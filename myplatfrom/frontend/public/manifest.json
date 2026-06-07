@@ -1,0 +1,35 @@
+{
+  "name": "KDS – Kitchen Display",
+  "short_name": "KDS",
+  "description": "Kitchen Display System – ระบบแสดงออเดอร์สำหรับครัว",
+  "start_url": "/kds",
+  "scope": "/kds",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1c1c1e",
+  "theme_color": "#f97316",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "/icons/kds.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/kds.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["food", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Kitchen Queue",
+      "short_name": "Queue",
+      "url": "/kds",
+      "icons": [{ "src": "/icons/kds.svg", "sizes": "any" }]
+    }
+  ]
+}
