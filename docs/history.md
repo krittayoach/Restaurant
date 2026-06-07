@@ -1,5 +1,19 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.3 (2026-06-07)
+
+- F: Self-service plan upgrade — manager เลือก plan → ชำระด้วย PromptPay (upload slip → super admin อนุมัติ) หรือ credit card (auto-approve ทันที)
+- F: `/billing` routes — `POST /upgrade`, `POST /slip`, `GET /pending-payments`, `PATCH /payments/:id/approve|reject`
+- F: Admin page — section "คำขออัปเกรด" แสดง pending slips พร้อมปุ่ม approve/reject
+- F: Offline PWA for KDS — Service Worker cache static shell + Next.js chunks, network-first navigation
+- F: KDS offline data cache — localStorage เก็บ orders/stats, โหลดจาก cache เมื่อ offline
+- F: KDS offline action queue — รับทำ/เสร็จแล้ว ขณะ offline → เก็บใน localStorage → auto-sync เมื่อ online
+- F: KDS install prompt — ปุ่ม "ติดตั้งแอป" ผ่าน `beforeinstallprompt`
+- C: `PLATFORM_PROMPTPAY_ID` env var ใน backend
+- C: `next.config.js` — no-cache header สำหรับ `sw.js`
+- C: `public/manifest.json`, `public/sw.js`, `public/icons/kds.svg`
+- C: `plan_payments` table ใน schema (method, status, slip_url, reviewed_by)
+
 ## Changelog — v2.2 (2026-06-07)
 
 - F: Export CSV / PDF บนหน้า reports — frontend-only ไม่มี library เพิ่ม

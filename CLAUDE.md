@@ -29,7 +29,7 @@ myplatfrom/
 │   ├── admin/                      # Super admin
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
-│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations
+│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing
 │   ├── db/       # schema.ts, drizzle.config.ts
 │   └── lib/      # redis.ts, jwt.ts, storage.ts
 └── docker-compose.yml
@@ -82,6 +82,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/restaurant_saas
 REDIS_URL=redis://localhost:6380
 JWT_SECRET=dev-secret-change-in-production
 PORT=3010
+PLATFORM_PROMPTPAY_ID=0812345678
 # frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:3010
 ```
@@ -106,13 +107,12 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 - `GET /restaurants/:slug` — เช็ค UUID format ก่อน query (Postgres error)
 - Port 3000/3001 อาจชนกับ project อื่น — ใช้ 3002/3010 แทน
 - KDS `/kds/[slug]` อยู่นอก dashboard layout — middleware ครอบ `/kds/:path*` แยก
+- `sw.js` ต้องอยู่ใน `public/` — scope `/`, cache KDS shell + Next.js chunks
+- `next.config.js` ต้องมี — ตั้ง `no-cache` header ให้ `sw.js` เพื่อรับ SW update
 
 ## Backlog
 - [ ] Loyalty / points system
-- [ ] Inventory / stock management
-- [ ] Super admin billing dashboard
 - [ ] Multi-language (EN + TH toggle)
-- [ ] Offline PWA สำหรับ kitchen board
 
 ## /update-claude Instructions
 1. **List changes** แบ่งเป็น: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
