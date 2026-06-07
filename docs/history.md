@@ -1,5 +1,15 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.2 (2026-06-07)
+
+- F: Export CSV / PDF บนหน้า reports — frontend-only ไม่มี library เพิ่ม
+- F: Table Reservation System — `/r/[slug]/reserve` (public form + confirm page), backend `/reservations`, section ใน tables dashboard + auto-sync table status
+- F: Kitchen Display System (KDS) — `/kds/[slug]` fullscreen ไม่มี sidebar, realtime SSE, protected chef+manager
+- C: Git init + push ขึ้น GitHub `krittayoach/Restaurant`
+- C: Project skills `/start-app` / `/stop-app`
+- C: เปลี่ยน port backend 3001→3010, frontend 3000→3002 (port conflict)
+- C: DB schema เพิ่ม `reservations` table + `reservation_status` enum
+
 ## Project Summary
 
 **Restaurant SaaS** — a multi-tenant platform for Thai restaurants. Customers scan a QR code on their table, browse the menu on their phone, and place orders without any app install or account. Kitchen staff see orders in realtime. Employee staff manage the floor and payment. Managers have full control over menu, staff, promotions, and reports.
