@@ -1,11 +1,83 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Star, Calendar, Receipt } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Star, Calendar, Receipt, Download, FileText } from 'lucide-react'
 import { api, getToken } from '@/lib/api'
 import { LoadingScreen } from '@/components/LoadingScreen'
 
 function toLocalDate(d: Date) {
   return d.toISOString().slice(0, 10)
+}
+
+function exportCSV(daily: any[], bestseller: any[], from: string, to: string) {
+  const rows: string[] = []
+
+  rows.push(`ยอดขายรายวัน (${from} ถึง ${to})`)
+  rows.push('วันที่,รายได้ (บาท),จำนวนออเดอร์')
+  daily.forEach(d => rows.push(`${d.date},${parseFloat(d.total).toFixed(2)},${d.count}`))
+
+  rows.push('')
+  rows.push('เมนูขายดี Top 10')
+  rows.push('อันดับ,เมนู,จำนวน (ชิ้น),รายได้ (บาท)')
+  bestseller.forEach((item, i) =>
+    rows.push(`${i + 1},"${item.menu_name}",${item.total_qty},${parseFloat(item.revenue).toFixed(2)}`)
+  )
+
+  const bom = '﻿'
+  const blob = new Blob([bom + rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `report_${from}_${to}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportPDF(daily: any[], bestseller: any[], summary: any, from: string, to: string, restaurantName: string) {
+  const html = `<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>รายงาน ${from} – ${to}</title>
+<style>
+  body { font-family: sans-serif; color: #1a1a1a; padding: 32px; font-size: 13px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  p.sub { color: #666; margin: 0 0 24px; font-size: 12px; }
+  .cards { display: flex; gap: 16px; margin-bottom: 24px; }
+  .card { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+  .card .label { color: #888; font-size: 11px; margin-top: 4px; }
+  .card .value { font-size: 18px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #e5e7eb; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
+  h2 { font-size: 14px; margin: 0 0 8px; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<h1>รายงานยอดขาย — ${restaurantName}</h1>
+<p class="sub">ช่วงเวลา: ${from} ถึง ${to}</p>
+<div class="cards">
+  <div class="card"><div class="value">฿${parseFloat(summary.total ?? 0).toLocaleString()}</div><div class="label">รายได้รวม</div></div>
+  <div class="card"><div class="value">${summary.order_count ?? 0} รายการ</div><div class="label">จำนวนออเดอร์</div></div>
+  <div class="card"><div class="value">${bestseller[0]?.menu_name ?? '-'}</div><div class="label">เมนูขายดีสุด</div></div>
+</div>
+<h2>ยอดขายรายวัน</h2>
+<table>
+  <thead><tr><th>วันที่</th><th>รายได้ (บาท)</th><th>จำนวนออเดอร์</th></tr></thead>
+  <tbody>${daily.map(d => `<tr><td>${d.date}</td><td>฿${parseFloat(d.total).toLocaleString()}</td><td>${d.count}</td></tr>`).join('')}</tbody>
+</table>
+<h2>เมนูขายดี Top 10</h2>
+<table>
+  <thead><tr><th>#</th><th>เมนู</th><th>จำนวน (ชิ้น)</th><th>รายได้ (บาท)</th></tr></thead>
+  <tbody>${bestseller.map((item, i) => `<tr><td>${i + 1}</td><td>${item.menu_name}</td><td>${item.total_qty}</td><td>฿${parseFloat(item.revenue).toLocaleString()}</td></tr>`).join('')}</tbody>
+</table>
+</body></html>`
+
+  const win = window.open('', '_blank')
+  if (!win) return
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => { win.print() }
 }
 
 export default function ReportsPage() {
@@ -16,6 +88,7 @@ export default function ReportsPage() {
   const [to, setTo]     = useState(today)
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [restaurantName, setRestaurantName] = useState('ร้านอาหาร')
 
   async function load(f: string, t: string) {
     setLoading(true)
@@ -25,7 +98,11 @@ export default function ReportsPage() {
     setLoading(false)
   }
 
-  useEffect(() => { load(from, to) }, [])
+  useEffect(() => {
+    load(from, to)
+    const slug = window.location.pathname.split('/')[2]
+    api.get(`/restaurants/${slug}`).then((r: any) => { if (r?.name) setRestaurantName(r.name) }).catch(() => null)
+  }, [])
 
   const daily      = data?.daily ?? []
   const summary    = data?.summary ?? { total: 0, order_count: 0 }
@@ -34,9 +111,29 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-display font-bold text-2xl text-text">รายงาน</h1>
-        <p className="text-muted text-sm mt-0.5">ยอดขายและสถิติร้าน</p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="font-display font-bold text-2xl text-text">รายงาน</h1>
+          <p className="text-muted text-sm mt-0.5">ยอดขายและสถิติร้าน</p>
+        </div>
+        {!loading && data && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => exportCSV(daily, bestseller, from, to)}
+              className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg bg-bg3 text-text hover:bg-border transition-colors font-medium"
+            >
+              <Download size={15} />
+              CSV
+            </button>
+            <button
+              onClick={() => exportPDF(daily, bestseller, summary, from, to, restaurantName)}
+              className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 transition-colors font-medium"
+            >
+              <FileText size={15} />
+              PDF
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Date range filter */}
