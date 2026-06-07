@@ -1,0 +1,191 @@
+# history.md — Project History & Decision Log
+
+## Project Summary
+
+**Restaurant SaaS** — a multi-tenant platform for Thai restaurants. Customers scan a QR code on their table, browse the menu on their phone, and place orders without any app install or account. Kitchen staff see orders in realtime. Employee staff manage the floor and payment. Managers have full control over menu, staff, promotions, and reports.
+
+---
+
+## Changelog — v1.9 (2026-06-03)
+
+- G: Super Admin UI — `/admin` page: reset password + list ร้านทั้งหมด
+- `GET /restaurants/all` — super_admin only (newest first)
+- Middleware guard `/admin/*` + login redirect super_admin → `/admin`
+- Bug: ช่องชื่อโต๊ะใน QR page เพิ่ม validation กรอบแดง (ไม่มี inline text เพื่อไม่ให้ layout เบี้ยว)
+
+---
+
+## Changelog — v1.8 (2026-06-03)
+
+- D: `window.scrollTo` → `document.querySelector('main')?.scrollTo` ครบ 3 ไฟล์ (menu, promotions, employees)
+- F: เพิ่ม try/catch + `toast.error()` ทุก event handler ใน 6 ไฟล์ (menu, promotions, employees, tables/qr, orders, kitchen)
+
+---
+
+## Changelog — v1.7 (2026-06-03)
+
+- Settings page (`/settings`) — แก้ชื่อร้าน, PromptPay, เวลาเปิด-ปิด + เปลี่ยนรหัสผ่าน (manager)
+- `PATCH /auth/change-password` — เปลี่ยนรหัสผ่านตัวเอง (ทุก role)
+- `PATCH /auth/reset-password` — super_admin reset รหัสผ่าน (API only, ยังไม่มี UI)
+- Manager สร้าง manager เพิ่มได้ — `POST /employees` รองรับ role `manager`
+- Toast system — `components/Toast.tsx` + `useToast()` global, wire ใน root layout
+- ConfirmModal — `components/ConfirmModal.tsx` + `useConfirm()` async popup
+- เปลี่ยน `confirm()` native ทั้ง 6 จุด → ConfirmModal (menu, promotions, employees, QR)
+- Sidebar เพิ่ม "⚙️ ตั้งค่า" (manager only)
+- `docs/design.md` — แก้ color/font ที่ผิด + เพิ่ม Toast, ConfirmModal, Dashboard Layout, Image Upload, Form Validation
+
+---
+
+## Changelog — v1.6 (2026-06-03)
+
+- 6.5: Menu image upload — migrate base64 → file upload จริงผ่าน MinIO (S3-compatible)
+  - Backend: `POST /menus/image` multipart proxy, `storage.ts` เพิ่ม `uploadFile()` + `getPublicUrl()`
+  - Frontend: spinner UI ระหว่าง upload, เก็บ public URL แทน base64
+  - Docker: เพิ่ม MinIO service + minio-init auto-create bucket (public)
+- UI: Dashboard sidebar fix — sidebar อยู่กับที่, เฉพาะ content เลื่อน
+- UI: Logout ใช้ custom popup modal แทน native `confirm()`
+- Bug: `GET /restaurants/:slug` แก้ 500 เมื่อ slug ไม่ใช่ UUID format
+
+---
+
+## Changelog — v1.5 (2026-05-31)
+
+- แก้ `start.sh` ใช้ subshell `(cd ... && ...)` ให้ backend/frontend ขึ้นถูก port
+- อัปเดต CLAUDE.md Dev Setup ให้แนะนำ `./start.sh` เป็น recommended command
+
+---
+
+## Changelog — v1.4 (2026-05-31)
+
+- 6.1: ติดตั้ง `concurrently` — `bun run dev` ใช้ได้แล้ว
+- 6.2: `seed.ts` auto-detect restaurant ID จาก DB แทน hardcode UUID
+- 6.3: clear `sessionStorage.currentOrderId` เมื่อ paid (แก้ใน B1)
+- 6.4: category jump bar sticky บนหน้า order ลูกค้า
+- 6.6: pagination 20 รายการ/หน้า บนหน้า menu dashboard
+
+---
+
+## Changelog — v1.3 (2026-05-31)
+
+- B1: clear `sessionStorage.currentOrderId` เมื่อ payment_status = paid
+- B2: `start.sh` แก้ container name + รัน backend/frontend แยกแทน concurrently
+- B3: `serving.ts` เพิ่ม manager role ใน serve/add-items/cancel endpoints
+
+---
+
+## Changelog — v1.2 (2026-05-31)
+
+- CLAUDE.md reorganized: ลดจาก 248 → 135 บรรทัด, ลบ changelog ออกจาก CLAUDE.md
+- Changelog ย้ายไป docs/history.md (format: prepend newest first)
+- เพิ่ม `/update-claude Instructions` ใน CLAUDE.md กำหนด process update ใหม่
+
+---
+
+## v1.0 — Initial Release
+
+### Core Features Shipped
+
+**Multi-Tenant Foundation**
+- Single PostgreSQL database, all tables scoped by `restaurant_id`
+- Restaurant registration flow creates manager account + default tables + QR tokens
+- `slug`-based URL routing for tenant isolation
+
+**QR Ordering System**
+- 32-byte hex `qrToken` per table, generated/reset by manager
+- Customer scans → resolves table context → browses menu → places order
+- No account required — customer identified by name + phone (upsert)
+- httpOnly cookie stores `tableId` + `restaurantId` for session
+
+**Realtime Kitchen & Floor**
+- Redis Pub/Sub + Server-Sent Events for live order updates
+- Kitchen channel: `{restaurantId}:kitchen` (NEW_ORDER, ITEM_STATUS, ORDER_ACCEPTED)
+- Floor channel: `{restaurantId}:order:update` (ITEM_READY, ITEM_SERVED, ORDER_SERVED)
+- 15-minute highlight on overdue kitchen orders
+
+**Order Item State Machine**
+- `pending → cooking → ready → served`
+- Cancel only allowed on `pending` items
+- Order-level status derived automatically from item states
+- Timestamps: `startedAt`, `finishedAt`, `servedAt` per item
+
+**Payment**
+- Transfer (PromptPay slip upload) + Cash
+- Employee verifies slip → table resets to available
+- Refund flow available
+
+**Staff Management**
+- Roles: super_admin, manager, employee, chef
+- Manager: full control (menu, staff, QR, reports, promotions, salary)
+- Employee: floor + menu edit + payment confirm + check-in/out
+- Chef: kitchen queue + item status + check-in/out
+- Attendance tracking + salary payment log
+
+**Menu System**
+- Categories with drag-and-drop reorder
+- Menu items with image, price, availability toggle
+- Redis cache (5 min TTL), invalidated on any CRUD
+- Snapshot of name + price stored in each order item
+
+**Promotions**
+- Percentage or fixed-amount discount
+- Minimum order threshold
+- Date-range validity (`starts_at` / `ends_at`)
+
+**Reports**
+- Weekly sales (7 days)
+- Monthly sales
+- Top 10 bestsellers by quantity + revenue
+
+---
+
+## Key Decisions Log
+
+### 2025 — Initial Architecture
+
+**Chose Elysia over Express/Hono**
+Elysia provides end-to-end type safety with TypeBox schema validation and auto-generates Swagger docs. Running on Bun gives significant performance improvement over Node.js for this IO-bound workload.
+
+**Chose Drizzle over Prisma**
+Drizzle is lighter, runs natively on Bun without native bindings issues, and produces simpler SQL. Schema-as-code with full TypeScript inference. Migration workflow fits the project's pace.
+
+**Chose SSE over WebSocket**
+All realtime communication is server-to-client push only. SSE is simpler, requires no special server setup, and works reliably over HTTP/2. No need for bidirectional channels.
+
+**Chose single-DB multi-tenant over schema-per-tenant**
+Simpler ops, no dynamic schema creation, no connection pooling per tenant. All queries enforced to include `restaurant_id`. Acceptable for the projected scale (hundreds of restaurants, not thousands).
+
+**Customer auth without registration**
+Lowering friction for walk-in customers is critical. Name + phone upsert gives enough identity for order tracking without requiring an account. JWT issued per QR scan session.
+
+**Snapshot pricing in order_items**
+Menu prices can change. Storing `menu_name` and `unit_price` at order time ensures reports and receipts are always accurate, regardless of future menu edits.
+
+---
+
+## Changelog — v1.1 (2026-05-31)
+
+Features & improvements shipped after v1.0:
+
+- Redesign: warm orange/rose theme ทั้ง dashboard และหน้าลูกค้า
+- Form UX: validation *, password ≥6, loading spinner ทุกหน้า
+- Dashboard URL ใช้ slug แทน UUID
+- Menu: grid 4 card/row + upload รูปภาพ (base64)
+- Customer order flow: QR → order โดยตรง, ไม่มีแท็บสลับ, cart inline
+- Reports: date range filter + ปุ่มลัด
+- SSE: useSSE hook + auto-reconnect (kitchen, orders, customer payment)
+- Customer payment: realtime via `{restaurantId}:table:{tableId}` channel
+- Bug: kitchen actions เปิดให้ manager ด้วย
+
+---
+
+## Backlog / Future Considerations
+
+- [ ] Push notifications (Web Push API) for order ready alerts to customers
+- [ ] Multi-language support (EN + TH toggle)
+- [ ] Table reservation system
+- [ ] Loyalty / points system for repeat customers
+- [ ] Kitchen display system (KDS) dedicated hardware view
+- [ ] Inventory / stock management
+- [ ] Super admin billing dashboard (plan upgrades, invoice)
+- [ ] Export reports to CSV / PDF
+- [ ] Offline-capable PWA for kitchen board

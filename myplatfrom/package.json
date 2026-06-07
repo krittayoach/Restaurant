@@ -1,0 +1,20 @@
+{
+  "name": "restaurant-saas",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:backend": "cd backend  && bun run dev",
+    "dev:frontend": "cd frontend && bun run dev",
+    "build": "cd frontend && bun run build",
+    "db:push": "cd backend  && bun run db:push",
+    "db:studio": "cd backend  && bun run db:studio",
+    "db:seed": "cd backend  && bun run src/seed.ts",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v && docker compose up -d"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.0"
+  }
+}

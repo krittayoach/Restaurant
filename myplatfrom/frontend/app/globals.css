@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Warm restaurant light theme */
+  --bg:      #fff8f0;   /* cream */
+  --bg2:     #ffffff;   /* card surface */
+  --bg3:     #fff2e3;   /* warm peach (inputs/chips) */
+  --border:  #f3e6d4;   /* soft warm border */
+  --border2: #ecd9bf;
+  --text:    #2b1c10;   /* warm dark brown */
+  --muted:   #a3917b;   /* warm taupe */
+  --accent:  #f97316;   /* orange */
+  --accent2: #fb923c;
+  --teal:    #0d9488;
+  --blue:    #2563eb;
+  --violet:  #7c3aed;
+  --rose:    #e11d48;
+  --green:   #16a34a;
+  --yellow:  #d97706;   /* amber (readable on light) */
+  --shadow:  0 4px 24px -6px rgba(124, 76, 20, 0.12);
+  --shadow-sm: 0 2px 10px -4px rgba(124, 76, 20, 0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, #ffe9d1 0%, transparent 55%),
+    radial-gradient(900px 500px at -10% 0%, #ffeede 0%, transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: 'Noto Sans Thai', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── Keyframes ───────────────────────────────────────────── */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn    { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes floaty   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes shimmer  { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+@keyframes pulseRing{ 0% { box-shadow: 0 0 0 0 rgba(249,115,22,.35);} 70%{box-shadow:0 0 0 8px rgba(249,115,22,0);} 100%{box-shadow:0 0 0 0 rgba(249,115,22,0);} }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(20px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes slideOutRight { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(20px) scale(.97); } }
+
+@layer components {
+  .card {
+    @apply bg-bg2 rounded-3xl border border-border;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-hover { @apply transition-all duration-200; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-accent text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 0 6px 16px -6px rgba(249,115,22,.6);
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
+
+  .btn-secondary { @apply inline-flex items-center justify-center gap-2 bg-bg3 text-text border border-border px-5 py-2.5 rounded-2xl text-sm font-semibold hover:border-border2 transition-all active:scale-95; }
+  .btn-danger { @apply inline-flex items-center justify-center gap-2 bg-rose/10 text-rose border border-rose/20 px-4 py-2.5 rounded-2xl text-sm font-semibold hover:bg-rose/20 transition-all active:scale-95; }
+
+  .input { @apply w-full bg-bg3 border border-border rounded-2xl px-4 py-2.5 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:border-accent focus:bg-bg2 transition-all; }
+  .input-error { @apply border-rose bg-rose/5 focus:border-rose; }
+  .field-error { @apply text-rose text-xs mt-1 ml-1; }
+  .badge { @apply inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold; }
+}
+
+@layer utilities {
+  .anim-up    { animation: fadeInUp .45s cubic-bezier(.2,.7,.3,1) both; }
+  .anim-in    { animation: fadeIn .4s ease both; }
+  .anim-pop   { animation: popIn .3s cubic-bezier(.2,.8,.3,1) both; }
+  .anim-toast { animation: slideInRight .25s cubic-bezier(.2,.8,.3,1) both; }
+  .anim-toast-out { animation: slideOutRight .2s cubic-bezier(.4,0,1,1) both; }
+  .floaty     { animation: floaty 4s ease-in-out infinite; }
+  .pulse-ring { animation: pulseRing 2s ease-out infinite; }
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg3) 25%, #ffe6cc 50%, var(--bg3) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+}

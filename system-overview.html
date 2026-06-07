@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant SaaS — System Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0c0f;
+    --bg2:      #111318;
+    --bg3:      #181c24;
+    --border:   #232834;
+    --border2:  #2e3545;
+    --text:     #e8ecf4;
+    --muted:    #6b7591;
+    --accent:   #f97316;
+    --accent2:  #fb923c;
+    --teal:     #14b8a6;
+    --blue:     #3b82f6;
+    --violet:   #8b5cf6;
+    --rose:     #f43f5e;
+    --green:    #22c55e;
+    --yellow:   #eab308;
+    --glow:     rgba(249,115,22,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Noto Sans Thai',sans-serif;
+    font-size:14px;line-height:1.6;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,h4,.mono{font-family:'Syne',sans-serif}
+  code,.tag,.badge{font-family:'DM Mono',monospace}
+
+  /* ── GRAIN OVERLAY ── */
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    opacity:.4;
+  }
+
+  /* ── HEADER ── */
+  .hero{
+    position:relative;padding:80px 60px 60px;
+    background:linear-gradient(135deg,#0a0c0f 0%,#0f1420 50%,#0a0c0f 100%);
+    border-bottom:1px solid var(--border);overflow:hidden;
+  }
+  .hero::after{
+    content:'';position:absolute;top:-120px;right:-80px;
+    width:600px;height:600px;border-radius:50%;
+    background:radial-gradient(circle,rgba(249,115,22,.12) 0%,transparent 70%);
+    pointer-events:none;
+  }
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);
+    padding:6px 14px;border-radius:100px;
+    font-size:11px;font-family:'DM Mono',monospace;
+    color:var(--accent2);letter-spacing:.08em;text-transform:uppercase;
+    margin-bottom:24px;
+  }
+  .hero-badge::before{content:'●';color:var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .hero h1{
+    font-size:clamp(36px,5vw,64px);font-weight:800;line-height:1.05;
+    letter-spacing:-.03em;margin-bottom:16px;
+  }
+  .hero h1 span{color:var(--accent)}
+  .hero p{color:var(--muted);font-size:16px;max-width:560px;line-height:1.7}
+  .stack-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+  .pill{
+    padding:5px 12px;border-radius:6px;font-size:11px;
+    font-family:'DM Mono',monospace;letter-spacing:.04em;font-weight:500;
+  }
+  .pill-next{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);color:#93c5fd}
+  .pill-elysia{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.35);color:#fdba74}
+  .pill-pg{background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.35);color:#5eead4}
+  .pill-redis{background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.35);color:#fda4af}
+  .pill-bun{background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.35);color:#fde047}
+
+  /* ── NAV ── */
+  nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(10,12,15,.92);backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);
+    padding:0 60px;display:flex;gap:2px;overflow-x:auto;
+  }
+  nav a{
+    padding:14px 18px;color:var(--muted);text-decoration:none;
+    font-size:12px;font-family:'DM Mono',monospace;letter-spacing:.04em;
+    white-space:nowrap;border-bottom:2px solid transparent;
+    transition:all .2s;
+  }
+  nav a:hover{color:var(--text);border-color:var(--accent)}
+
+  /* ── LAYOUT ── */
+  .container{max-width:1200px;margin:0 auto;padding:60px}
+  section{margin-bottom:80px}
+  .section-label{
+    display:flex;align-items:center;gap:12px;margin-bottom:32px;
+  }
+  .section-label .num{
+    font-family:'DM Mono',monospace;font-size:11px;
+    color:var(--accent);letter-spacing:.1em;
+  }
+  .section-label h2{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .section-line{flex:1;height:1px;background:var(--border)}
+
+  /* ── CARDS ── */
+  .card{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:24px;
+    transition:border-color .2s,transform .2s;
+  }
+  .card:hover{border-color:var(--border2);transform:translateY(-2px)}
+  .card-title{font-size:13px;font-weight:600;margin-bottom:8px}
+  .card-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:900px){.grid-4,.grid-3{grid-template-columns:repeat(2,1fr)}.grid-5{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.grid-2,.grid-3,.grid-4,.grid-5,.grid-flow{grid-template-columns:1fr}}
+
+  /* ── ROLES ── */
+  .role-card{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:22px;position:relative;overflow:hidden;
+  }
+  .role-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  }
+  .role-super::before{background:var(--yellow)}
+  .role-manager::before{background:var(--accent)}
+  .role-employee::before{background:var(--blue)}
+  .role-chef::before{background:var(--teal)}
+  .role-customer::before{background:var(--green)}
+  .role-icon{font-size:28px;margin-bottom:12px}
+  .role-title{font-size:14px;font-weight:700;margin-bottom:4px}
+  .role-scope{font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'DM Mono',monospace}
+  .role-perms{list-style:none;display:flex;flex-direction:column;gap:4px}
+  .role-perms li{font-size:12px;color:var(--muted);display:flex;align-items:flex-start;gap:6px}
+  .role-perms li::before{content:'→';color:var(--accent);flex-shrink:0;margin-top:1px}
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-box{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:32px;
+    display:flex;flex-direction:column;gap:20px;
+  }
+  .arch-layer{
+    display:flex;align-items:center;gap:12px;
+  }
+  .arch-label{
+    width:100px;font-size:11px;font-family:'DM Mono',monospace;
+    color:var(--muted);text-align:right;flex-shrink:0;
+  }
+  .arch-nodes{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+  .arch-node{
+    padding:8px 14px;border-radius:8px;font-size:12px;
+    font-family:'DM Mono',monospace;font-weight:500;
+    display:flex;align-items:center;gap:6px;
+  }
+  .node-nextjs{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#93c5fd}
+  .node-elysia{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:#fdba74}
+  .node-pg{background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4}
+  .node-redis{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:#fda4af}
+  .node-bun{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#fde047}
+  .node-s3{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd}
+  .arch-arrow{
+    display:flex;justify-content:center;
+    font-size:18px;color:var(--border2);
+  }
+
+  /* ── DB TABLES ── */
+  .db-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .db-table{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;
+  }
+  .db-table-head{
+    background:var(--bg3);padding:10px 14px;
+    display:flex;align-items:center;gap:8px;
+    border-bottom:1px solid var(--border);
+  }
+  .db-icon{font-size:14px}
+  .db-name{font-size:12px;font-weight:600;font-family:'DM Mono',monospace}
+  .db-fields{padding:10px 14px;display:flex;flex-direction:column;gap:5px}
+  .db-field{display:flex;align-items:center;gap:8px;font-size:11px}
+  .db-field-name{color:var(--text);font-family:'DM Mono',monospace;min-width:90px}
+  .db-field-type{color:var(--muted);font-size:10px}
+  .badge-pk{background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.3);padding:1px 5px;border-radius:3px;font-size:9px;font-family:'DM Mono',monospace}
+  .badge-fk{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);padding:1px 5px;border-radius:3px;font-size:9px;font-family:'DM Mono',monospace}
+  .badge-idx{background:rgba(20,184,166,.15);color:#5eead4;border:1px solid rgba(20,184,166,.3);padding:1px 5px;border-radius:3px;font-size:9px;font-family:'DM Mono',monospace}
+
+  /* ── FLOW DIAGRAM ── */
+  .flow-container{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:32px;
+    display:flex;gap:0;overflow-x:auto;
+  }
+  .flow-col{
+    display:flex;flex-direction:column;align-items:center;
+    gap:8px;min-width:160px;flex:1;
+  }
+  .flow-actor{
+    padding:8px 14px;border-radius:8px;
+    font-size:12px;font-weight:600;text-align:center;width:100%;
+    font-family:'DM Mono',monospace;
+  }
+  .actor-cust{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac}
+  .actor-emp{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#93c5fd}
+  .actor-chef{background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4}
+  .actor-mgr{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:#fdba74}
+  .actor-sys{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd}
+  .flow-step{
+    font-size:11px;text-align:center;color:var(--muted);
+    padding:6px 10px;background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;width:100%;
+  }
+  .flow-arrow-h{
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;color:var(--accent);min-width:32px;align-self:flex-start;
+    margin-top:36px;
+  }
+  .flow-highlight{border-color:var(--accent);color:var(--accent2)}
+
+  /* ── API TABLE ── */
+  .api-section{margin-bottom:28px}
+  .api-section-title{
+    font-size:12px;font-family:'DM Mono',monospace;
+    color:var(--accent);letter-spacing:.08em;text-transform:uppercase;
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  }
+  .api-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .api-table{width:100%;border-collapse:collapse}
+  .api-table th{
+    text-align:left;font-size:10px;font-family:'DM Mono',monospace;
+    color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+    padding:8px 12px;border-bottom:1px solid var(--border);
+  }
+  .api-table td{
+    padding:8px 12px;border-bottom:1px solid rgba(35,40,52,.5);
+    font-size:12px;vertical-align:middle;
+  }
+  .method{
+    font-family:'DM Mono',monospace;font-size:10px;font-weight:600;
+    padding:3px 7px;border-radius:4px;display:inline-block;
+  }
+  .m-get{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+  .m-post{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3)}
+  .m-put{background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.3)}
+  .m-patch{background:rgba(249,115,22,.15);color:#fdba74;border:1px solid rgba(249,115,22,.3)}
+  .m-delete{background:rgba(244,63,94,.15);color:#fda4af;border:1px solid rgba(244,63,94,.3)}
+  .api-path{font-family:'DM Mono',monospace;font-size:12px;color:var(--text)}
+  .api-desc{color:var(--muted);font-size:12px}
+  .auth-tag{
+    font-size:10px;font-family:'DM Mono',monospace;
+    padding:2px 7px;border-radius:4px;
+  }
+  .auth-public{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.25)}
+  .auth-manager{background:rgba(249,115,22,.1);color:#fdba74;border:1px solid rgba(249,115,22,.25)}
+  .auth-employee{background:rgba(59,130,246,.1);color:#93c5fd;border:1px solid rgba(59,130,246,.25)}
+  .auth-chef{background:rgba(20,184,166,.1);color:#5eead4;border:1px solid rgba(20,184,166,.25)}
+  .auth-staff{background:rgba(139,92,246,.1);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)}
+
+  /* ── STATUS FLOW ── */
+  .status-flow{
+    display:flex;align-items:center;gap:0;
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:24px;overflow-x:auto;flex-wrap:wrap;
+    justify-content:center;gap:4px;
+  }
+  .status-node{
+    padding:10px 18px;border-radius:8px;font-size:12px;
+    font-weight:600;text-align:center;white-space:nowrap;
+  }
+  .s-pending{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.35);color:#fde047}
+  .s-cooking{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.35);color:#fdba74}
+  .s-ready{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd}
+  .s-served{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#86efac}
+  .s-cancel{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.35);color:#fda4af}
+  .s-arrow{color:var(--accent);font-size:18px;padding:0 6px}
+  .s-actor{font-size:10px;color:var(--muted);text-align:center;margin-top:4px;font-family:'DM Mono',monospace}
+  .status-item{display:flex;flex-direction:column;align-items:center}
+
+  /* ── REDIS KEYS ── */
+  .redis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .redis-key{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:10px;padding:16px;
+  }
+  .redis-pattern{
+    font-family:'DM Mono',monospace;font-size:12px;
+    color:var(--rose);margin-bottom:6px;word-break:break-all;
+  }
+  .redis-purpose{font-size:12px;color:var(--muted)}
+  .redis-meta{
+    margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .redis-badge{
+    font-size:10px;font-family:'DM Mono',monospace;
+    padding:2px 7px;border-radius:4px;
+  }
+
+  /* ── QR FLOW ── */
+  .qr-flow{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;padding:32px;
+  }
+  .qr-steps{display:flex;flex-direction:column;gap:0}
+  .qr-step{
+    display:flex;gap:20px;padding:16px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .qr-step:last-child{border-bottom:none}
+  .qr-num{
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);
+    color:var(--accent);font-size:13px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-family:'DM Mono',monospace;
+  }
+  .qr-content h4{font-size:13px;font-weight:600;margin-bottom:4px}
+  .qr-content p{font-size:12px;color:var(--muted)}
+  .qr-content code{
+    font-family:'DM Mono',monospace;font-size:11px;
+    background:var(--bg3);border:1px solid var(--border);
+    padding:2px 6px;border-radius:4px;color:var(--teal);
+    word-break:break-all;
+  }
+
+  /* ── PAGES MAP ── */
+  .pages-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .pages-group{
+    background:var(--bg2);border:1px solid var(--border);
+    border-radius:12px;overflow:hidden;
+  }
+  .pages-group-head{
+    padding:14px 18px;background:var(--bg3);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;
+  }
+  .pages-list{padding:0}
+  .page-row{
+    display:grid;grid-template-columns:1fr auto auto;
+    align-items:center;gap:12px;
+    padding:10px 18px;border-bottom:1px solid rgba(35,40,52,.4);
+    font-size:12px;
+  }
+  .page-row:last-child{border-bottom:none}
+  .page-path{font-family:'DM Mono',monospace;font-size:11px;color:var(--teal)}
+  .page-ssr{font-size:10px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:4px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd}
+  .page-csr{font-size:10px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#93c5fd}
+  .page-sse{font-size:10px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:4px;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:#fda4af}
+
+  /* ── FOOTER ── */
+  footer{
+    border-top:1px solid var(--border);padding:40px 60px;
+    display:flex;justify-content:space-between;align-items:center;
+    color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;
+  }
+  .footer-stack{display:flex;gap:16px}
+  .footer-item{display:flex;align-items:center;gap:6px}
+
+  /* ── ANIMATIONS ── */
+  .fade-in{opacity:0;transform:translateY(16px);animation:fadeIn .5s ease forwards}
+  @keyframes fadeIn{to{opacity:1;transform:none}}
+  .delay-1{animation-delay:.1s}
+  .delay-2{animation-delay:.2s}
+  .delay-3{animation-delay:.3s}
+  .delay-4{animation-delay:.4s}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Restaurant SaaS Platform — v1.0</div>
+  <h1>ภาพรวม<span>ระบบ</span><br>สั่งอาหาร</h1>
+  <p>ระบบจัดการร้านอาหาร Multi-Tenant รองรับทุกร้าน ลูกค้าสั่งผ่าน QR Code บนโต๊ะ ครัวเห็น Realtime พนักงานจัดการได้ครบวงจร</p>
+  <div class="stack-pills">
+    <span class="pill pill-next">▲ Next.js 14</span>
+    <span class="pill pill-elysia">⚡ Elysia</span>
+    <span class="pill pill-bun">🥐 Bun</span>
+    <span class="pill pill-pg">🐘 PostgreSQL</span>
+    <span class="pill pill-redis">🔴 Redis</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#arch">สถาปัตยกรรม</a>
+  <a href="#roles">บทบาทผู้ใช้</a>
+  <a href="#flow">Customer Flow</a>
+  <a href="#qr">QR System</a>
+  <a href="#kitchen">Kitchen</a>
+  <a href="#status">Order Status</a>
+  <a href="#schema">Database</a>
+  <a href="#redis-keys">Redis</a>
+  <a href="#api">API Endpoints</a>
+  <a href="#pages">Pages Map</a>
+</nav>
+
+<div class="container">
+
+<!-- ── 1. ARCHITECTURE ── -->
+<section id="arch">
+  <div class="section-label">
+    <span class="num">01</span>
+    <h2>สถาปัตยกรรมระบบ</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="arch-box">
+    <div class="arch-layer">
+      <div class="arch-label">Client</div>
+      <div class="arch-nodes">
+        <div class="arch-node node-nextjs">▲ Next.js 14<br><span style="font-size:10px;opacity:.6">App Router · SSR · SSE</span></div>
+        <div class="arch-node node-nextjs" style="opacity:.7">📱 Mobile Browser<br><span style="font-size:10px;opacity:.6">QR Scan → Menu</span></div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ HTTP · SSE · JWT</div>
+    <div class="arch-layer">
+      <div class="arch-label">API</div>
+      <div class="arch-nodes">
+        <div class="arch-node node-elysia">⚡ Elysia + Bun<br><span style="font-size:10px;opacity:.6">REST · Swagger · JWT</span></div>
+        <div class="arch-node node-elysia" style="opacity:.7">🔐 Auth Guard<br><span style="font-size:10px;opacity:.6">Role-based · Tenant-scoped</span></div>
+      </div>
+    </div>
+    <div class="arch-arrow">↕ Drizzle ORM · ioredis</div>
+    <div class="arch-layer">
+      <div class="arch-label">Data</div>
+      <div class="arch-nodes">
+        <div class="arch-node node-pg">🐘 PostgreSQL 16<br><span style="font-size:10px;opacity:.6">Multi-Tenant · Enums · ACID</span></div>
+        <div class="arch-node node-redis">🔴 Redis 7<br><span style="font-size:10px;opacity:.6">Session · Cache · Pub/Sub</span></div>
+        <div class="arch-node node-s3">☁️ Object Storage<br><span style="font-size:10px;opacity:.6">Menu Images · Slips</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px" class="grid-4">
+    <div class="card">
+      <div class="card-title">Multi-Tenant</div>
+      <div class="card-desc">ทุกตารางมี <code>restaurant_id</code> — ข้อมูลแต่ละร้านแยกกันสมบูรณ์ ใช้ฐานข้อมูลเดียว</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Realtime via SSE</div>
+      <div class="card-desc">ครัวเห็นออเดอร์ใหม่ทันที พนักงานเห็น item ready ผ่าน Server-Sent Events ต่อ channel</div>
+    </div>
+    <div class="card">
+      <div class="card-title">QR per Table</div>
+      <div class="card-desc">แต่ละโต๊ะมี <code>qrToken</code> 32-byte hex ร้านสร้างเอง / reset ได้ทันที</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Redis Cache</div>
+      <div class="card-desc">เมนูถูก cache 5 นาที, Session TTL 24h, Kitchen queue, Pub/Sub channel ต่อร้าน</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 2. ROLES ── -->
+<section id="roles">
+  <div class="section-label">
+    <span class="num">02</span>
+    <h2>บทบาทผู้ใช้งาน</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="grid-5">
+    <div class="role-card role-super">
+      <div class="role-icon">👑</div>
+      <div class="role-title">Super Admin</div>
+      <div class="role-scope">scope: platform</div>
+      <ul class="role-perms">
+        <li>จัดการร้านทั้งหมด</li>
+        <li>Billing / Plans</li>
+        <li>ระงับร้านได้</li>
+      </ul>
+    </div>
+    <div class="role-card role-manager">
+      <div class="role-icon">🧑‍💼</div>
+      <div class="role-title">Manager</div>
+      <div class="role-scope">scope: own restaurant</div>
+      <ul class="role-perms">
+        <li>ตั้งค่าร้าน / เวลา</li>
+        <li>จัดการเมนู + category</li>
+        <li>สร้าง / reset QR</li>
+        <li>จัดการพนักงาน</li>
+        <li>กำหนด / จ่ายเงินเดือน</li>
+        <li>ดูรายงานขาย</li>
+        <li>จัดการโปรโมชั่น</li>
+      </ul>
+    </div>
+    <div class="role-card role-employee">
+      <div class="role-icon">🧑‍🍳</div>
+      <div class="role-title">Employee (พนักงาน)</div>
+      <div class="role-scope">scope: own restaurant</div>
+      <ul class="role-perms">
+        <li>ดู floor view โต๊ะ</li>
+        <li>เสิร์ฟ / ยืนยันชำระ</li>
+        <li>แก้ไขสถานะโต๊ะ</li>
+        <li>เพิ่มรายการในออเดอร์</li>
+        <li>ยกเลิก item (pending)</li>
+        <li>เช็คอิน/เอาท์</li>
+        <li>แก้ไขเมนูได้บางส่วน</li>
+      </ul>
+    </div>
+    <div class="role-card role-chef">
+      <div class="role-icon">👨‍🍳</div>
+      <div class="role-title">Chef (พ่อครัว)</div>
+      <div class="role-scope">scope: own restaurant</div>
+      <ul class="role-perms">
+        <li>ดูคิวออเดอร์ realtime</li>
+        <li>รับทำ / เริ่มทำ item</li>
+        <li>mark เสร็จทีละ item</li>
+        <li>รับทำทั้งออเดอร์</li>
+        <li>ดูสถิติครัว</li>
+        <li>เช็คอิน/เอาท์</li>
+      </ul>
+    </div>
+    <div class="role-card role-customer">
+      <div class="role-icon">🛒</div>
+      <div class="role-title">Customer (ลูกค้า)</div>
+      <div class="role-scope">scope: walk-in via QR</div>
+      <ul class="role-perms">
+        <li>แสกน QR → เมนู</li>
+        <li>ไม่ต้องสมัครสมาชิก</li>
+        <li>กรอกชื่อ+เบอร์</li>
+        <li>สั่ง / เพิ่ม / ยกเลิก</li>
+        <li>โอนเงิน (upload slip)</li>
+        <li>ชำระสด</li>
+        <li>ดูสถานะออเดอร์</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ── 3. CUSTOMER FLOW ── -->
+<section id="flow">
+  <div class="section-label">
+    <span class="num">03</span>
+    <h2>Customer Journey Flow</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="flow-container">
+    <div class="flow-col">
+      <div class="flow-actor actor-cust">👤 ลูกค้า</div>
+      <div class="flow-step">แสกน QR บนโต๊ะ</div>
+      <div class="flow-step">กรอกชื่อ + เบอร์</div>
+      <div class="flow-step">เลือกเมนู + จำนวน</div>
+      <div class="flow-step">ใส่โน้ต (ถ้ามี)</div>
+      <div class="flow-step">กด "สั่งอาหาร"</div>
+      <div class="flow-step">รอดูสถานะ</div>
+      <div class="flow-step">สั่งเพิ่ม (ถ้าต้องการ)</div>
+      <div class="flow-step flow-highlight">ขอชำระเงิน</div>
+      <div class="flow-step">โอน / สด</div>
+    </div>
+    <div class="flow-arrow-h">→</div>
+    <div class="flow-col">
+      <div class="flow-actor actor-sys">⚙️ ระบบ</div>
+      <div class="flow-step">Resolve qrToken → table</div>
+      <div class="flow-step">Upsert customer</div>
+      <div class="flow-step">Load menu (Redis cache)</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">Create Order + Items</div>
+      <div class="flow-step">Push kitchenQueue</div>
+      <div class="flow-step">Pub/Sub → SSE</div>
+      <div class="flow-step flow-highlight">Calc total + discount</div>
+      <div class="flow-step">Store slip path</div>
+    </div>
+    <div class="flow-arrow-h">→</div>
+    <div class="flow-col">
+      <div class="flow-actor actor-chef">👨‍🍳 พ่อครัว</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">เห็น order ใหม่ (SSE)</div>
+      <div class="flow-step">กด "รับทำ"</div>
+      <div class="flow-step">กด "เสร็จแล้ว"</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+    </div>
+    <div class="flow-arrow-h">→</div>
+    <div class="flow-col">
+      <div class="flow-actor actor-emp">🧑‍🍳 พนักงาน</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">—</div>
+      <div class="flow-step">เห็น "พร้อมเสิร์ฟ" (SSE)</div>
+      <div class="flow-step flow-highlight">กด "เสิร์ฟแล้ว"</div>
+      <div class="flow-step">ยืนยันชำระ</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 4. QR SYSTEM ── -->
+<section id="qr">
+  <div class="section-label">
+    <span class="num">04</span>
+    <h2>QR Code System</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="grid-2">
+    <div class="qr-flow">
+      <div style="font-size:13px;font-weight:600;margin-bottom:20px;color:var(--accent2)">🏪 Manager สร้าง QR</div>
+      <div class="qr-steps">
+        <div class="qr-step">
+          <div class="qr-num">1</div>
+          <div class="qr-content">
+            <h4>เปิดหน้า QR Dashboard</h4>
+            <p><code>/dashboard/{slug}/tables/qr</code></p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">2</div>
+          <div class="qr-content">
+            <h4>กด "สร้าง QR" หรือ "สร้างทุกโต๊ะ"</h4>
+            <p>ระบบสร้าง <code>qrToken = randomBytes(32).hex()</code> บันทึกลง PostgreSQL</p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">3</div>
+          <div class="qr-content">
+            <h4>Download PNG หรือ Print Sheet</h4>
+            <p>ได้ QR image พร้อมชื่อร้าน + โต๊ะ นำไปวางบนโต๊ะได้เลย</p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">4</div>
+          <div class="qr-content">
+            <h4>Reset ได้ทุกเมื่อ</h4>
+            <p>Token เก่าจะหมดอายุทันที ป้องกัน QR เก่าถูกใช้</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="qr-flow">
+      <div style="font-size:13px;font-weight:600;margin-bottom:20px;color:var(--green)">👤 ลูกค้าแสกน QR</div>
+      <div class="qr-steps">
+        <div class="qr-step">
+          <div class="qr-num">1</div>
+          <div class="qr-content">
+            <h4>แสกน QR บนโต๊ะ</h4>
+            <p>เปิด <code>app.domain.com/r/{slug}/table/{qrToken}</code></p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">2</div>
+          <div class="qr-content">
+            <h4>Server Resolve Token</h4>
+            <p><code>GET /tables/resolve/{qrToken}?slug={slug}</code><br>ตรวจ slug ตรงกันป้องกัน token ข้ามร้าน</p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">3</div>
+          <div class="qr-content">
+            <h4>Set Cookie + Load Menu</h4>
+            <p>เก็บ <code>tableId, restaurantId</code> ใน httpOnly cookie · โหลดเมนูจาก Redis cache</p>
+          </div>
+        </div>
+        <div class="qr-step">
+          <div class="qr-num">4</div>
+          <div class="qr-content">
+            <h4>พร้อมสั่งอาหารทันที</h4>
+            <p>ลูกค้าเห็นเมนูของร้านนั้น context โต๊ะถูก preset แล้ว</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 5. KITCHEN FLOW ── -->
+<section id="kitchen">
+  <div class="section-label">
+    <span class="num">05</span>
+    <h2>Kitchen &amp; Serving Flow</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="grid-2">
+    <div class="card" style="padding:28px">
+      <div style="font-size:13px;font-weight:600;color:var(--teal);margin-bottom:20px">👨‍🍳 Kitchen Board (พ่อครัว)</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">SSE Stream</span>
+          <span style="color:var(--muted)">ออเดอร์ใหม่ปรากฏทันทีไม่ต้อง refresh · Pub/Sub ต่อ restaurantId</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Card View</span>
+          <span style="color:var(--muted)">แสดงเวลาที่สั่ง · ไฮไลท์แดงถ้าเกิน 15 นาที · แสดงหมายเหตุลูกค้า</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Actions</span>
+          <span style="color:var(--muted)">รับทำทีละ item หรือ "รับทั้งออเดอร์" · บันทึก startedAt/finishedAt</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Stats</span>
+          <span style="color:var(--muted)">จำนวน pending/cooking/ready · เวลาเฉลี่ยต่อ item วันนี้</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:28px">
+      <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:20px">🧑‍🍳 Floor View (พนักงาน)</div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:12px;">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--blue);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Floor Map</span>
+          <span style="color:var(--muted)">ผังโต๊ะพร้อมสถานะ · pending/cooking items · สีบ่งบอกสถานะ</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--blue);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Ready Panel</span>
+          <span style="color:var(--muted)">รายการพร้อมเสิร์ฟแยกชัดเจน · SSE แจ้งเมื่อครัวทำเสร็จ</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--blue);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Actions</span>
+          <span style="color:var(--muted)">เสิร์ฟทีละ item หรือทั้งออเดอร์ · เพิ่มรายการเข้า order เดิม · ยกเลิก pending</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <span style="color:var(--blue);font-family:'DM Mono',monospace;font-size:11px;min-width:70px">Payment</span>
+          <span style="color:var(--muted)">ยืนยันสลิปโอน · รับชำระสด · คืนเงิน · โต๊ะ reset เป็น available อัตโนมัติ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 6. ORDER STATUS ── -->
+<section id="status">
+  <div class="section-label">
+    <span class="num">06</span>
+    <h2>Order Item Status Flow</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="status-flow">
+    <div class="status-item">
+      <div class="status-node s-pending">pending</div>
+      <div class="s-actor">ลูกค้าสั่ง</div>
+    </div>
+    <div class="s-arrow">→</div>
+    <div class="status-item">
+      <div class="status-node s-cooking">cooking</div>
+      <div class="s-actor">พ่อครัวรับทำ</div>
+    </div>
+    <div class="s-arrow">→</div>
+    <div class="status-item">
+      <div class="status-node s-ready">ready</div>
+      <div class="s-actor">ทำเสร็จ → SSE</div>
+    </div>
+    <div class="s-arrow">→</div>
+    <div class="status-item">
+      <div class="status-node s-served">served</div>
+      <div class="s-actor">พนักงานเสิร์ฟ</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:0 16px;color:var(--muted);font-size:12px">
+      <span style="color:var(--border2)">│</span>
+    </div>
+    <div class="status-item">
+      <div class="status-node s-cancel">cancelled</div>
+      <div class="s-actor">ยกเลิก (pending เท่านั้น)</div>
+    </div>
+  </div>
+  <div style="margin-top:16px" class="grid-3">
+    <div class="card">
+      <div class="card-title" style="color:var(--yellow)">Order-level sync</div>
+      <div class="card-desc">Order status ถูก sync อัตโนมัติจาก items — ถ้าทุก item served → order served, ถ้าทุก item ready → order ready</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--teal)">Timestamps</div>
+      <div class="card-desc">บันทึก <code>startedAt</code> เมื่อ cooking, <code>finishedAt</code> เมื่อ ready, <code>servedAt</code> เมื่อ served — ใช้คำนวณเวลาเฉลี่ยครัว</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--rose)">Cancel Guard</div>
+      <div class="card-desc">ยกเลิก item ได้เฉพาะ <code>pending</code> — ถ้า cooking ขึ้นไปแล้วต้องติดต่อพนักงาน และ recalculate total อัตโนมัติ</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 7. DATABASE SCHEMA ── -->
+<section id="schema">
+  <div class="section-label">
+    <span class="num">07</span>
+    <h2>Database Schema</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="db-grid">
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🏪</span><span class="db-name">restaurants</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">slug</span><span class="badge-idx">UQ</span><span class="db-field-type">varchar(60)</span></div>
+        <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">varchar(100)</span></div>
+        <div class="db-field"><span class="db-field-name">promptpay</span><span class="db-field-type">varchar(20)</span></div>
+        <div class="db-field"><span class="db-field-name">open_time</span><span class="db-field-type">varchar(5)</span></div>
+        <div class="db-field"><span class="db-field-name">close_time</span><span class="db-field-type">varchar(5)</span></div>
+        <div class="db-field"><span class="db-field-name">plan</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">is_active</span><span class="db-field-type">boolean</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🍽️</span><span class="db-name">menus</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">category_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">varchar(100)</span></div>
+        <div class="db-field"><span class="db-field-name">price</span><span class="db-field-type">float4</span></div>
+        <div class="db-field"><span class="db-field-name">image</span><span class="db-field-type">varchar(255)</span></div>
+        <div class="db-field"><span class="db-field-name">is_available</span><span class="db-field-type">boolean</span></div>
+        <div class="db-field"><span class="db-field-name">sort_order</span><span class="db-field-type">integer</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🪑</span><span class="db-name">tables</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">label</span><span class="db-field-type">varchar(20)</span></div>
+        <div class="db-field"><span class="db-field-name">seats</span><span class="db-field-type">integer</span></div>
+        <div class="db-field"><span class="db-field-name">status</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">qr_token</span><span class="badge-idx">UQ</span><span class="db-field-type">varchar(64)</span></div>
+        <div class="db-field"><span class="db-field-name">qr_generated_at</span><span class="db-field-type">timestamp</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">👤</span><span class="db-name">users</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid (null=admin)</span></div>
+        <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">varchar(100)</span></div>
+        <div class="db-field"><span class="db-field-name">phone</span><span class="badge-idx">UQ</span><span class="db-field-type">varchar(20)</span></div>
+        <div class="db-field"><span class="db-field-name">password</span><span class="db-field-type">varchar(255) bcrypt</span></div>
+        <div class="db-field"><span class="db-field-name">role</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">salary</span><span class="db-field-type">float4</span></div>
+        <div class="db-field"><span class="db-field-name">is_active</span><span class="db-field-type">boolean</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">📋</span><span class="db-name">orders</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">table_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">promotion_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">status</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">payment_method</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">payment_status</span><span class="db-field-type">enum</span></div>
+        <div class="db-field"><span class="db-field-name">total</span><span class="db-field-type">float4</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🥢</span><span class="db-name">order_items</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span><span class="db-field-type">identity</span></div>
+        <div class="db-field"><span class="db-field-name">order_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">menu_id</span><span class="badge-fk">FK</span><span class="db-field-type">uuid</span></div>
+        <div class="db-field"><span class="db-field-name">menu_name</span><span class="db-field-type">snapshot</span></div>
+        <div class="db-field"><span class="db-field-name">quantity</span><span class="db-field-type">integer</span></div>
+        <div class="db-field"><span class="db-field-name">unit_price</span><span class="db-field-type">float4 snapshot</span></div>
+        <div class="db-field"><span class="db-field-name">status</span><span class="db-field-type">enum (5 states)</span></div>
+        <div class="db-field"><span class="db-field-name">started/finished/served</span><span class="db-field-type">timestamp ×3</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🎁</span><span class="db-name">promotions</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">varchar(100)</span></div>
+        <div class="db-field"><span class="db-field-name">discount_pct</span><span class="db-field-type">float4 (%)</span></div>
+        <div class="db-field"><span class="db-field-name">discount_amt</span><span class="db-field-type">float4 (฿)</span></div>
+        <div class="db-field"><span class="db-field-name">min_order</span><span class="db-field-type">float4</span></div>
+        <div class="db-field"><span class="db-field-name">starts_at / ends_at</span><span class="db-field-type">timestamp</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">⏰</span><span class="db-name">attendance</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span></div>
+        <div class="db-field"><span class="db-field-name">user_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">date</span><span class="db-field-type">varchar(10)</span></div>
+        <div class="db-field"><span class="db-field-name">check_in</span><span class="db-field-type">timestamp</span></div>
+        <div class="db-field"><span class="db-field-name">check_out</span><span class="db-field-type">timestamp</span></div>
+        <div class="db-field"><span class="db-field-name">hours_worked</span><span class="db-field-type">float4</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">💰</span><span class="db-name">salary_payments</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span></div>
+        <div class="db-field"><span class="db-field-name">user_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">amount</span><span class="db-field-type">float4</span></div>
+        <div class="db-field"><span class="db-field-name">month</span><span class="db-field-type">varchar "2024-01"</span></div>
+        <div class="db-field"><span class="db-field-name">paid_by</span><span class="badge-fk">FK</span><span class="db-field-type">manager id</span></div>
+        <div class="db-field"><span class="db-field-name">paid_at</span><span class="db-field-type">timestamp</span></div>
+      </div>
+    </div>
+    <div class="db-table">
+      <div class="db-table-head"><span class="db-icon">🏷️</span><span class="db-name">categories</span></div>
+      <div class="db-fields">
+        <div class="db-field"><span class="db-field-name">id</span><span class="badge-pk">PK</span></div>
+        <div class="db-field"><span class="db-field-name">restaurant_id</span><span class="badge-fk">FK</span></div>
+        <div class="db-field"><span class="db-field-name">name</span><span class="db-field-type">varchar(50)</span></div>
+        <div class="db-field"><span class="db-field-name">sort_order</span><span class="db-field-type">integer</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:16px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--muted)">
+    <strong style="color:var(--text)">Enums ใน PostgreSQL:</strong>&nbsp;
+    <code>role</code> · <code>table_status</code> · <code>order_status</code> · <code>order_item_status</code> · <code>payment_method</code> · <code>payment_status</code> · <code>plan</code>
+  </div>
+</section>
+
+<!-- ── 8. REDIS KEYS ── -->
+<section id="redis-keys">
+  <div class="section-label">
+    <span class="num">08</span>
+    <h2>Redis Key Patterns</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="redis-grid">
+    <div class="redis-key">
+      <div class="redis-pattern">session:{token}</div>
+      <div class="redis-purpose">JWT session payload ของ staff ทุก role</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#fde047">TTL 24h</span>
+        <span class="redis-badge" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd">String</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">cache:{restaurantId}:menus</div>
+      <div class="redis-purpose">เมนูทั้งหมดของร้าน (เฉพาะที่เปิดขาย) ถูก invalidate เมื่อ CRUD เมนู/category</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#fde047">TTL 5 min</span>
+        <span class="redis-badge" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd">JSON String</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">{restaurantId}:order:active:{tableId}</div>
+      <div class="redis-purpose">orderId ที่ active ของโต๊ะนั้น ลบเมื่อชำระเงินเสร็จ</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4">No TTL</span>
+        <span class="redis-badge" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd">String</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">{restaurantId}:queue:kitchen</div>
+      <div class="redis-purpose">Kitchen order queue (lpush เมื่อสั่ง)</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4">No TTL</span>
+        <span class="redis-badge" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#93c5fd">List</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">{restaurantId}:kitchen (Pub/Sub)</div>
+      <div class="redis-purpose">SSE channel ครัว → NEW_ORDER, ITEM_STATUS, ORDER_ACCEPTED</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:#fda4af">Pub/Sub</span>
+        <span class="redis-badge" style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:#fdba74">Realtime</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">{restaurantId}:order:update (Pub/Sub)</div>
+      <div class="redis-purpose">SSE channel พนักงาน → ITEM_READY, ITEM_SERVED, ORDER_SERVED</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:#fda4af">Pub/Sub</span>
+        <span class="redis-badge" style="background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:#fdba74">Realtime</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">ratelimit:login:{ip}</div>
+      <div class="redis-purpose">นับครั้ง login fail ต่อ IP ป้องกัน brute-force</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#fde047">TTL 5 min</span>
+        <span class="redis-badge" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd">Counter</span>
+      </div>
+    </div>
+    <div class="redis-key">
+      <div class="redis-pattern">{restaurantId}:table:{tableId}:status</div>
+      <div class="redis-purpose">สถานะโต๊ะใน memory สำหรับ floor view (sync กับ PostgreSQL)</div>
+      <div class="redis-meta">
+        <span class="redis-badge" style="background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#5eead4">No TTL</span>
+        <span class="redis-badge" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd">String</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 9. API ENDPOINTS ── -->
+<section id="api">
+  <div class="section-label">
+    <span class="num">09</span>
+    <h2>API Endpoints</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Auth -->
+  <div class="api-section">
+    <div class="api-section-title">Auth</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/restaurants/register</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">ลงทะเบียนร้านใหม่ + สร้าง manager + โต๊ะเริ่มต้น + QR</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/auth/login</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">เข้าสู่ระบบ staff (phone+password) → JWT + Redis session</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/auth/customer</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">ลูกค้า upsert ด้วยชื่อ+เบอร์ → JWT</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/auth/logout</td><td><span class="auth-tag auth-staff">staff</span></td><td class="api-desc">ลบ Redis session</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QR + Tables -->
+  <div class="api-section">
+    <div class="api-section-title">QR Code + Tables</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/tables/resolve/:qrToken</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">ลูกค้าแสกน QR → resolve tableId + restaurantId</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/tables</td><td><span class="auth-tag auth-staff">staff</span></td><td class="api-desc">โต๊ะทั้งหมดของร้าน</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/tables</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">เพิ่มโต๊ะ</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/tables/:id/qr-token</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">สร้าง/reset QR token โต๊ะเดี่ยว</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/tables/qr-token/bulk</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">สร้าง QR ทุกโต๊ะพร้อมกัน</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/tables/:id/status</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">เปลี่ยนสถานะโต๊ะ</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Menu + Categories -->
+  <div class="api-section">
+    <div class="api-section-title">Menu + Categories</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/menus</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">เมนูที่เปิดขาย (Redis cache 5 min)</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/menus/all</td><td><span class="auth-tag auth-staff">staff</span></td><td class="api-desc">เมนูทั้งหมดรวมที่ปิดขาย</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/menus</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">เพิ่มเมนู + invalidate cache</td></tr>
+        <tr><td><span class="method m-put">PUT</span></td><td class="api-path">/menus/:id</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">แก้ไขเมนู</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/menus/:id/toggle</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">เปิด/ปิดขายด่วน</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/menus/reorder</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">จัดลำดับ drag-and-drop</td></tr>
+        <tr><td><span class="method m-delete">DEL</span></td><td class="api-path">/menus/:id</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">soft delete</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/categories</td><td><span class="auth-tag auth-public">public</span></td><td class="api-desc">หมวดหมู่เมนู</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/categories</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">เพิ่มหมวดหมู่</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/categories/reorder</td><td><span class="auth-tag auth-employee">employee+</span></td><td class="api-desc">จัดลำดับ category</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Orders + Kitchen + Serving -->
+  <div class="api-section">
+    <div class="api-section-title">Orders + Kitchen + Serving</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/orders</td><td><span class="auth-tag auth-public">customer</span></td><td class="api-desc">สร้างออเดอร์ → push kitchenQueue → publish SSE</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/orders/table/:tid</td><td><span class="auth-tag auth-public">customer</span></td><td class="api-desc">ออเดอร์ active ของโต๊ะ</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/kitchen/queue</td><td><span class="auth-tag auth-chef">chef</span></td><td class="api-desc">คิวออเดอร์รอทำ (pending + cooking)</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/kitchen/stats</td><td><span class="auth-tag auth-chef">chef</span></td><td class="api-desc">สถิติครัววันนี้ + เวลาเฉลี่ย</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/kitchen/items/:id/status</td><td><span class="auth-tag auth-chef">chef</span></td><td class="api-desc">เปลี่ยนสถานะ item → publish SSE</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/kitchen/orders/:id/accept-all</td><td><span class="auth-tag auth-chef">chef</span></td><td class="api-desc">รับทำทุก item ในออเดอร์</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/kitchen/stream</td><td><span class="auth-tag auth-chef">chef</span></td><td class="api-desc">SSE realtime kitchen channel</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/serving/tables</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">Floor view พร้อม pending/ready item count</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/serving/ready</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">รายการ item พร้อมเสิร์ฟทุกโต๊ะ</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/serving/items/:id/serve</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">เสิร์ฟแล้ว + sync order status</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/serving/orders/:id/add-items</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">สั่งเพิ่มเข้า order เดิม</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/serving/items/:id/cancel</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">ยกเลิก item (pending เท่านั้น)</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/orders/stream</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">SSE แจ้งเมื่อ item ready / table update</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Payment -->
+  <div class="api-section">
+    <div class="api-section-title">Payment</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/payment/submit</td><td><span class="auth-tag auth-public">customer</span></td><td class="api-desc">แนบสลิปโอนเงิน</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/payment/verify</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">ยืนยันการชำระ → table available</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/payment/cash</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">บันทึกชำระสด</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/payment/refund</td><td><span class="auth-tag auth-employee">employee</span></td><td class="api-desc">คืนเงินลูกค้า</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Employees -->
+  <div class="api-section">
+    <div class="api-section-title">Employees</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/employees</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">รายชื่อพนักงาน + chef ทั้งหมด</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/employees</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">เพิ่มพนักงาน (bcrypt password)</td></tr>
+        <tr><td><span class="method m-put">PUT</span></td><td class="api-path">/employees/:id</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">แก้ไขข้อมูล / เปลี่ยนรหัสผ่าน</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/employees/:id/toggle</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">เปิด/ระงับ account</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/employees/:id/salary</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">กำหนดเงินเดือน</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/employees/:id/pay</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">บันทึกการจ่ายเงินเดือนรายเดือน</td></tr>
+        <tr><td><span class="method m-post">POST</span></td><td class="api-path">/employees/check-in</td><td><span class="auth-tag auth-staff">employee/chef</span></td><td class="api-desc">เช็คอินเข้างาน</td></tr>
+        <tr><td><span class="method m-patch">PATCH</span></td><td class="api-path">/employees/check-out</td><td><span class="auth-tag auth-staff">employee/chef</span></td><td class="api-desc">เช็คเอาท์ + คำนวณชั่วโมง</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/employees/attendance</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">ตารางเวลาเข้างานรายเดือน</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/employees/attendance/summary</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">สรุปชั่วโมง + เงินเดือน รายคน</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reports -->
+  <div class="api-section">
+    <div class="api-section-title">Reports</div>
+    <table class="api-table">
+      <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/reports/sales/weekly</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">ยอดขาย 7 วันย้อนหลัง</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/reports/sales/monthly</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">ยอดขายรายเดือน</td></tr>
+        <tr><td><span class="method m-get">GET</span></td><td class="api-path">/reports/menu/bestseller</td><td><span class="auth-tag auth-manager">manager</span></td><td class="api-desc">เมนูขายดี top 10 + revenue</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 10. PAGES MAP ── -->
+<section id="pages">
+  <div class="section-label">
+    <span class="num">10</span>
+    <h2>Next.js Pages Map</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="pages-grid">
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--green)">🛒</span> Customer (via QR)
+        <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:auto">/r/{slug}/...</span>
+      </div>
+      <div class="pages-list">
+        <div class="page-row"><span>/table/[qrToken]</span><span class="api-desc" style="color:var(--muted);font-size:11px">หน้าเมนู</span><span class="page-ssr">SSR</span></div>
+        <div class="page-row"><span>/table/[qrToken]/order</span><span class="api-desc" style="color:var(--muted);font-size:11px">ตะกร้า/ยืนยัน</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/table/[qrToken]/payment</span><span class="api-desc" style="color:var(--muted);font-size:11px">ชำระเงิน</span><span class="page-csr">CSR</span></div>
+      </div>
+    </div>
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--accent)">🔐</span> Auth
+      </div>
+      <div class="pages-list">
+        <div class="page-row"><span>/login</span><span class="api-desc" style="color:var(--muted);font-size:11px">staff login</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/register</span><span class="api-desc" style="color:var(--muted);font-size:11px">ลงทะเบียนร้าน</span><span class="page-csr">CSR</span></div>
+      </div>
+    </div>
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--teal)">👨‍🍳</span> Chef
+        <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:auto">/dashboard/{slug}/...</span>
+      </div>
+      <div class="pages-list">
+        <div class="page-row"><span>/kitchen</span><span class="api-desc" style="color:var(--muted);font-size:11px">คิวครัว + สถิติ</span><span class="page-sse">SSE</span></div>
+      </div>
+    </div>
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--blue)">🧑‍🍳</span> Employee
+        <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:auto">/dashboard/{slug}/...</span>
+      </div>
+      <div class="pages-list">
+        <div class="page-row"><span>/orders</span><span class="api-desc" style="color:var(--muted);font-size:11px">Floor view + พร้อมเสิร์ฟ</span><span class="page-sse">SSE</span></div>
+        <div class="page-row"><span>/menu</span><span class="api-desc" style="color:var(--muted);font-size:11px">จัดการเมนู</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/tables</span><span class="api-desc" style="color:var(--muted);font-size:11px">รายการโต๊ะ</span><span class="page-csr">CSR</span></div>
+      </div>
+    </div>
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--accent)">🧑‍💼</span> Manager
+        <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:auto">/dashboard/{slug}/...</span>
+      </div>
+      <div class="pages-list">
+        <div class="page-row"><span>/</span><span class="api-desc" style="color:var(--muted);font-size:11px">Overview dashboard</span><span class="page-ssr">SSR</span></div>
+        <div class="page-row"><span>/menu</span><span class="api-desc" style="color:var(--muted);font-size:11px">เมนู + category</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/tables/qr</span><span class="api-desc" style="color:var(--muted);font-size:11px">สร้าง/print QR</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/promotions</span><span class="api-desc" style="color:var(--muted);font-size:11px">โปรโมชั่น</span><span class="page-ssr">SSR</span></div>
+        <div class="page-row"><span>/employees</span><span class="api-desc" style="color:var(--muted);font-size:11px">พนักงาน+เงินเดือน+เวลา</span><span class="page-csr">CSR</span></div>
+        <div class="page-row"><span>/reports</span><span class="api-desc" style="color:var(--muted);font-size:11px">รายงานขาย + bestseller</span><span class="page-ssr">SSR</span></div>
+      </div>
+    </div>
+    <div class="pages-group">
+      <div class="pages-group-head">
+        <span style="color:var(--violet)">⚙️</span> Middleware
+      </div>
+      <div class="pages-list">
+        <div class="page-row" style="grid-template-columns:1fr"><span style="font-size:11px;color:var(--muted)">JWT verify → role-based route guard · redirect ถ้าไม่มีสิทธิ์</span></div>
+        <div class="page-row" style="grid-template-columns:1fr"><span style="font-size:11px;color:var(--muted)">restaurantSlug ใน path ต้องตรงกับ JWT payload เสมอ</span></div>
+        <div class="page-row" style="grid-template-columns:1fr"><span style="font-size:11px;color:var(--muted)">Edge runtime · jose library · httpOnly cookie</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<footer>
+  <div>Restaurant SaaS — System Overview · Generated 2025</div>
+  <div class="footer-stack">
+    <div class="footer-item"><span style="color:var(--accent)">▲</span> Next.js 14</div>
+    <div class="footer-item"><span style="color:var(--accent2)">⚡</span> Elysia</div>
+    <div class="footer-item"><span style="color:var(--teal)">🐘</span> PostgreSQL</div>
+    <div class="footer-item"><span style="color:var(--rose)">🔴</span> Redis</div>
+    <div class="footer-item"><span style="color:var(--yellow)">🥐</span> Bun</div>
+  </div>
+</footer>
+
+<script>
+// Intersection Observer for fade-in animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'none';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('section').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  observer.observe(el);
+});
+
+// Active nav highlight
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) cur = s.id;
+  });
+  navLinks.forEach(a => {
+    a.style.color = a.getAttribute('href') === '#' + cur ? 'var(--accent2)' : '';
+    a.style.borderColor = a.getAttribute('href') === '#' + cur ? 'var(--accent)' : '';
+  });
+});
+</script>
+</body>
+</html>
