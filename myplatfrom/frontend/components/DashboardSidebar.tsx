@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList,
-  ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings,
+  ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings, Monitor,
 } from 'lucide-react'
 
 const NAV = [
@@ -70,6 +70,13 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
               </Link>
             )
           })}
+          {(role === 'chef' || role === 'manager') && (
+            <a href={`/kds/${slug}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-medium text-muted hover:bg-bg3 hover:text-text transition-all">
+              <Monitor size={16} className="w-5" />
+              KDS จอครัว ↗
+            </a>
+          )}
         </nav>
 
         <div className="p-3 border-t border-border">

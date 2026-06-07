@@ -45,6 +45,12 @@ export async function middleware(req: NextRequest) {
     const { payload } = await jwtVerify(token, secret) as { payload: any }
     const role = payload.role as string
 
+    // KDS route — chef and manager only
+    if (pathname.startsWith('/kds/')) {
+      if (!['chef', 'manager'].includes(role)) return NextResponse.redirect(new URL('/login', req.url))
+      return NextResponse.next()
+    }
+
     // Staff dashboard routes
     if (pathname.startsWith('/dashboard/')) {
       const parts = pathname.split('/')
@@ -75,5 +81,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/admin', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/kds/:path*', '/admin', '/login', '/register'],
 }
