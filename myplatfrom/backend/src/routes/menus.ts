@@ -1,7 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { menus } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { menus, restaurants } from '../db/schema'
+import { eq, and, count } from 'drizzle-orm'
+import { PLAN_LIMITS } from './restaurants'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys, MENU_CACHE_TTL } from '../lib/redis'
 import { uploadFile, getPublicUrl, menuImageKey } from '../lib/storage'
@@ -59,6 +60,13 @@ export const menuRoutes = new Elysia({ prefix: '/menus' })
   .post('/', async ({ headers, body, set }) => {
     const payload = await requireAuth(headers, ['manager', 'employee'], set)
     if (!payload) return
+    const [rest] = await db.select({ plan: restaurants.plan }).from(restaurants).where(eq(restaurants.id, payload.restaurantId!)).limit(1)
+    const limit = PLAN_LIMITS[rest?.plan ?? 'free'].menus
+    const [{ count: menuCount }] = await db.select({ count: count() }).from(menus).where(and(eq(menus.restaurant_id, payload.restaurantId!), eq(menus.is_deleted, false)))
+    if (menuCount >= limit) {
+      set.status = 402
+      return { error: 'Plan limit reached', plan: rest?.plan, limit, current: menuCount }
+    }
     const [menu] = await db.insert(menus).values({ ...body, restaurant_id: payload.restaurantId! }).returning()
     await invalidateCache(payload.restaurantId!)
     return menu

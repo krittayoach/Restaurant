@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { api, getToken } from '@/lib/api'
-import { ShieldCheck, KeyRound, Check, Store, LogOut } from 'lucide-react'
+import { ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
 
@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [token, setToken] = useState('')
   const [restaurants, setRestaurants] = useState<any[]>([])
   const [loadingRests, setLoadingRests] = useState(true)
+  const [billing, setBilling] = useState<any>(null)
   const [pwForm, setPwForm] = useState({ phone: '', newPassword: '' })
   const [pwSaving, setPwSaving] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
@@ -19,10 +20,14 @@ export default function AdminPage() {
   useEffect(() => {
     const t = getToken()
     setToken(t)
-    api.get('/restaurants/all', t)
-      .then(setRestaurants)
-      .catch(() => setRestaurants([]))
-      .finally(() => setLoadingRests(false))
+    Promise.all([
+      api.get('/restaurants/all', t).catch(() => []),
+      api.get('/restaurants/billing', t).catch(() => null),
+    ]).then(([rests, bill]) => {
+      setRestaurants(rests ?? [])
+      setBilling(bill)
+      setLoadingRests(false)
+    })
   }, [])
 
   async function resetPassword(e: React.FormEvent) {
@@ -43,6 +48,15 @@ export default function AdminPage() {
     } finally {
       setPwSaving(false)
     }
+  }
+
+  async function changePlan(id: string, plan: string) {
+    try {
+      const updated = await api.patch(`/restaurants/${id}/plan`, { plan }, token)
+      setRestaurants(r => r.map(rest => rest.id === id ? { ...rest, plan: updated.plan } : rest))
+      toast.success(`เปลี่ยนเป็น ${plan} แล้ว`)
+      api.get('/restaurants/billing', token).then(setBilling).catch(() => null)
+    } catch (e: any) { toast.error(e.message) }
   }
 
   async function logout() {
@@ -75,6 +89,32 @@ export default function AdminPage() {
             <LogOut size={15} /> ออกจากระบบ
           </button>
         </div>
+
+        {/* Billing summary */}
+        {billing && (
+          <div className="card p-6 mb-6 anim-up">
+            <div className="flex items-center gap-2.5 mb-5">
+              <TrendingUp size={18} className="text-yellow" />
+              <h2 className="font-display font-semibold text-base">รายได้ประมาณการ</h2>
+              <span className="ml-auto font-display font-bold text-xl text-accent">฿{billing.revenue.toLocaleString()}/เดือน</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { plan: 'free',  label: 'Free',  color: 'text-muted  bg-bg3',       price: '฿0' },
+                { plan: 'basic', label: 'Basic', color: 'text-blue   bg-blue/10',   price: '฿299' },
+                { plan: 'pro',   label: 'Pro',   color: 'text-accent bg-accent/10', price: '฿799' },
+              ].map(p => {
+                const s = billing.summary?.find((s: any) => s.plan === p.plan)
+                return (
+                  <div key={p.plan} className={`rounded-2xl p-4 ${p.color}`}>
+                    <p className="font-bold text-2xl">{s?.count ?? 0}</p>
+                    <p className="text-xs mt-0.5">{p.label} · {p.price}/เดือน</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Reset Password */}
@@ -139,7 +179,12 @@ export default function AdminPage() {
                     <p className="text-sm font-semibold truncate">{r.name}</p>
                     <p className="text-xs text-muted font-mono">{r.slug}</p>
                   </div>
-                  <span className={`badge text-xs ${PLAN_CLS[r.plan] ?? 'bg-bg3 text-muted'}`}>{r.plan}</span>
+                  <select value={r.plan} onChange={e => changePlan(r.id, e.target.value)}
+                    className={`text-xs px-2 py-1 rounded-lg border-0 font-semibold cursor-pointer ${PLAN_CLS[r.plan] ?? 'bg-bg3 text-muted'}`}>
+                    <option value="free">free</option>
+                    <option value="basic">basic</option>
+                    <option value="pro">pro</option>
+                  </select>
                   <div className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-green' : 'bg-rose'}`} title={r.is_active ? 'active' : 'inactive'} />
                 </div>
               ))}

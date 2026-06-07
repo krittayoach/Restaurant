@@ -1,7 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { tables } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { tables, restaurants } from '../db/schema'
+import { eq, and, count } from 'drizzle-orm'
+import { PLAN_LIMITS } from './restaurants'
 import { randomBytes } from 'crypto'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys, subscriber } from '../lib/redis'
@@ -40,6 +41,13 @@ export const tableRoutes = new Elysia({ prefix: '/tables' })
   .post('/', async ({ headers, body, set }) => {
     const payload = await requireAuth(headers as any, ['manager'], set)
     if (!payload) return
+    const [rest] = await db.select({ plan: restaurants.plan }).from(restaurants).where(eq(restaurants.id, payload.restaurantId!)).limit(1)
+    const limit = PLAN_LIMITS[rest?.plan ?? 'free'].tables
+    const [{ count: tableCount }] = await db.select({ count: count() }).from(tables).where(eq(tables.restaurant_id, payload.restaurantId!))
+    if (tableCount >= limit) {
+      set.status = 402
+      return { error: `Plan limit reached`, plan: rest?.plan, limit, current: tableCount }
+    }
     const [table] = await db.insert(tables).values({
       restaurant_id: payload.restaurantId!,
       label: body.label,

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
-import { Settings, Save, Check, Lock, Eye, EyeOff } from 'lucide-react'
+import { Settings, Save, Check, Lock, Eye, EyeOff, Zap } from 'lucide-react'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
 
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ name: '', promptpay: '', open_time: '08:00', close_time: '22:00' })
+  const [planInfo, setPlanInfo] = useState<any>(null)
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
   const [pwSaving, setPwSaving] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
@@ -29,6 +30,7 @@ export default function SettingsPage() {
         open_time: r.open_time ?? '08:00',
         close_time: r.close_time ?? '22:00',
       })
+      setPlanInfo({ plan: r.plan, table_count: r.table_count, menu_count: r.menu_count, limits: r.plan_limits })
       setPageLoading(false)
     }).catch(() => setPageLoading(false))
   }, [])
@@ -85,6 +87,51 @@ export default function SettingsPage() {
           <p className="text-muted text-sm">แก้ไขข้อมูลทั่วไปของร้าน</p>
         </div>
       </div>
+
+      {/* Plan info */}
+      {planInfo && (
+        <div className="card p-5 mb-5 anim-up" style={{ animationDelay: '20ms' }}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Zap size={16} className="text-accent" />
+              <span className="font-semibold text-sm text-text">แพ็กเกจปัจจุบัน</span>
+            </div>
+            <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${
+              planInfo.plan === 'pro'   ? 'bg-accent/15 text-accent' :
+              planInfo.plan === 'basic' ? 'bg-blue/15 text-blue' :
+                                          'bg-bg3 text-muted'
+            }`}>{planInfo.plan}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'โต๊ะ', used: planInfo.table_count, max: planInfo.limits?.tables },
+              { label: 'เมนู', used: planInfo.menu_count,  max: planInfo.limits?.menus  },
+            ].map(item => {
+              const isUnlimited = !isFinite(item.max)
+              const pct = isUnlimited ? 0 : Math.min((item.used / item.max) * 100, 100)
+              const isNear = !isUnlimited && pct >= 80
+              return (
+                <div key={item.label} className="bg-bg3 rounded-xl p-3">
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="text-muted">{item.label}</span>
+                    <span className={`font-semibold ${isNear ? 'text-rose' : 'text-text'}`}>
+                      {item.used} / {isUnlimited ? '∞' : item.max}
+                    </span>
+                  </div>
+                  {!isUnlimited && (
+                    <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${isNear ? 'bg-rose' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {planInfo.plan !== 'pro' && (
+            <p className="text-xs text-muted mt-3">ต้องการเพิ่ม limit? ติดต่อ Admin เพื่ออัปเกรด</p>
+          )}
+        </div>
+      )}
 
       <form onSubmit={submit} className="card p-6 space-y-5 anim-up" style={{ animationDelay: '40ms' }}>
         {/* ชื่อร้าน */}
