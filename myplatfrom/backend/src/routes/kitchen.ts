@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { orders, orderItems } from '../db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { orders, orderItems, menuIngredients, ingredients } from '../db/schema'
+import { eq, and, inArray, sql } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { publisher, keys, subscriber } from '../lib/redis'
 
@@ -53,6 +53,17 @@ export const kitchenRoutes = new Elysia({ prefix: '/kitchen' })
 
     const [updated] = await db.update(orderItems).set(updates).where(eq(orderItems.id, params.id)).returning()
     if (!updated) { set.status = 404; return { error: 'Item not found' } }
+
+    // Auto-deduct inventory when item starts cooking
+    if (body.status === 'cooking' && updated.menu_id) {
+      const recipe = await db.select().from(menuIngredients)
+        .where(eq(menuIngredients.menu_id, updated.menu_id))
+      for (const r of recipe) {
+        await db.update(ingredients)
+          .set({ quantity: sql`GREATEST(0, ${ingredients.quantity} - ${r.quantity_per_unit * updated.quantity})` })
+          .where(eq(ingredients.id, r.ingredient_id))
+      }
+    }
 
     // Sync order status
     const allItems = await db.select().from(orderItems).where(eq(orderItems.order_id, updated.order_id))

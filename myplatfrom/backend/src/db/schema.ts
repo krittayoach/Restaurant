@@ -123,6 +123,24 @@ export const orderItems = pgTable('order_items', {
   created_at:  timestamp('created_at').defaultNow().notNull(),
 })
 
+// ─── ingredients ──────────────────────────────────────────────────────────────
+export const ingredients = pgTable('ingredients', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  name:          varchar('name', { length: 100 }).notNull(),
+  unit:          varchar('unit', { length: 20 }).notNull(),
+  quantity:      real('quantity').default(0).notNull(),
+  low_threshold: real('low_threshold').default(0).notNull(),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
+})
+
+export const menuIngredients = pgTable('menu_ingredients', {
+  id:                uuid('id').primaryKey().defaultRandom(),
+  menu_id:           uuid('menu_id').notNull().references(() => menus.id, { onDelete: 'cascade' }),
+  ingredient_id:     uuid('ingredient_id').notNull().references(() => ingredients.id, { onDelete: 'cascade' }),
+  quantity_per_unit: real('quantity_per_unit').notNull(),
+})
+
 // ─── reservations ─────────────────────────────────────────────────────────────
 export const reservations = pgTable('reservations', {
   id:             uuid('id').primaryKey().defaultRandom(),

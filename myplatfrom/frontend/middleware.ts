@@ -63,7 +63,7 @@ export async function middleware(req: NextRequest) {
       if (pathname.includes('/orders') && role !== 'employee' && role !== 'manager') {
         return NextResponse.redirect(new URL('/login', req.url))
       }
-      if ((pathname.includes('/employees') || pathname.includes('/reports') || pathname.includes('/promotions')) && role !== 'manager') {
+      if ((pathname.includes('/employees') || pathname.includes('/reports') || pathname.includes('/promotions') || pathname.includes('/inventory')) && role !== 'manager') {
         return NextResponse.redirect(new URL('/login', req.url))
       }
 
