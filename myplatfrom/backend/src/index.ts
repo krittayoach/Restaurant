@@ -15,6 +15,7 @@ import { reportRoutes } from './routes/reports'
 import { promotionRoutes } from './routes/promotions'
 import { reservationRoutes } from './routes/reservations'
 import { inventoryRoutes } from './routes/inventory'
+import { billingRoutes } from './routes/billing'
 
 const app = new Elysia()
   .use(cors({
@@ -48,6 +49,7 @@ const app = new Elysia()
   .use(promotionRoutes)
   .use(reservationRoutes)
   .use(inventoryRoutes)
+  .use(billingRoutes)
   .get('/health', () => ({ status: 'ok', ts: new Date().toISOString() }))
   .listen(process.env.PORT ?? 3001)
 

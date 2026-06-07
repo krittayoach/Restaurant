@@ -155,6 +155,23 @@ export const reservations = pgTable('reservations', {
   created_at:     timestamp('created_at').defaultNow().notNull(),
 })
 
+// ─── plan_payments ────────────────────────────────────────────────────────────
+export const planPaymentStatusEnum = pgEnum('plan_payment_status', ['pending', 'approved', 'rejected'])
+
+export const planPayments = pgTable('plan_payments', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  plan:          planEnum('plan').notNull(),
+  amount:        real('amount').notNull(),
+  method:        varchar('method', { length: 20 }).notNull(),
+  status:        planPaymentStatusEnum('status').default('pending').notNull(),
+  slip_url:      varchar('slip_url', { length: 500 }),
+  note:          text('note'),
+  reviewed_by:   uuid('reviewed_by').references(() => users.id),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
+  updated_at:    timestamp('updated_at').defaultNow().notNull(),
+})
+
 // ─── attendance ───────────────────────────────────────────────────────────────
 export const attendance = pgTable('attendance', {
   id:            uuid('id').primaryKey().defaultRandom(),

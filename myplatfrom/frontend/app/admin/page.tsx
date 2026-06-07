@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { api, getToken } from '@/lib/api'
-import { ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp } from 'lucide-react'
+import { ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp, Zap, X, ExternalLink } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
 
@@ -12,10 +12,13 @@ export default function AdminPage() {
   const [restaurants, setRestaurants] = useState<any[]>([])
   const [loadingRests, setLoadingRests] = useState(true)
   const [billing, setBilling] = useState<any>(null)
+  const [pendingPayments, setPendingPayments] = useState<any[]>([])
   const [pwForm, setPwForm] = useState({ phone: '', newPassword: '' })
   const [pwSaving, setPwSaving] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
   const [showPwResult, setShowPwResult] = useState('')
+  const [rejectId, setRejectId] = useState<string | null>(null)
+  const [rejectNote, setRejectNote] = useState('')
 
   useEffect(() => {
     const t = getToken()
@@ -23,9 +26,11 @@ export default function AdminPage() {
     Promise.all([
       api.get('/restaurants/all', t).catch(() => []),
       api.get('/restaurants/billing', t).catch(() => null),
-    ]).then(([rests, bill]) => {
+      api.get('/billing/pending-payments', t).catch(() => []),
+    ]).then(([rests, bill, pending]) => {
       setRestaurants(rests ?? [])
       setBilling(bill)
+      setPendingPayments(pending ?? [])
       setLoadingRests(false)
     })
   }, [])
@@ -59,6 +64,26 @@ export default function AdminPage() {
     } catch (e: any) { toast.error(e.message) }
   }
 
+  async function approvePayment(id: string) {
+    try {
+      const res = await api.patch(`/billing/payments/${id}/approve`, {}, token)
+      setPendingPayments(p => p.filter(x => x.id !== id))
+      setRestaurants(r => r.map(rest => rest.id === (pendingPayments.find(x => x.id === id)?.restaurant_id) ? { ...rest, plan: res.plan } : rest))
+      toast.success('อนุมัติและอัปเกรด plan แล้ว')
+      api.get('/restaurants/billing', token).then(setBilling).catch(() => null)
+    } catch (e: any) { toast.error(e.message) }
+  }
+
+  async function rejectPayment() {
+    if (!rejectId) return
+    try {
+      await api.patch(`/billing/payments/${rejectId}/reject`, { note: rejectNote || undefined }, token)
+      setPendingPayments(p => p.filter(x => x.id !== rejectId))
+      setRejectId(null); setRejectNote('')
+      toast.success('ปฏิเสธคำขอแล้ว')
+    } catch (e: any) { toast.error(e.message) }
+  }
+
   async function logout() {
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
     router.push('/login')
@@ -72,8 +97,8 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-bg p-6 md:p-10">
-      {/* Header */}
       <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-8 anim-up">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-yellow/10 flex items-center justify-center">
@@ -116,6 +141,52 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Pending plan upgrade requests */}
+        {pendingPayments.length > 0 && (
+          <div className="card p-6 mb-6 anim-up border-yellow/30 border">
+            <div className="flex items-center gap-2.5 mb-4">
+              <Zap size={18} className="text-yellow" />
+              <h2 className="font-display font-semibold text-base">คำขออัปเกรดแพ็กเกจ</h2>
+              <span className="ml-auto bg-yellow/20 text-yellow text-xs font-bold px-2.5 py-0.5 rounded-full">{pendingPayments.length} รายการ</span>
+            </div>
+            <div className="space-y-3">
+              {pendingPayments.map(pmt => (
+                <div key={pmt.id} className="bg-bg3 rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <p className="font-semibold text-sm">{pmt.restaurant_name}</p>
+                      <p className="text-xs text-muted font-mono">{pmt.restaurant_slug}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${PLAN_CLS[pmt.current_plan] ?? ''}`}>{pmt.current_plan}</span>
+                        <span className="text-xs text-muted">→</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${PLAN_CLS[pmt.plan] ?? ''}`}>{pmt.plan}</span>
+                        <span className="text-xs text-muted">฿{pmt.amount.toLocaleString()}</span>
+                        <span className="text-xs text-muted capitalize">({pmt.method})</span>
+                      </div>
+                    </div>
+                    {pmt.slip_url && (
+                      <a href={pmt.slip_url} target="_blank" rel="noopener noreferrer"
+                        className="shrink-0 flex items-center gap-1 text-xs text-blue hover:underline">
+                        <ExternalLink size={12} /> ดูสลิป
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => approvePayment(pmt.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green/10 text-green text-sm font-semibold hover:bg-green/20 transition-all">
+                      <Check size={14} /> อนุมัติ
+                    </button>
+                    <button onClick={() => { setRejectId(pmt.id); setRejectNote('') }}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose/10 text-rose text-sm font-semibold hover:bg-rose/20 transition-all">
+                      <X size={14} /> ปฏิเสธ
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Reset Password */}
           <div className="card p-6 anim-up" style={{ animationDelay: '40ms' }}>
@@ -126,22 +197,14 @@ export default function AdminPage() {
             <form onSubmit={resetPassword} className="space-y-3">
               <div>
                 <label className="block text-xs text-muted mb-1.5 ml-1">เบอร์โทรของ user</label>
-                <input
-                  value={pwForm.phone}
-                  onChange={e => setPwForm(f => ({ ...f, phone: e.target.value }))}
-                  placeholder="0812345678"
-                  className="input"
-                />
+                <input value={pwForm.phone} onChange={e => setPwForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="0812345678" className="input" />
               </div>
               <div>
                 <label className="block text-xs text-muted mb-1.5 ml-1">รหัสผ่านใหม่</label>
-                <input
-                  type="password"
-                  value={pwForm.newPassword}
+                <input type="password" value={pwForm.newPassword}
                   onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
-                  className="input"
-                />
+                  placeholder="อย่างน้อย 6 ตัวอักษร" className="input" />
               </div>
               {showPwResult && (
                 <p className="text-sm text-green bg-green/10 rounded-xl px-4 py-2.5">{showPwResult}</p>
@@ -149,11 +212,9 @@ export default function AdminPage() {
               <button type="submit" disabled={pwSaving}
                 className={`btn-primary w-full justify-center gap-2 ${pwSaved ? 'bg-green hover:bg-green' : 'bg-yellow hover:bg-yellow/90'}`}
                 style={{ boxShadow: '0 6px 16px -6px rgba(217,119,6,.5)' }}>
-                {pwSaved
-                  ? <><Check size={16} /> รีเซ็ตแล้ว</>
-                  : pwSaving
-                    ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> กำลังรีเซ็ต...</>
-                    : <><KeyRound size={16} /> รีเซ็ตรหัสผ่าน</>}
+                {pwSaved ? <><Check size={16} /> รีเซ็ตแล้ว</>
+                  : pwSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> กำลังรีเซ็ต...</>
+                  : <><KeyRound size={16} /> รีเซ็ตรหัสผ่าน</>}
               </button>
             </form>
           </div>
@@ -185,13 +246,35 @@ export default function AdminPage() {
                     <option value="basic">basic</option>
                     <option value="pro">pro</option>
                   </select>
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-green' : 'bg-rose'}`} title={r.is_active ? 'active' : 'inactive'} />
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${r.is_active ? 'bg-green' : 'bg-rose'}`} />
                 </div>
               ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Reject modal */}
+      {rejectId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-bg2 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 className="font-display font-bold text-lg mb-4">ปฏิเสธคำขอ</h3>
+            <textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)}
+              placeholder="เหตุผล (ไม่บังคับ)" rows={3}
+              className="input resize-none mb-4" />
+            <div className="flex gap-3">
+              <button onClick={() => setRejectId(null)}
+                className="flex-1 py-2.5 rounded-2xl bg-bg3 text-sm font-semibold text-muted hover:text-text transition-colors">
+                ยกเลิก
+              </button>
+              <button onClick={rejectPayment}
+                className="flex-1 py-2.5 rounded-2xl bg-rose/90 text-white text-sm font-semibold hover:bg-rose transition-colors">
+                ปฏิเสธ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
