@@ -3,9 +3,20 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import QRCode from 'qrcode'
-import { QrCode, RefreshCw, ExternalLink, RotateCcw, Download, Plus, Pencil, Trash2, X, Check } from 'lucide-react'
+import { QrCode, RefreshCw, ExternalLink, RotateCcw, Download, Plus, Pencil, Trash2, X, Check, CalendarClock, Users, Phone } from 'lucide-react'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
+
+const RES_STATUS: Record<string, { label: string; color: string }> = {
+  confirmed: { label: 'ยืนยันแล้ว', color: 'text-accent bg-accent/10' },
+  seated:    { label: 'เข้านั่งแล้ว', color: 'text-green bg-green/10' },
+  cancelled: { label: 'ยกเลิก',      color: 'text-muted bg-bg3' },
+  no_show:   { label: 'ไม่มา',       color: 'text-rose bg-rose/10' },
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+}
 
 const STATUS: Record<string, { emoji: string; text: string }> = {
   available: { emoji: '🟢', text: 'text-green' },
@@ -27,11 +38,26 @@ export default function QRPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ label: '', seats: '' })
+  const [reservations, setReservations] = useState<any[]>([])
+  const [resDate, setResDate] = useState(new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
     const t = getToken()
-    setToken(t); load(t)
+    setToken(t); load(t); loadReservations(t, resDate)
   }, [])
+
+  async function loadReservations(t: string, date: string) {
+    const data = await api.get(`/reservations?date=${date}`, t).catch(() => [])
+    setReservations(data ?? [])
+  }
+
+  async function updateResStatus(id: string, status: string) {
+    try {
+      await api.patch(`/reservations/${id}`, { status }, token)
+      loadReservations(token, resDate)
+      load(token)
+    } catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+  }
 
   async function load(t: string) {
     const tbls = await api.get('/tables', t).catch(() => [])
@@ -124,6 +150,68 @@ export default function QRPage() {
           </form>
         </div>
       )}
+
+      {/* Reservations section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CalendarClock size={18} className="text-accent" />
+            <h2 className="font-display font-bold text-lg text-text">การจองโต๊ะ</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href={`/r/${params.slug}/reserve`} target="_blank"
+              className="text-xs text-accent hover:underline">ลิงก์จองสำหรับลูกค้า ↗</a>
+            <input type="date" value={resDate}
+              onChange={e => { setResDate(e.target.value); loadReservations(token, e.target.value) }}
+              className="input py-1.5 text-sm" />
+          </div>
+        </div>
+        {reservations.length === 0 ? (
+          <div className="card p-6 text-center text-muted text-sm">ไม่มีการจองในวันนี้</div>
+        ) : (
+          <div className="space-y-2">
+            {reservations.map(r => {
+              const s = RES_STATUS[r.status] ?? RES_STATUS.confirmed
+              return (
+                <div key={r.id} className="card p-4 flex items-center gap-4">
+                  <div className="text-center w-14 shrink-0">
+                    <p className="font-bold text-lg text-text">{formatTime(r.reserved_at)}</p>
+                    <p className="text-xs text-muted">น.</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-text">{r.customer_name}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}>{s.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted mt-0.5 flex-wrap">
+                      <span className="flex items-center gap-1"><Users size={10} />{r.party_size} คน</span>
+                      <span className="flex items-center gap-1"><Phone size={10} />{r.customer_phone}</span>
+                      <span>โต๊ะ {r.table_label}</span>
+                    </div>
+                    {r.notes && <p className="text-xs text-muted mt-1 italic">"{r.notes}"</p>}
+                  </div>
+                  {r.status === 'confirmed' && (
+                    <div className="flex gap-1.5 shrink-0">
+                      <button onClick={() => updateResStatus(r.id, 'seated')}
+                        className="text-xs px-2.5 py-1.5 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
+                        เข้านั่ง
+                      </button>
+                      <button onClick={() => updateResStatus(r.id, 'no_show')}
+                        className="text-xs px-2.5 py-1.5 rounded-lg bg-bg3 text-muted hover:bg-border font-medium">
+                        ไม่มา
+                      </button>
+                      <button onClick={() => updateResStatus(r.id, 'cancelled')}
+                        className="text-xs px-2.5 py-1.5 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
+                        ยกเลิก
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {tables.map((table, i) => {

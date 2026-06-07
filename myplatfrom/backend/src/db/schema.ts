@@ -12,6 +12,7 @@ export const orderItemStatusEnum = pgEnum('order_item_status', ['pending', 'cook
 export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'transfer'])
 export const paymentStatusEnum = pgEnum('payment_status', ['unpaid', 'pending_verification', 'paid', 'refunded'])
 export const planEnum = pgEnum('plan', ['free', 'basic', 'pro'])
+export const reservationStatusEnum = pgEnum('reservation_status', ['confirmed', 'seated', 'cancelled', 'no_show'])
 
 // ─── restaurants ──────────────────────────────────────────────────────────────
 export const restaurants = pgTable('restaurants', {
@@ -120,6 +121,20 @@ export const orderItems = pgTable('order_items', {
   finished_at: timestamp('finished_at'),
   served_at:   timestamp('served_at'),
   created_at:  timestamp('created_at').defaultNow().notNull(),
+})
+
+// ─── reservations ─────────────────────────────────────────────────────────────
+export const reservations = pgTable('reservations', {
+  id:             uuid('id').primaryKey().defaultRandom(),
+  restaurant_id:  uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  table_id:       uuid('table_id').notNull().references(() => tables.id),
+  customer_name:  varchar('customer_name', { length: 100 }).notNull(),
+  customer_phone: varchar('customer_phone', { length: 20 }).notNull(),
+  party_size:     integer('party_size').notNull(),
+  reserved_at:    timestamp('reserved_at').notNull(),
+  notes:          text('notes'),
+  status:         reservationStatusEnum('status').default('confirmed').notNull(),
+  created_at:     timestamp('created_at').defaultNow().notNull(),
 })
 
 // ─── attendance ───────────────────────────────────────────────────────────────
