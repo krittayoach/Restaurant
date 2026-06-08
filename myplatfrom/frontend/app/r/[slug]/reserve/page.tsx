@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Calendar, Clock, Users, User, Phone, FileText, ChevronRight, Plus, Minus, ShoppingCart, ImagePlus, Upload } from 'lucide-react'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import QRCode from 'qrcode'
+import { Spinner } from '@/components/Spinner'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
@@ -183,8 +184,8 @@ export default function ReservePage() {
             </div>
             {searchError && <p className="text-red-500 text-sm">{searchError}</p>}
             <button onClick={searchTables} disabled={searching}
-              className="btn-primary w-full py-2.5 flex items-center justify-center gap-2">
-              {searching ? t.searching : <><span>{t.searchTables}</span><ChevronRight size={16} /></>}
+              className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 disabled:opacity-70">
+              {searching ? <><Spinner size={16} />{t.searching}</> : <><span>{t.searchTables}</span><ChevronRight size={16} /></>}
             </button>
           </div>
         </div>
@@ -328,8 +329,8 @@ export default function ReservePage() {
             {formError && <p className="text-red-500 text-sm text-center">{formError}</p>}
 
             <button type="submit" disabled={submitting || (needPayment && !restaurant?.promptpay)}
-              className="btn-primary w-full py-3 text-base disabled:opacity-50">
-              {submitting ? t.booking : t.confirmBooking}
+              className="btn-primary w-full py-3 text-base disabled:opacity-50 flex items-center justify-center gap-2">
+              {submitting ? <><Spinner size={16} />{t.booking}</> : t.confirmBooking}
             </button>
           </form>
         )}

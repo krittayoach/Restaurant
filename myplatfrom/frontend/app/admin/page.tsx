@@ -4,6 +4,7 @@ import { api, getToken } from '@/lib/api'
 import { ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp, Zap, X, ExternalLink } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
+import { Spinner } from '@/components/Spinner'
 
 export default function AdminPage() {
   const toast = useToast()
@@ -19,6 +20,8 @@ export default function AdminPage() {
   const [showPwResult, setShowPwResult] = useState('')
   const [rejectId, setRejectId] = useState<string | null>(null)
   const [rejectNote, setRejectNote] = useState('')
+  const [rejecting, setRejecting] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const t = getToken()
@@ -65,6 +68,7 @@ export default function AdminPage() {
   }
 
   async function approvePayment(id: string) {
+    setBusyId(b => ({ ...b, [`approve_${id}`]: true }))
     try {
       const res = await api.patch(`/billing/payments/${id}/approve`, {}, token)
       setPendingPayments(p => p.filter(x => x.id !== id))
@@ -72,16 +76,19 @@ export default function AdminPage() {
       toast.success('อนุมัติและอัปเกรด plan แล้ว')
       api.get('/restaurants/billing', token).then(setBilling).catch(() => null)
     } catch (e: any) { toast.error(e.message) }
+    finally { setBusyId(b => ({ ...b, [`approve_${id}`]: false })) }
   }
 
   async function rejectPayment() {
     if (!rejectId) return
+    setRejecting(true)
     try {
       await api.patch(`/billing/payments/${rejectId}/reject`, { note: rejectNote || undefined }, token)
       setPendingPayments(p => p.filter(x => x.id !== rejectId))
       setRejectId(null); setRejectNote('')
       toast.success('ปฏิเสธคำขอแล้ว')
     } catch (e: any) { toast.error(e.message) }
+    finally { setRejecting(false) }
   }
 
   async function logout() {
@@ -172,9 +179,9 @@ export default function AdminPage() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => approvePayment(pmt.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green/10 text-green text-sm font-semibold hover:bg-green/20 transition-all">
-                      <Check size={14} /> อนุมัติ
+                    <button onClick={() => approvePayment(pmt.id)} disabled={busyId[`approve_${pmt.id}`]}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-green/10 text-green text-sm font-semibold hover:bg-green/20 transition-all disabled:opacity-60">
+                      {busyId[`approve_${pmt.id}`] ? <Spinner size={14} /> : <Check size={14} />} อนุมัติ
                     </button>
                     <button onClick={() => { setRejectId(pmt.id); setRejectNote('') }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose/10 text-rose text-sm font-semibold hover:bg-rose/20 transition-all">
@@ -213,7 +220,7 @@ export default function AdminPage() {
                 className={`btn-primary w-full justify-center gap-2 ${pwSaved ? 'bg-green hover:bg-green' : 'bg-yellow hover:bg-yellow/90'}`}
                 style={{ boxShadow: '0 6px 16px -6px rgba(217,119,6,.5)' }}>
                 {pwSaved ? <><Check size={16} /> รีเซ็ตแล้ว</>
-                  : pwSaving ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> กำลังรีเซ็ต...</>
+                  : pwSaving ? <><Spinner size={16} /> กำลังรีเซ็ต...</>
                   : <><KeyRound size={16} /> รีเซ็ตรหัสผ่าน</>}
               </button>
             </form>
@@ -267,9 +274,9 @@ export default function AdminPage() {
                 className="flex-1 py-2.5 rounded-2xl bg-bg3 text-sm font-semibold text-muted hover:text-text transition-colors">
                 ยกเลิก
               </button>
-              <button onClick={rejectPayment}
-                className="flex-1 py-2.5 rounded-2xl bg-rose/90 text-white text-sm font-semibold hover:bg-rose transition-colors">
-                ปฏิเสธ
+              <button onClick={rejectPayment} disabled={rejecting}
+                className="flex-1 py-2.5 rounded-2xl bg-rose/90 text-white text-sm font-semibold hover:bg-rose transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                {rejecting && <Spinner size={14} />}ปฏิเสธ
               </button>
             </div>
           </div>

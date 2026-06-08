@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { Phone, Star, CalendarClock, ChevronRight, ArrowUpCircle, ArrowDownCircle, Users, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import Link from 'next/link'
+import { Spinner } from '@/components/Spinner'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
@@ -78,9 +79,7 @@ export default function CustomerPortalPage() {
             />
             <button onClick={lookup} disabled={loading}
               className="btn-primary px-5 py-2 shrink-0 flex items-center gap-1.5">
-              {loading
-                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                : <ChevronRight size={16} />}
+              {loading ? <Spinner size={16} /> : <ChevronRight size={16} />}
             </button>
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}

@@ -6,6 +6,7 @@ import { Clock } from 'lucide-react'
 import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
+import { Spinner } from '@/components/Spinner'
 
 interface OrderItem { id: string; menu_name: string; quantity: number; note?: string; status: string }
 interface Order { id: string; created_at: string; status: string; items: OrderItem[] }
@@ -23,6 +24,7 @@ export default function KitchenPage() {
   const [stats, setStats] = useState({ pending: 0, cooking: 0, ready: 0 })
   const toast = useToast()
   const [token, setToken] = useState('')
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const [pageLoading, setPageLoading] = useState(true)
 
   useEffect(() => {
@@ -43,12 +45,16 @@ export default function KitchenPage() {
     setOrders(q); setStats(s); setPageLoading(false)
   }
   async function acceptAll(id: string) {
+    setBusyId(b => ({ ...b, [`order_${id}`]: true }))
     try { await api.patch(`/kitchen/orders/${id}/accept-all`, {}, token); loadAll(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [`order_${id}`]: false })) }
   }
   async function updateItem(id: string, status: string) {
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.patch(`/kitchen/items/${id}/status`, { status }, token); loadAll(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
   const cards = [
@@ -91,7 +97,10 @@ export default function KitchenPage() {
                   <Clock size={13} className={urgent ? 'text-rose' : 'text-muted'} />
                   <span className={`text-xs font-mono font-semibold ${urgent ? 'text-rose' : 'text-muted'}`}>{mins} นาที{urgent ? ' 🔥' : ''}</span>
                 </div>
-                <button onClick={() => acceptAll(order.id)} className="text-xs bg-teal text-white px-3 py-1.5 rounded-xl font-semibold hover:brightness-110 active:scale-95 transition-all">รับทั้งหมด</button>
+                <button onClick={() => acceptAll(order.id)} disabled={busyId[`order_${order.id}`]}
+                  className="text-xs bg-teal text-white px-3 py-1.5 rounded-xl font-semibold hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5">
+                  {busyId[`order_${order.id}`] ? <Spinner size={12} /> : null}รับทั้งหมด
+                </button>
               </div>
               <div className="p-3 space-y-2">
                 {items.map(item => {
@@ -103,8 +112,18 @@ export default function KitchenPage() {
                         {item.note && <p className="text-xs text-yellow mt-0.5">📝 {item.note}</p>}
                       </div>
                       <span className={`badge ${s.cls} shrink-0`}>{s.label}</span>
-                      {item.status === 'pending' && <button onClick={() => updateItem(item.id, 'cooking')} className="text-xs bg-accent text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0">รับทำ</button>}
-                      {item.status === 'cooking' && <button onClick={() => updateItem(item.id, 'ready')} className="text-xs bg-green text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0">เสร็จ</button>}
+                      {item.status === 'pending' && (
+                        <button onClick={() => updateItem(item.id, 'cooking')} disabled={busyId[item.id]}
+                          className="text-xs bg-accent text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0 disabled:opacity-60 flex items-center gap-1.5">
+                          {busyId[item.id] ? <Spinner size={12} /> : null}รับทำ
+                        </button>
+                      )}
+                      {item.status === 'cooking' && (
+                        <button onClick={() => updateItem(item.id, 'ready')} disabled={busyId[item.id]}
+                          className="text-xs bg-green text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0 disabled:opacity-60 flex items-center gap-1.5">
+                          {busyId[item.id] ? <Spinner size={12} /> : null}เสร็จ
+                        </button>
+                      )}
                     </div>
                   )
                 })}

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Star, Calendar, Receipt, Download, FileText } from 'lucide-react'
 import { api, getToken } from '@/lib/api'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { Spinner } from '@/components/Spinner'
 
 function toLocalDate(d: Date) {
   return d.toISOString().slice(0, 10)
@@ -152,8 +153,8 @@ export default function ReportsPage() {
             className="input py-2 text-sm" />
         </div>
         <button onClick={() => load(from, to)} disabled={loading}
-          className="btn-primary py-2 px-5 text-sm">
-          {loading ? 'กำลังโหลด...' : 'ดูรายงาน'}
+          className="btn-primary py-2 px-5 text-sm gap-2 disabled:opacity-70">
+          {loading ? <><Spinner size={14} />กำลังโหลด...</> : 'ดูรายงาน'}
         </button>
         <div className="flex gap-2 ml-auto flex-wrap">
           {[

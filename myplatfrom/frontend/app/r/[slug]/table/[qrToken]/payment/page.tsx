@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import QRCode from 'qrcode'
 import { CheckCircle2, Clock, Flame, UtensilsCrossed, XCircle, Upload, ImagePlus, PlusCircle, X } from 'lucide-react'
 import { useI18n, LangToggle } from '@/lib/i18n'
+import { Spinner } from '@/components/Spinner'
 
 export default function PaymentPage() {
   const params = useParams() as { slug: string; qrToken: string }
@@ -17,6 +18,7 @@ export default function PaymentPage() {
   const [slipPreview, setSlipPreview] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitDone, setSubmitDone] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const [pulse, setPulse] = useState(false)
   const tableIdRef = useRef<string | null>(null)
 
@@ -72,8 +74,9 @@ export default function PaymentPage() {
 
   async function cancelItem(itemId: string) {
     if (!order) return
-    await api.patch(`/orders/${order.id}/items/${itemId}/cancel`, {})
-    load()
+    setBusyId(b => ({ ...b, [itemId]: true }))
+    try { await api.patch(`/orders/${order.id}/items/${itemId}/cancel`, {}); load() }
+    finally { setBusyId(b => ({ ...b, [itemId]: false })) }
   }
 
   async function submitSlip() {
@@ -159,10 +162,10 @@ export default function PaymentPage() {
                         </div>
                         <span className="text-sm font-bold text-orange-500">฿{(item.unit_price * item.quantity).toFixed(0)}</span>
                         {item.status === 'pending' && (
-                          <button onClick={() => cancelItem(item.id)}
-                            className="w-6 h-6 rounded-lg bg-rose-50 text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors"
+                          <button onClick={() => cancelItem(item.id)} disabled={busyId[item.id]}
+                            className="w-6 h-6 rounded-lg bg-rose-50 text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors disabled:opacity-60"
                             title={t.cancelItem}>
-                            <X size={12} />
+                            {busyId[item.id] ? <Spinner size={10} /> : <X size={12} />}
                           </button>
                         )}
                       </div>
@@ -215,7 +218,7 @@ export default function PaymentPage() {
                       {slipPreview && !submitDone && (
                         <button onClick={submitSlip} disabled={submitting}
                           className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-400 to-rose-400 text-white font-bold py-3 rounded-xl mt-3 shadow-md shadow-orange-200 hover:shadow-lg transition-all active:scale-[.98] disabled:opacity-60">
-                          <Upload size={16} />
+                          {submitting ? <Spinner size={16} /> : <Upload size={16} />}
                           {submitting ? t.sending : t.sendSlip}
                         </button>
                       )}
