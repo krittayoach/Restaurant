@@ -5,6 +5,7 @@
 ## Docs
 | File | เนื้อหา |
 |---|---|
+| [`docs/architecture.md`](docs/architecture.md) | System diagram, ER diagram, trade-offs, sequence diagrams |
 | [`docs/design.md`](docs/design.md) | Color system, UI patterns, rendering strategy |
 | [`docs/history.md`](docs/history.md) | v1.0 features, key decisions, changelog, backlog |
 | [`docs/technical-patterns.md`](docs/technical-patterns.md) | Backend/frontend patterns, Redis, SSE, security |
@@ -113,7 +114,6 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 
 ## Backlog — Phase 3
 - [ ] Admin dashboard (MRR, จัดการร้าน, suspend, impersonate) · billing cron + email · rate limiting · audit log · multi-branch
-
 ## /update-claude Instructions
 1. **List changes** แบ่งเป็น: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
 2. **CLAUDE.md** — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ต้องอยู่ที่ ≤120 บรรทัด
