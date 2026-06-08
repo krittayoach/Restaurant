@@ -111,6 +111,9 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 - `sw.js` ต้องอยู่ใน `public/` — scope `/`, cache KDS shell + Next.js chunks
 - `next.config.js` ต้องมี — ตั้ง `no-cache` header ให้ `sw.js` เพื่อรับ SW update
 
+## Backlog — Phase 3
+- [ ] Admin dashboard (MRR, จัดการร้าน, suspend, impersonate) · billing cron + email · rate limiting · audit log · multi-branch
+
 ## /update-claude Instructions
 1. **List changes** แบ่งเป็น: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
 2. **CLAUDE.md** — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ต้องอยู่ที่ ≤120 บรรทัด

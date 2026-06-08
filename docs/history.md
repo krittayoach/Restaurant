@@ -1,5 +1,9 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.5 (2026-06-08)
+
+- U: Settings page redesign — SectionLabel/Field components, plan card layout ใหม่ (badge + usage bars แยก), per-field show/hide password, upgrade modal slide-up บน mobile
+
 ## Changelog — v2.4 (2026-06-08)
 
 - F: Loyalty/points system — `lib/loyalty.ts`, `routes/customers.ts`, `customers` + `point_transactions` tables; earn ฿10=1pt + จองโต๊ะ=50pt, redeem เป็นส่วนลดที่หน้า order
