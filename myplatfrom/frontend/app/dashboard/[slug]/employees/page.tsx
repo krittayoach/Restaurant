@@ -6,6 +6,7 @@ import { Plus, UserCheck, UserX, X, Eye, EyeOff, Pencil, Trash2 } from 'lucide-r
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
+import { Spinner } from '@/components/Spinner'
 
 const ROLE: Record<string, { label: string; emoji: string; cls: string }> = {
   manager:  { label: 'ผู้จัดการ', emoji: '👔', cls: 'bg-accent/10 text-accent' },
@@ -24,6 +25,8 @@ export default function EmployeesPage() {
   const [form, setForm] = useState(EMPTY)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [showPw, setShowPw] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const { confirm } = useConfirm()
   const toast = useToast()
   const [pageLoading, setPageLoading] = useState(true)
@@ -55,6 +58,7 @@ export default function EmployeesPage() {
     if (!editingId && (!form.password || form.password.length < 6)) return
     if (editingId && form.password && form.password.length < 6) return
 
+    setSaving(true)
     try {
       if (editingId) {
         const body: any = { name: form.name, phone: form.phone }
@@ -66,16 +70,21 @@ export default function EmployeesPage() {
       }
       setShowForm(false); setEditingId(null); setFormSubmitted(false); setForm(EMPTY); load(token)
     } catch (e: any) { toast.error(e.message ?? 'บันทึกไม่สำเร็จ') }
+    finally { setSaving(false) }
   }
 
   async function toggle(id: string) {
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.patch(`/employees/${id}/toggle`, {}, token); load(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
   async function del(id: string, name: string) {
     if (!await confirm({ title: `ลบพนักงาน "${name}"?`, message: 'ไม่สามารถเรียกคืนได้', danger: true, confirmLabel: 'ลบ' })) return
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.delete(`/employees/${id}`, token); load(token) }
     catch (e: any) { toast.error(e.message ?? 'ลบไม่สำเร็จ') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
   if (pageLoading) return <LoadingScreen />
@@ -142,8 +151,10 @@ export default function EmployeesPage() {
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <button type="submit" className="btn-primary">{editingId ? 'บันทึกการแก้ไข' : 'บันทึก'}</button>
-              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} className="btn-secondary">ยกเลิก</button>
+              <button type="submit" disabled={saving} className="btn-primary gap-2 disabled:opacity-70">
+                {saving ? <><Spinner size={14} /> กำลังบันทึก...</> : (editingId ? 'บันทึกการแก้ไข' : 'บันทึก')}
+              </button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} disabled={saving} className="btn-secondary">ยกเลิก</button>
             </div>
           </form>
         </div>
@@ -166,11 +177,11 @@ export default function EmployeesPage() {
                 <button onClick={() => openEdit(emp)} className="w-9 h-9 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" title="แก้ไข">
                   <Pencil size={14} />
                 </button>
-                <button onClick={() => toggle(emp.id)} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 ${emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green'}`} title={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
-                  {emp.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
+                <button onClick={() => toggle(emp.id)} disabled={busyId[emp.id]} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 ${emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green'}`} title={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
+                  {busyId[emp.id] ? <Spinner size={13} /> : emp.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                 </button>
-                <button onClick={() => del(emp.id, emp.name)} className="w-9 h-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors" title="ลบ">
-                  <Trash2 size={14} />
+                <button onClick={() => del(emp.id, emp.name)} disabled={busyId[emp.id]} className="w-9 h-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" title="ลบ">
+                  {busyId[emp.id] ? <Spinner size={13} /> : <Trash2 size={14} />}
                 </button>
               </div>
             </div>

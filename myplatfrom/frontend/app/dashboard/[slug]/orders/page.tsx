@@ -6,6 +6,7 @@ import { CheckCircle2, Banknote, BadgeCheck, X } from 'lucide-react'
 import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
+import { Spinner } from '@/components/Spinner'
 
 const TABLE_STATUS: Record<string, { label: string; emoji: string; ring: string; text: string }> = {
   available: { label: 'ว่าง',          emoji: '🟢', ring: 'ring-green/30',  text: 'text-green' },
@@ -27,6 +28,7 @@ export default function OrdersPage() {
   const toast = useToast()
   const [token, setToken] = useState('')
   const [tab, setTab] = useState<'floor' | 'ready' | 'payment'>('floor')
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const [pageLoading, setPageLoading] = useState(true)
 
   useEffect(() => {
@@ -46,23 +48,31 @@ export default function OrdersPage() {
   }
 
   async function serveItem(id: string) {
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.patch(`/serving/items/${id}/serve`, {}, token); loadData(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
   async function payCash(orderId: string) {
+    setBusyId(b => ({ ...b, [`cash_${orderId}`]: true }))
     try { await api.patch('/payment/cash', { orderId }, token); loadData(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [`cash_${orderId}`]: false })) }
   }
 
   async function verifyTransfer(orderId: string) {
+    setBusyId(b => ({ ...b, [`verify_${orderId}`]: true }))
     try { await api.patch('/payment/verify', { orderId }, token); loadData(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [`verify_${orderId}`]: false })) }
   }
 
   async function cancelItem(itemId: string) {
+    setBusyId(b => ({ ...b, [`cancel_${itemId}`]: true }))
     try { await api.patch(`/serving/items/${itemId}/cancel`, {}, token); loadData(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [`cancel_${itemId}`]: false })) }
   }
 
   const tabs = [
@@ -121,9 +131,9 @@ export default function OrdersPage() {
                 <p className="font-semibold text-sm">{item.menu_name} <span className="text-muted">×{item.quantity}</span></p>
                 <p className="text-xs text-muted font-mono">order #{item.order_id?.slice(0, 8)}</p>
               </div>
-              <button onClick={() => serveItem(item.id)}
-                className="inline-flex items-center gap-1.5 bg-green text-white px-4 py-2.5 rounded-2xl text-sm font-semibold hover:brightness-110 active:scale-95 transition-all">
-                <CheckCircle2 size={15} /> เสิร์ฟแล้ว
+              <button onClick={() => serveItem(item.id)} disabled={busyId[item.id]}
+                className="inline-flex items-center gap-1.5 bg-green text-white px-4 py-2.5 rounded-2xl text-sm font-semibold hover:brightness-110 active:scale-95 transition-all disabled:opacity-60">
+                {busyId[item.id] ? <Spinner size={14} /> : <CheckCircle2 size={15} />} เสิร์ฟแล้ว
               </button>
             </div>
           ))}
@@ -161,9 +171,9 @@ export default function OrdersPage() {
                         {item.status === 'pending' ? 'รอทำ' : item.status === 'cooking' ? 'กำลังทำ' : item.status === 'ready' ? 'พร้อม' : 'เสิร์ฟแล้ว'}
                       </span>
                       {item.status === 'pending' && (
-                        <button onClick={() => cancelItem(item.id)}
-                          className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0">
-                          <X size={11} />
+                        <button onClick={() => cancelItem(item.id)} disabled={busyId[`cancel_${item.id}`]}
+                          className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
+                          {busyId[`cancel_${item.id}`] ? <Spinner size={10} /> : <X size={11} />}
                         </button>
                       )}
                     </div>
@@ -182,14 +192,14 @@ export default function OrdersPage() {
 
                 {/* Action buttons */}
                 <div className="flex gap-2">
-                  <button onClick={() => payCash(order.id)}
-                    className="btn-secondary flex-1 gap-1.5 text-sm">
-                    <Banknote size={15} /> ชำระสด
+                  <button onClick={() => payCash(order.id)} disabled={busyId[`cash_${order.id}`] || busyId[`verify_${order.id}`]}
+                    className="btn-secondary flex-1 gap-1.5 text-sm disabled:opacity-60">
+                    {busyId[`cash_${order.id}`] ? <Spinner size={14} /> : <Banknote size={15} />} ชำระสด
                   </button>
                   {order.payment_status === 'pending_verification' && (
-                    <button onClick={() => verifyTransfer(order.id)}
-                      className="btn-primary flex-1 gap-1.5 text-sm">
-                      <BadgeCheck size={15} /> ยืนยันโอน
+                    <button onClick={() => verifyTransfer(order.id)} disabled={busyId[`verify_${order.id}`] || busyId[`cash_${order.id}`]}
+                      className="btn-primary flex-1 gap-1.5 text-sm disabled:opacity-60">
+                      {busyId[`verify_${order.id}`] ? <Spinner size={14} /> : <BadgeCheck size={15} />} ยืนยันโอน
                     </button>
                   )}
                 </div>

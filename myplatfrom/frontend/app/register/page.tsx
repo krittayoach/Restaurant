@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Spinner } from '@/components/Spinner'
 
 const FIELDS = [
   { key: 'name',        label: 'ชื่อร้านอาหาร',          placeholder: 'ร้านอร่อยริมทาง',  type: 'text', span: true },
@@ -71,8 +72,8 @@ export default function RegisterPage() {
                 {submitted && f.key === 'password' && form.password.length > 0 && form.password.length < 6 && <p className="field-error">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</p>}
               </div>
             ))}
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-base col-span-2 mt-1">
-              {loading ? 'กำลังสร้างร้าน...' : <>สร้างร้านอาหาร <ArrowRight size={18} /></>}
+            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-base col-span-2 mt-1 gap-2 disabled:opacity-70">
+              {loading ? <><Spinner size={18} /> กำลังสร้างร้าน...</> : <>สร้างร้านอาหาร <ArrowRight size={18} /></>}
             </button>
           </form>
         </div>

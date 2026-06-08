@@ -6,6 +6,7 @@ import { Plus, Tag, ToggleLeft, ToggleRight, Pencil, Trash2, X } from 'lucide-re
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
+import { Spinner } from '@/components/Spinner'
 
 const EMPTY = { name: '', discount_pct: '', discount_amt: '', min_order: '', starts_at: '', ends_at: '' }
 
@@ -18,6 +19,8 @@ export default function PromotionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY)
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const { confirm } = useConfirm()
   const toast = useToast()
   const [pageLoading, setPageLoading] = useState(true)
@@ -60,6 +63,7 @@ export default function PromotionsPage() {
       starts_at: form.starts_at || null,
       ends_at: form.ends_at || null,
     }
+    setSaving(true)
     try {
       if (editingId) {
         await api.put(`/promotions/${editingId}`, body, token)
@@ -68,16 +72,21 @@ export default function PromotionsPage() {
       }
       setShowForm(false); setEditingId(null); setFormSubmitted(false); setForm(EMPTY); load(token, rid)
     } catch (e: any) { toast.error(e.message ?? 'บันทึกไม่สำเร็จ') }
+    finally { setSaving(false) }
   }
 
   async function togglePromo(id: string) {
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.patch(`/promotions/${id}/toggle`, {}, token); load(token, rid) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
   async function del(id: string, name: string) {
     if (!await confirm({ title: `ลบโปรโมชั่น "${name}"?`, danger: true, confirmLabel: 'ลบ' })) return
+    setBusyId(b => ({ ...b, [id]: true }))
     try { await api.delete(`/promotions/${id}`, token); load(token, rid) }
     catch (e: any) { toast.error(e.message ?? 'ลบไม่สำเร็จ') }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
   if (pageLoading) return <LoadingScreen />
@@ -132,8 +141,10 @@ export default function PromotionsPage() {
               </div>
             </div>
             <div className="flex gap-2 pt-1">
-              <button type="submit" className="btn-primary">{editingId ? 'บันทึกการแก้ไข' : 'บันทึก'}</button>
-              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} className="btn-secondary">ยกเลิก</button>
+              <button type="submit" disabled={saving} className="btn-primary gap-2 disabled:opacity-70">
+                {saving ? <><Spinner size={14} /> กำลังบันทึก...</> : (editingId ? 'บันทึกการแก้ไข' : 'บันทึก')}
+              </button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} disabled={saving} className="btn-secondary">ยกเลิก</button>
             </div>
           </form>
         </div>
@@ -160,11 +171,11 @@ export default function PromotionsPage() {
               <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" title="แก้ไข">
                 <Pencil size={13} />
               </button>
-              <button onClick={() => togglePromo(p.id)} className="text-muted hover:text-text transition-colors">
-                {p.is_active ? <ToggleRight size={22} className="text-green" /> : <ToggleLeft size={22} />}
+              <button onClick={() => togglePromo(p.id)} disabled={busyId[p.id]} className="text-muted hover:text-text transition-colors disabled:opacity-50">
+                {busyId[p.id] ? <Spinner size={16} /> : p.is_active ? <ToggleRight size={22} className="text-green" /> : <ToggleLeft size={22} />}
               </button>
-              <button onClick={() => del(p.id, p.name)} className="w-8 h-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors" title="ลบ">
-                <Trash2 size={13} />
+              <button onClick={() => del(p.id, p.name)} disabled={busyId[p.id]} className="w-8 h-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" title="ลบ">
+                {busyId[p.id] ? <Spinner size={13} /> : <Trash2 size={13} />}
               </button>
             </div>
           </div>

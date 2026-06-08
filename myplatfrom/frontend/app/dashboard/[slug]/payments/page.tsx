@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle, XCircle, RefreshCw, ImageIcon, CalendarClock, Users, Phone, Clock, CreditCard } from 'lucide-react'
+import { Spinner } from '@/components/Spinner'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010'
 
@@ -168,12 +169,12 @@ export default function PaymentsPage() {
                 <button onClick={() => verifyOrder(order.id, false)}
                   disabled={actionLoading === order.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors font-medium disabled:opacity-50">
-                  <XCircle size={13} />ปฏิเสธ
+                  {actionLoading === order.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
                 </button>
                 <button onClick={() => verifyOrder(order.id, true)}
                   disabled={actionLoading === order.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium disabled:opacity-50">
-                  <CheckCircle size={13} />อนุมัติ
+                  {actionLoading === order.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
                 </button>
               </div>
             </div>
@@ -230,12 +231,12 @@ export default function PaymentsPage() {
                 <button onClick={() => verifyPreOrder(res.id, 'reject')}
                   disabled={actionLoading === res.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors font-medium disabled:opacity-50">
-                  <XCircle size={13} />ปฏิเสธ
+                  {actionLoading === res.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
                 </button>
                 <button onClick={() => verifyPreOrder(res.id, 'approve')}
                   disabled={actionLoading === res.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium disabled:opacity-50">
-                  <CheckCircle size={13} />อนุมัติ
+                  {actionLoading === res.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
                 </button>
               </div>
             </div>

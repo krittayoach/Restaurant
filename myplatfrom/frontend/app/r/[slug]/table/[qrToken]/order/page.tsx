@@ -296,7 +296,8 @@ export default function OrderPage() {
 
 function MenuItemCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: number; onAdd: () => void; onRemove: () => void }) {
   return (
-    <div className="bg-white rounded-2xl border border-orange-100 shadow-sm overflow-hidden flex flex-col">
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col transition-all ${qty > 0 ? 'border-orange-300 shadow-orange-100' : 'border-orange-100'}`}>
+      {/* Image */}
       <div className="aspect-square w-full bg-gradient-to-br from-orange-50 to-rose-50 overflow-hidden relative">
         {(item as any).image ? (
           <img src={(item as any).image} alt={item.name} className="w-full h-full object-cover" />
@@ -304,29 +305,40 @@ function MenuItemCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: num
           <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
         )}
         {qty > 0 && (
-          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
+          <div className="absolute top-1.5 left-1.5 min-w-[20px] h-5 px-1 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
             {qty}
           </div>
         )}
       </div>
-      <div className="p-2 flex-1">
+
+      {/* Info */}
+      <div className="px-2.5 pt-2 pb-1.5 flex-1">
         <p className="font-semibold text-xs text-gray-800 line-clamp-2 leading-tight">{item.name}</p>
         <p className="font-bold text-orange-500 text-xs mt-0.5">฿{item.price}</p>
       </div>
-      <div className="flex border-t border-orange-50">
-        {qty > 0 ? (
-          <>
-            <button onClick={onRemove} className="flex-1 py-1.5 flex items-center justify-center text-orange-400 hover:bg-orange-50 transition-colors">
-              <Minus size={13} />
-            </button>
-            <button onClick={onAdd} className="flex-1 py-1.5 flex items-center justify-center bg-gradient-to-r from-orange-400 to-rose-400 text-white">
-              <Plus size={13} />
-            </button>
-          </>
-        ) : (
-          <button onClick={onAdd} className="w-full py-1.5 flex items-center justify-center bg-gradient-to-r from-orange-400 to-rose-400 text-white rounded-b-2xl active:scale-[.98] transition-all">
-            <Plus size={13} />
+
+      {/* Action */}
+      <div className="px-2 pb-2">
+        {qty === 0 ? (
+          <button
+            onClick={onAdd}
+            className="w-full py-2 rounded-xl bg-orange-400 hover:bg-orange-500 active:scale-95 text-white flex items-center justify-center gap-1 text-xs font-bold transition-all shadow-sm shadow-orange-200">
+            <Plus size={13} strokeWidth={3} /> เพิ่ม
           </button>
+        ) : (
+          <div className="flex items-center justify-between bg-orange-50 rounded-xl border border-orange-200 p-1 gap-1">
+            <button
+              onClick={onRemove}
+              className="w-7 h-7 rounded-lg bg-white border border-orange-100 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+              <Minus size={12} className="text-orange-400" strokeWidth={2.5} />
+            </button>
+            <span className="font-bold text-sm text-orange-500 flex-1 text-center">{qty}</span>
+            <button
+              onClick={onAdd}
+              className="w-7 h-7 rounded-lg bg-orange-400 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
+              <Plus size={12} className="text-white" strokeWidth={2.5} />
+            </button>
+          </div>
         )}
       </div>
     </div>
