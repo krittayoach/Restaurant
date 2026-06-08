@@ -6,6 +6,7 @@
 | File | เนื้อหา |
 |---|---|
 | [`docs/architecture.md`](docs/architecture.md) | System diagram, ER diagram, trade-offs, sequence diagrams |
+| [`docs/nfr.md`](docs/nfr.md) | Non-functional requirements: performance, security, scalability |
 | [`docs/design.md`](docs/design.md) | Color system, UI patterns, rendering strategy |
 | [`docs/history.md`](docs/history.md) | v1.0 features, key decisions, changelog, backlog |
 | [`docs/technical-patterns.md`](docs/technical-patterns.md) | Backend/frontend patterns, Redis, SSE, security |
