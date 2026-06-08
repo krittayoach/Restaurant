@@ -23,15 +23,16 @@
 myplatfrom/
 ├── frontend/app/
 │   ├── r/[slug]/table/[qrToken]/   # Customer: order, payment
-│   ├── r/[slug]/reserve/           # Customer: table reservation + confirm
+│   ├── r/[slug]/reserve/           # Customer: table reservation + pre-order
+│   ├── r/[slug]/me/                # Customer: loyalty portal (แต้มสะสม)
 │   ├── kds/[slug]/                 # Kitchen Display System (fullscreen)
-│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, employees, promotions, reports, settings
+│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, settings
 │   ├── admin/                      # Super admin
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
-│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing
-│   ├── db/       # schema.ts, drizzle.config.ts
-│   └── lib/      # redis.ts, jwt.ts, storage.ts
+│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers
+│   ├── db/       # schema.ts, drizzle.config.ts, seed-demo.ts
+│   └── lib/      # redis.ts, jwt.ts, storage.ts, loyalty.ts
 └── docker-compose.yml
 ```
 
@@ -109,10 +110,6 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 - KDS `/kds/[slug]` อยู่นอก dashboard layout — middleware ครอบ `/kds/:path*` แยก
 - `sw.js` ต้องอยู่ใน `public/` — scope `/`, cache KDS shell + Next.js chunks
 - `next.config.js` ต้องมี — ตั้ง `no-cache` header ให้ `sw.js` เพื่อรับ SW update
-
-## Backlog
-- [ ] Loyalty / points system
-- [ ] Multi-language (EN + TH toggle)
 
 ## /update-claude Instructions
 1. **List changes** แบ่งเป็น: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm

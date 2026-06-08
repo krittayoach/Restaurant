@@ -1,5 +1,18 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.4 (2026-06-08)
+
+- F: Loyalty/points system — `lib/loyalty.ts`, `routes/customers.ts`, `customers` + `point_transactions` tables; earn ฿10=1pt + จองโต๊ะ=50pt, redeem เป็นส่วนลดที่หน้า order
+- F: Customer portal `/r/[slug]/me` — ค้นหาด้วยเบอร์โทร, ดูแต้ม, ประวัติจอง, ประวัติแต้ม
+- F: Multi-language TH/EN — `frontend/lib/i18n.tsx` hook + `LangToggle` ทุกหน้า customer-facing
+- F: Reservation pre-order — เลือกเมนูล่วงหน้าตอนจอง, บังคับอัปสลิป, banner เตือนยกเลิก 1 ชม.
+- F: Reservation form validation — กรอบแดง per-field ทุก required field
+- F: Unified payments page `/dashboard/[slug]/payments` — รวม order slips + pre-order slips รอยืนยัน, ปุ่ม approve/reject
+- F: `GET /reservations/pending-preorders` endpoint
+- C: `seed-demo.ts` — ข้อมูลจำลองครบทุกฟีเจอร์ (340 orders / 7 reservations / 6 customers / 25 menus / 15 ingredients)
+- C: `README.md` สำหรับ GitHub
+- C: Schema — 4 คอลัมน์ใหม่ใน `reservations` (pre_order_items, pre_order_total, pre_order_payment, pre_order_slip)
+
 ## Changelog — v2.3 (2026-06-07)
 
 - F: Self-service plan upgrade — manager เลือก plan → ชำระด้วย PromptPay (upload slip → super admin อนุมัติ) หรือ credit card (auto-approve ทันที)
