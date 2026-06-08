@@ -1,5 +1,13 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.6 (2026-06-08)
+
+- U: Menu page (dashboard) จัดกลุ่มตาม category + section headers + search bar
+- U: Customer order page — ปุ่ม "เพิ่ม" สีส้ม + counter `[-][n][+]` + card border highlight เมื่อมีของในตะกร้า
+- F: Shared `Spinner` component (`components/Spinner.tsx`) ใช้ `border-current` รับ color จาก parent
+- F: Button-level loading states ครบทุกหน้า — dashboard (menu, employees, promotions, orders, payments, inventory, tables/qr, kitchen, reports, settings), customer (order, payment, reserve, me), auth (login, register), admin
+- B: แก้ stray `}` ใน `settings/page.tsx` หลังลบ local Spinner function
+
 ## Changelog — v2.5 (2026-06-08)
 
 - U: Settings page redesign — SectionLabel/Field components, plan card layout ใหม่ (badge + usage bars แยก), per-field show/hide password, upgrade modal slide-up บน mobile

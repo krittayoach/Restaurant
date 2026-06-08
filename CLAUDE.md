@@ -101,17 +101,16 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 
 ## Gotchas
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
-- `bun run --watch` อาจ race condition — kill bun แล้วเริ่มใหม่
 - Next.js middleware ใช้ Edge runtime → `jose` ไม่ใช้ `jsonwebtoken`
 - Token เก็บใน localStorage (`getToken()`/`saveToken()`) ไม่ใช่ cookie
 - Register endpoint: `POST /restaurants/register` (ไม่ใช่ `/auth/register`)
 - `.next` cache เสีย → `rm -rf frontend/.next` แล้ว restart
-- MinIO `storage.ts` ต้องมี `forcePathStyle: true`
+- `bun run build` ระหว่าง dev → corrupt `.next` — ใช้ `tsc --noEmit` แทน
 - `GET /restaurants/:slug` — เช็ค UUID format ก่อน query (Postgres error)
-- Port 3000/3001 อาจชนกับ project อื่น — ใช้ 3002/3010 แทน
 - KDS `/kds/[slug]` อยู่นอก dashboard layout — middleware ครอบ `/kds/:path*` แยก
 - `sw.js` ต้องอยู่ใน `public/` — scope `/`, cache KDS shell + Next.js chunks
 - `next.config.js` ต้องมี — ตั้ง `no-cache` header ให้ `sw.js` เพื่อรับ SW update
+- `Spinner` component อยู่ที่ `components/Spinner.tsx` — ใช้ `border-current` รับ color จาก parent
 
 ## Backlog — Phase 3
 - [ ] Admin dashboard (MRR, จัดการร้าน, suspend, impersonate) · billing cron + email · rate limiting · audit log · multi-branch
