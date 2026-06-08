@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, X, Check, AlertTriangle, Package, ChevronDown, Ch
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { Spinner } from '@/components/Spinner'
 
 const UNITS = ['กรัม', 'กิโลกรัม', 'มิลลิลิตร', 'ลิตร', 'ชิ้น', 'แผ่น', 'ถุง', 'กล่อง']
 
@@ -28,6 +29,9 @@ export default function InventoryPage() {
   const [adjustDelta, setAdjustDelta] = useState('')
   const [recipeMenuId, setRecipeMenuId] = useState<string | null>(null)
   const [recipeItems, setRecipeItems] = useState<{ ingredient_id: string; quantity_per_unit: string }[]>([])
+  const [addSaving, setAddSaving] = useState(false)
+  const [recipeSaving, setRecipeSaving] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const t = getToken(); setToken(t); loadAll(t)
@@ -52,6 +56,7 @@ export default function InventoryPage() {
   async function addIngredient(e: React.FormEvent) {
     e.preventDefault()
     if (!addForm.name || !addForm.unit) return
+    setAddSaving(true)
     try {
       await api.post('/inventory', {
         name: addForm.name, unit: addForm.unit,
@@ -63,9 +68,11 @@ export default function InventoryPage() {
       loadAll(token)
       toast.success('เพิ่มวัตถุดิบแล้ว')
     } catch (e: any) { toast.error(e.message) }
+    finally { setAddSaving(false) }
   }
 
   async function saveEdit(id: string) {
+    setBusyId(b => ({ ...b, [id]: true }))
     try {
       await api.patch(`/inventory/${id}`, {
         name: editForm.name, unit: editForm.unit,
@@ -74,24 +81,30 @@ export default function InventoryPage() {
       }, token)
       setEditingId(null); loadAll(token); toast.success('บันทึกแล้ว')
     } catch (e: any) { toast.error(e.message) }
+    finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
   async function deleteIngredient(id: string, name: string) {
     if (!await confirm({ title: `ลบ "${name}"?`, danger: true, confirmLabel: 'ลบ' })) return
+    setBusyId(b => ({ ...b, [`del_${id}`]: true }))
     try { await api.delete(`/inventory/${id}`, token); loadAll(token); toast.success('ลบแล้ว') }
     catch (e: any) { toast.error(e.message) }
+    finally { setBusyId(b => ({ ...b, [`del_${id}`]: false })) }
   }
 
   async function adjust(id: string) {
     const delta = parseFloat(adjustDelta)
     if (isNaN(delta) || delta === 0) return
+    setBusyId(b => ({ ...b, [`adj_${id}`]: true }))
     try {
       await api.post(`/inventory/${id}/adjust`, { delta }, token)
       setAdjustId(null); setAdjustDelta(''); loadAll(token)
     } catch (e: any) { toast.error(e.message) }
+    finally { setBusyId(b => ({ ...b, [`adj_${id}`]: false })) }
   }
 
   async function saveRecipe(menuId: string) {
+    setRecipeSaving(true)
     try {
       await api.put(`/inventory/recipe/${menuId}`, {
         items: recipeItems
@@ -103,6 +116,7 @@ export default function InventoryPage() {
       setRecipeMenuId(null)
       toast.success('บันทึก recipe แล้ว')
     } catch (e: any) { toast.error(e.message) }
+    finally { setRecipeSaving(false) }
   }
 
   const lowStock = ingredients.filter(i => i.quantity <= i.low_threshold && i.low_threshold > 0)
@@ -169,8 +183,10 @@ export default function InventoryPage() {
                 placeholder="0" min="0" step="0.1" className="input w-full" />
             </div>
             <div className="col-span-2 flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary">ยกเลิก</button>
-              <button type="submit" className="btn-primary">เพิ่ม</button>
+              <button type="button" onClick={() => setShowAdd(false)} disabled={addSaving} className="btn-secondary">ยกเลิก</button>
+              <button type="submit" disabled={addSaving} className="btn-primary gap-2 disabled:opacity-70">
+                {addSaving ? <><Spinner size={14} /> กำลังเพิ่ม...</> : 'เพิ่ม'}
+              </button>
             </div>
           </form>
         </div>
@@ -214,8 +230,10 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex gap-1.5 justify-end">
-                          <button onClick={() => saveEdit(ing.id)} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20"><Check size={14} /></button>
-                          <button onClick={() => setEditingId(null)} className="p-1.5 bg-bg3 text-muted rounded-lg hover:bg-border"><X size={14} /></button>
+                          <button onClick={() => saveEdit(ing.id)} disabled={busyId[ing.id]} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
+                            {busyId[ing.id] ? <Spinner size={13} /> : <Check size={14} />}
+                          </button>
+                          <button onClick={() => setEditingId(null)} disabled={busyId[ing.id]} className="p-1.5 bg-bg3 text-muted rounded-lg hover:bg-border"><X size={14} /></button>
                         </div>
                       </td>
                     </>
@@ -232,8 +250,10 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-1.5 justify-end">
                             <input type="number" value={adjustDelta} onChange={e => setAdjustDelta(e.target.value)}
                               placeholder="+100 หรือ -50" className="input py-1 text-xs w-28 text-right" step="0.1" autoFocus />
-                            <button onClick={() => adjust(ing.id)} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20"><Check size={13} /></button>
-                            <button onClick={() => { setAdjustId(null); setAdjustDelta('') }} className="p-1.5 bg-bg3 text-muted rounded-lg"><X size={13} /></button>
+                            <button onClick={() => adjust(ing.id)} disabled={busyId[`adj_${ing.id}`]} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
+                              {busyId[`adj_${ing.id}`] ? <Spinner size={12} /> : <Check size={13} />}
+                            </button>
+                            <button onClick={() => { setAdjustId(null); setAdjustDelta('') }} disabled={busyId[`adj_${ing.id}`]} className="p-1.5 bg-bg3 text-muted rounded-lg"><X size={13} /></button>
                           </div>
                         ) : (
                           <button onClick={() => { setAdjustId(ing.id); setAdjustDelta('') }}
@@ -247,8 +267,10 @@ export default function InventoryPage() {
                         <div className="flex gap-1.5 justify-end">
                           <button onClick={() => { setEditingId(ing.id); setEditForm({ name: ing.name, unit: ing.unit, quantity: String(ing.quantity), low_threshold: String(ing.low_threshold) }) }}
                             className="p-1.5 bg-blue/10 text-blue rounded-lg hover:bg-blue/20"><Pencil size={13} /></button>
-                          <button onClick={() => deleteIngredient(ing.id, ing.name)}
-                            className="p-1.5 bg-rose/10 text-rose rounded-lg hover:bg-rose/20"><Trash2 size={13} /></button>
+                          <button onClick={() => deleteIngredient(ing.id, ing.name)} disabled={busyId[`del_${ing.id}`]}
+                            className="p-1.5 bg-rose/10 text-rose rounded-lg hover:bg-rose/20 disabled:opacity-50">
+                            {busyId[`del_${ing.id}`] ? <Spinner size={12} /> : <Trash2 size={13} />}
+                          </button>
                         </div>
                       </td>
                     </>
@@ -305,8 +327,10 @@ export default function InventoryPage() {
                           <button onClick={() => setRecipeItems(r => [...r, { ingredient_id: '', quantity_per_unit: '' }])}
                             className="text-xs text-accent hover:underline flex items-center gap-1"><Plus size={12} />เพิ่มวัตถุดิบ</button>
                           <div className="ml-auto flex gap-2">
-                            <button onClick={() => setRecipeMenuId(null)} className="btn-secondary text-xs py-1.5 px-3">ยกเลิก</button>
-                            <button onClick={() => saveRecipe(menu.id)} className="btn-primary text-xs py-1.5 px-3">บันทึก</button>
+                            <button onClick={() => setRecipeMenuId(null)} disabled={recipeSaving} className="btn-secondary text-xs py-1.5 px-3">ยกเลิก</button>
+                            <button onClick={() => saveRecipe(menu.id)} disabled={recipeSaving} className="btn-primary text-xs py-1.5 px-3 gap-1.5 disabled:opacity-70">
+                              {recipeSaving ? <><Spinner size={12} />กำลังบันทึก...</> : 'บันทึก'}
+                            </button>
                           </div>
                         </div>
                       </div>
