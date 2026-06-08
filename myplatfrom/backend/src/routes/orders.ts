@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { orders, orderItems, tables, promotions } from '../db/schema'
+import { orders, orderItems, tables, promotions, users } from '../db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, publisher, keys } from '../lib/redis'
+import { redeemPoints, getCustomerByPhone, MIN_REDEEM_POINTS } from '../lib/loyalty'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -33,14 +34,35 @@ export const orderRoutes = new Elysia({ prefix: '/orders' })
       }
     }
 
+    // Handle points redeem
+    let pointsDiscount = 0
+    let customerPhone = ''
+    if (body.redeemPoints && body.redeemPoints >= MIN_REDEEM_POINTS) {
+      const [user] = await db.select({ phone: users.phone }).from(users).where(eq(users.id, payload.userId!)).limit(1)
+      if (user?.phone) {
+        customerPhone = user.phone
+        const customer = await getCustomerByPhone(body.restaurantId, user.phone)
+        if (!customer || customer.total_points < body.redeemPoints) {
+          set.status = 400; return { error: 'Insufficient points' }
+        }
+        pointsDiscount = body.redeemPoints
+      }
+    }
+
+    const totalDiscount = discount + pointsDiscount
     const [order] = await db.insert(orders).values({
       restaurant_id: body.restaurantId,
       table_id: body.tableId,
       customer_id: payload.userId,
       promotion_id: body.promotion_id,
-      total: subtotal - discount,
-      discount,
+      total: Math.max(0, subtotal - totalDiscount),
+      discount: totalDiscount,
     }).returning()
+
+    // Deduct redeemed points
+    if (body.redeemPoints && body.redeemPoints >= MIN_REDEEM_POINTS && customerPhone) {
+      await redeemPoints(body.restaurantId, customerPhone, body.redeemPoints, order.id)
+    }
 
     await db.insert(orderItems).values(
       body.items.map((i: any) => ({
@@ -62,9 +84,10 @@ export const orderRoutes = new Elysia({ prefix: '/orders' })
     return { orderId: order.id }
   }, {
     body: t.Object({
-      restaurantId: t.String(),
-      tableId: t.String(),
-      promotion_id: t.Optional(t.String()),
+      restaurantId:  t.String(),
+      tableId:       t.String(),
+      promotion_id:  t.Optional(t.String()),
+      redeemPoints:  t.Optional(t.Number()),
       items: t.Array(t.Object({
         menu_id: t.Optional(t.String()),
         menu_name: t.String(),

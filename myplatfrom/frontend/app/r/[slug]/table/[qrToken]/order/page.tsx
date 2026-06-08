@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Plus, Minus, ShoppingCart, MessageSquare, UtensilsCrossed } from 'lucide-react'
+import { useI18n, LangToggle } from '@/lib/i18n'
+import Link from 'next/link'
+import { Star } from 'lucide-react'
 
 interface MenuItem { id: string; name: string; price: number; category_id?: string; description?: string }
 interface CartItem extends MenuItem { quantity: number }
@@ -10,6 +13,7 @@ interface CartItem extends MenuItem { quantity: number }
 export default function OrderPage() {
   const params = useParams() as { slug: string; qrToken: string }
   const router = useRouter()
+  const { t, lang, setLang } = useI18n()
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
@@ -21,6 +25,9 @@ export default function OrderPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const [error, setError] = useState('')
   const [existingOrderId, setExistingOrderId] = useState<string | null>(null)
+  const [customerPoints, setCustomerPoints] = useState(0)
+  const [usePoints, setUsePoints] = useState(false)
+  const MIN_REDEEM = 100
 
   useEffect(() => {
     setExistingOrderId(sessionStorage.getItem('currentOrderId'))
@@ -39,7 +46,9 @@ export default function OrderPage() {
   const add    = (item: MenuItem) => setCart(c => c.find(i => i.id === item.id) ? c.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i) : [...c, { ...item, quantity: 1 }])
   const remove = (id: string)     => setCart(c => c.map(i => i.id === id ? { ...i, quantity: i.quantity - 1 } : i).filter(i => i.quantity > 0))
   const qty    = (id: string)     => cart.find(c => c.id === id)?.quantity ?? 0
-  const total  = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const pointsDiscount = usePoints ? customerPoints : 0
+  const total  = Math.max(0, subtotal - pointsDiscount)
 
   const cartItems = cart.map(i => ({
     menu_id: i.id, menu_name: i.name, quantity: i.quantity, unit_price: i.price,
@@ -47,18 +56,19 @@ export default function OrderPage() {
   }))
 
   async function submitOrder() {
-    if (cart.length === 0) { setError('กรุณาเลือกรายการอาหาร'); return }
+    if (cart.length === 0) { setError(t.errorSelectItems); return }
     setLoading(true); setError('')
     try {
       if (existingOrderId) {
         await api.post(`/orders/${existingOrderId}/add-items`, { items: cartItems })
       } else {
-        if (!name || !phone) { setError('กรุณากรอกชื่อและเบอร์โทร'); setLoading(false); return }
+        if (!name || !phone) { setError(t.errorNamePhone); setLoading(false); return }
         const { token } = await api.post('/auth/customer', { name, phone })
         const { orderId } = await api.post('/orders', {
-          restaurantId: tableInfo.restaurant_id,
-          tableId: tableInfo.id,
-          items: cartItems,
+          restaurantId:  tableInfo.restaurant_id,
+          tableId:       tableInfo.id,
+          items:         cartItems,
+          ...(usePoints && customerPoints >= MIN_REDEEM ? { redeemPoints: customerPoints } : {}),
         }, token)
         sessionStorage.setItem('currentOrderId', orderId)
       }
@@ -79,7 +89,7 @@ export default function OrderPage() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
       <div className="text-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-orange-400 border-t-transparent animate-spin mx-auto mb-3" />
-        <p className="text-orange-400 text-sm font-medium">กำลังโหลดเมนู...</p>
+        <p className="text-orange-400 text-sm font-medium">{t.loadingMenu}</p>
       </div>
     </div>
   )
@@ -91,19 +101,25 @@ export default function OrderPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <p className="font-bold text-sm text-gray-800">
-              {existingOrderId ? 'สั่งอาหารเพิ่ม' : 'สั่งอาหาร'}
+              {existingOrderId ? t.addMoreTitle : t.orderTitle}
             </p>
-            <p className="text-xs text-orange-400 font-medium">โต๊ะ {tableInfo?.label}</p>
+            <p className="text-xs text-orange-400 font-medium">{t.table} {tableInfo?.label}</p>
           </div>
-          <button onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
-            className="relative w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center hover:bg-orange-100 transition-colors">
-            <ShoppingCart size={18} className="text-orange-400" />
-            {cart.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
-                {cart.reduce((s, i) => s + i.quantity, 0)}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-3">
+            <Link href={`/r/${params.slug}/me`} className="flex items-center gap-1 text-xs text-orange-400 font-semibold hover:text-orange-500">
+              <Star size={13} />{lang === 'th' ? 'แต้ม' : 'Points'}
+            </Link>
+            <LangToggle lang={lang} setLang={setLang} />
+            <button onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="relative w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center hover:bg-orange-100 transition-colors">
+              <ShoppingCart size={18} className="text-orange-400" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
+                  {cart.reduce((s, i) => s + i.quantity, 0)}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -111,7 +127,7 @@ export default function OrderPage() {
       {existingOrderId && (
         <div className="max-w-lg mx-auto px-4 pt-3">
           <div className="bg-teal-50 border border-teal-200 text-teal-700 rounded-2xl px-4 py-2.5 text-xs font-semibold">
-            ✚ เพิ่มในออเดอร์เดิม — รายการใหม่จะส่งไปครัวทันที
+            {t.addMoreBanner}
           </div>
         </div>
       )}
@@ -159,14 +175,14 @@ export default function OrderPage() {
         {menus.length === 0 && (
           <div className="text-center py-16">
             <UtensilsCrossed size={32} className="text-orange-200 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">ยังไม่มีเมนู</p>
+            <p className="text-gray-400 text-sm">{t.noMenu}</p>
           </div>
         )}
 
         {/* Cart summary */}
         {cart.length > 0 && (
           <div id="cart-section" className="bg-white rounded-2xl border border-orange-100 shadow-sm p-4 mt-4">
-            <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-3">รายการที่เลือก</p>
+            <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-3">{t.selectedItems}</p>
             <div className="space-y-3 mb-4">
               {cart.map(i => (
                 <div key={i.id}>
@@ -190,15 +206,21 @@ export default function OrderPage() {
                     <input
                       value={notes[i.id] ?? ''}
                       onChange={e => setNotes(n => ({ ...n, [i.id]: e.target.value }))}
-                      placeholder="หมายเหตุ เช่น ไม่เผ็ด, ไม่ใส่ผัก"
+                      placeholder={t.notePlaceholder}
                       className="flex-1 text-xs border border-orange-100 rounded-lg px-3 py-1.5 bg-orange-50 placeholder-gray-300 focus:outline-none focus:border-orange-300 transition-colors"
                     />
                   </div>
                 </div>
               ))}
             </div>
+            {pointsDiscount > 0 && (
+              <div className="flex justify-between text-sm text-orange-400 font-medium">
+                <span>{lang === 'th' ? 'ส่วนลดแต้ม' : 'Points Discount'}</span>
+                <span>-฿{pointsDiscount}</span>
+              </div>
+            )}
             <div className="border-t border-orange-100 pt-3 flex justify-between font-bold">
-              <span className="text-gray-600">รวม</span>
+              <span className="text-gray-600">{t.total}</span>
               <span className="text-orange-500 text-lg">฿{total.toFixed(0)}</span>
             </div>
           </div>
@@ -207,17 +229,45 @@ export default function OrderPage() {
         {/* Customer info — only for new order */}
         {!existingOrderId && cart.length > 0 && (
           <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-4 space-y-3 mt-4">
-            <p className="text-xs font-bold text-orange-400 uppercase tracking-wider">ข้อมูลของคุณ</p>
+            <p className="text-xs font-bold text-orange-400 uppercase tracking-wider">{t.yourInfo}</p>
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5 font-medium">ชื่อ <span className="text-rose-400">*</span></label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="สมชาย ใจดี"
+              <label className="block text-xs text-gray-400 mb-1.5 font-medium">{t.name} <span className="text-rose-400">*</span></label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder={t.namePlaceholder}
                 className="w-full border border-orange-100 rounded-xl px-3.5 py-2.5 text-sm bg-orange-50/50 placeholder-gray-300 focus:outline-none focus:border-orange-300 transition-colors" />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5 font-medium">เบอร์โทร <span className="text-rose-400">*</span></label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0XX-XXX-XXXX" type="tel"
+              <label className="block text-xs text-gray-400 mb-1.5 font-medium">{t.phone} <span className="text-rose-400">*</span></label>
+              <input value={phone}
+                onChange={async e => {
+                  setPhone(e.target.value)
+                  const normalized = e.target.value.replace(/\D/g, '')
+                  if (normalized.length >= 9 && tableInfo?.restaurant_id) {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/customers/points?restaurantId=${tableInfo.restaurant_id}&phone=${normalized}`).catch(() => null)
+                    if (res?.ok) { const d = await res.json(); setCustomerPoints(d.total_points ?? 0) }
+                  } else { setCustomerPoints(0); setUsePoints(false) }
+                }}
+                placeholder={t.phonePlaceholder} type="tel"
                 className="w-full border border-orange-100 rounded-xl px-3.5 py-2.5 text-sm bg-orange-50/50 placeholder-gray-300 focus:outline-none focus:border-orange-300 transition-colors" />
             </div>
+
+            {/* Points redeem */}
+            {customerPoints >= MIN_REDEEM && (
+              <div className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 border transition-all ${usePoints ? 'bg-orange-50 border-orange-300' : 'bg-gray-50 border-gray-100'}`}>
+                <div>
+                  <p className="text-xs font-semibold text-gray-700">
+                    {lang === 'th' ? `ใช้ ${customerPoints} แต้ม` : `Use ${customerPoints} pts`}
+                    <span className="text-orange-500 ml-1">(-฿{customerPoints})</span>
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {lang === 'th' ? `ลดราคาได้ ฿${customerPoints}` : `฿${customerPoints} discount`}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setUsePoints(u => !u)}
+                  className={`w-11 h-6 rounded-full transition-all duration-200 ${usePoints ? 'bg-orange-400' : 'bg-gray-200'}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mx-0.5 ${usePoints ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -234,9 +284,9 @@ export default function OrderPage() {
           <button onClick={submitOrder} disabled={cart.length === 0 || loading}
             className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-[.98] ${cart.length > 0 ? 'bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg shadow-orange-200 hover:shadow-xl' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}>
             <ShoppingCart size={18} />
-            {loading ? 'กำลังส่ง...' : cart.length > 0
-              ? (existingOrderId ? `เพิ่มในออเดอร์เดิม · ฿${total.toFixed(0)}` : `สั่งอาหาร · ฿${total.toFixed(0)}`)
-              : 'เลือกรายการอาหาร'}
+            {loading ? t.sending : cart.length > 0
+              ? (existingOrderId ? t.addOrderBtn(total.toFixed(0)) : t.orderBtn(total.toFixed(0)))
+              : t.selectItems}
           </button>
         </div>
       </div>

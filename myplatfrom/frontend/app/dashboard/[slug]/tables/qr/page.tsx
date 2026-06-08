@@ -59,6 +59,16 @@ export default function QRPage() {
     } catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
   }
 
+  async function approvePreOrder(id: string, action: 'approve' | 'reject') {
+    try {
+      await api.patch(`/reservations/${id}/pre-order-payment`, { action }, token)
+      loadReservations(token, resDate)
+      toast.success(action === 'approve' ? 'ยืนยันชำระเงินแล้ว' : 'ปฏิเสธการชำระเงินแล้ว')
+    } catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+  }
+
+  const [viewSlip, setViewSlip] = useState<string | null>(null)
+
   async function load(t: string) {
     const tbls = await api.get('/tables', t).catch(() => [])
     setTables(tbls)
@@ -190,22 +200,46 @@ export default function QRPage() {
                     </div>
                     {r.notes && <p className="text-xs text-muted mt-1 italic">"{r.notes}"</p>}
                   </div>
-                  {r.status === 'confirmed' && (
-                    <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => updateResStatus(r.id, 'seated')}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
-                        เข้านั่ง
-                      </button>
-                      <button onClick={() => updateResStatus(r.id, 'no_show')}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-bg3 text-muted hover:bg-border font-medium">
-                        ไม่มา
-                      </button>
-                      <button onClick={() => updateResStatus(r.id, 'cancelled')}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
-                        ยกเลิก
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-1.5 shrink-0 items-end">
+                    {r.status === 'confirmed' && (
+                      <div className="flex gap-1.5">
+                        <button onClick={() => updateResStatus(r.id, 'seated')}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
+                          เข้านั่ง
+                        </button>
+                        <button onClick={() => updateResStatus(r.id, 'no_show')}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-bg3 text-muted hover:bg-border font-medium">
+                          ไม่มา
+                        </button>
+                        <button onClick={() => updateResStatus(r.id, 'cancelled')}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
+                          ยกเลิก
+                        </button>
+                      </div>
+                    )}
+                    {r.pre_order_payment === 'pending' && r.pre_order_slip && (
+                      <div className="flex gap-1.5">
+                        <button onClick={() => setViewSlip(r.pre_order_slip)}
+                          className="text-xs px-2 py-1 rounded-lg bg-blue/10 text-blue hover:bg-blue/20 font-medium">
+                          ดูสลิป
+                        </button>
+                        <button onClick={() => approvePreOrder(r.id, 'approve')}
+                          className="text-xs px-2 py-1 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
+                          อนุมัติ ฿{r.pre_order_total?.toFixed(0)}
+                        </button>
+                        <button onClick={() => approvePreOrder(r.id, 'reject')}
+                          className="text-xs px-2 py-1 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
+                          ปฏิเสธ
+                        </button>
+                      </div>
+                    )}
+                    {r.pre_order_payment === 'paid' && (
+                      <span className="text-xs text-green font-semibold">✓ ชำระล่วงหน้าแล้ว ฿{r.pre_order_total?.toFixed(0)}</span>
+                    )}
+                    {r.pre_order_payment === 'rejected' && (
+                      <span className="text-xs text-rose font-medium">✗ ไม่ผ่านการชำระ</span>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -296,6 +330,19 @@ export default function QRPage() {
           )
         })}
       </div>
+
+      {/* Slip preview modal */}
+      {viewSlip && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setViewSlip(null)}>
+          <div className="bg-white rounded-2xl p-4 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-semibold text-text">สลิปโอนเงิน</p>
+              <button onClick={() => setViewSlip(null)} className="text-muted hover:text-text text-xl leading-none">×</button>
+            </div>
+            <img src={viewSlip} alt="slip" className="w-full rounded-xl object-contain max-h-96" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

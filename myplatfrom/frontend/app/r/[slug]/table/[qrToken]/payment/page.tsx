@@ -4,17 +4,11 @@ import { useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import QRCode from 'qrcode'
 import { CheckCircle2, Clock, Flame, UtensilsCrossed, XCircle, Upload, ImagePlus, PlusCircle, X } from 'lucide-react'
-
-const STATUS_CONFIG: Record<string, { label: string; icon: any; cls: string; bg: string }> = {
-  pending:  { label: 'รอรับออเดอร์', icon: Clock,           cls: 'text-amber-500',  bg: 'bg-amber-50' },
-  cooking:  { label: 'กำลังทำ',      icon: Flame,           cls: 'text-orange-500', bg: 'bg-orange-50' },
-  ready:    { label: 'พร้อมเสิร์ฟ',  icon: CheckCircle2,    cls: 'text-teal-500',   bg: 'bg-teal-50' },
-  served:   { label: 'เสิร์ฟแล้ว',   icon: UtensilsCrossed, cls: 'text-green-500',  bg: 'bg-green-50' },
-  cancelled:{ label: 'ยกเลิก',       icon: XCircle,         cls: 'text-rose-400',   bg: 'bg-rose-50' },
-}
+import { useI18n, LangToggle } from '@/lib/i18n'
 
 export default function PaymentPage() {
   const params = useParams() as { slug: string; qrToken: string }
+  const { t, lang, setLang } = useI18n()
   const [order, setOrder] = useState<any>(null)
   const [tableInfo, setTableInfo] = useState<any>(null)
   const [restaurant, setRestaurant] = useState<any>(null)
@@ -53,13 +47,11 @@ export default function PaymentPage() {
   useEffect(() => {
     load()
 
-    // SSE realtime — ต่อหลัง load เพื่อให้มี tableId แล้ว
     const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
     let es: EventSource
     let retryTimer: ReturnType<typeof setTimeout>
 
     function connect() {
-      // รอให้ tableId พร้อม
       if (!tableIdRef.current) { retryTimer = setTimeout(connect, 300); return }
       es = new EventSource(`${API}/tables/${tableIdRef.current}/stream?qrToken=${params.qrToken}`)
       es.onmessage = () => { load(); setPulse(true); setTimeout(() => setPulse(false), 1500) }
@@ -92,17 +84,25 @@ export default function PaymentPage() {
       setSubmitDone(true)
       load()
     } catch {
-      alert('เกิดข้อผิดพลาด กรุณาลองใหม่')
+      alert(t.errorTryAgain)
     } finally {
       setSubmitting(false)
     }
   }
 
+  const statusConfig = {
+    pending:   { label: t.statusPending,   icon: Clock,           cls: 'text-amber-500',  bg: 'bg-amber-50' },
+    cooking:   { label: t.statusCooking,   icon: Flame,           cls: 'text-orange-500', bg: 'bg-orange-50' },
+    ready:     { label: t.statusReady,     icon: CheckCircle2,    cls: 'text-teal-500',   bg: 'bg-teal-50' },
+    served:    { label: t.statusServed,    icon: UtensilsCrossed, cls: 'text-green-500',  bg: 'bg-green-50' },
+    cancelled: { label: t.statusCancelled, icon: XCircle,         cls: 'text-rose-400',   bg: 'bg-rose-50' },
+  } as Record<string, { label: string; icon: any; cls: string; bg: string }>
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
       <div className="text-center">
         <div className="w-10 h-10 rounded-full border-[3px] border-orange-400 border-t-transparent animate-spin mx-auto mb-3" />
-        <p className="text-orange-400 text-sm font-medium">กำลังโหลด...</p>
+        <p className="text-orange-400 text-sm font-medium">{t.loading}</p>
       </div>
     </div>
   )
@@ -116,12 +116,15 @@ export default function PaymentPage() {
             🧾
           </div>
           <div className="flex-1">
-            <p className="font-bold text-sm text-gray-800 leading-tight">สถานะออเดอร์</p>
-            <p className="text-xs text-orange-400 font-medium">โต๊ะ {tableInfo?.label}</p>
+            <p className="font-bold text-sm text-gray-800 leading-tight">{t.orderStatus}</p>
+            <p className="text-xs text-orange-400 font-medium">{t.table} {tableInfo?.label}</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full transition-all duration-300 ${pulse ? 'bg-green-400 scale-125' : 'bg-green-400'} animate-pulse`} />
-            <span className="text-xs text-gray-400">realtime</span>
+          <div className="flex items-center gap-2">
+            <LangToggle lang={lang} setLang={setLang} />
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${pulse ? 'bg-green-400 scale-125' : 'bg-green-400'} animate-pulse`} />
+              <span className="text-xs text-gray-400">realtime</span>
+            </div>
           </div>
         </div>
       </div>
@@ -130,16 +133,16 @@ export default function PaymentPage() {
         {!order ? (
           <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-16 text-center mt-4">
             <UtensilsCrossed size={32} className="text-orange-200 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">ยังไม่มีออเดอร์</p>
+            <p className="text-gray-400 text-sm">{t.noOrders}</p>
           </div>
         ) : (
           <>
             {/* Order items */}
             <div className={`bg-white rounded-2xl border shadow-sm p-4 transition-all duration-500 ${pulse ? 'border-green-300 shadow-green-100' : 'border-orange-100'}`}>
-              <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4">รายการอาหาร</p>
+              <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-4">{t.orderItems}</p>
               <div className="space-y-3">
                 {order.items?.map((item: any) => {
-                  const s = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending
+                  const s = statusConfig[item.status] ?? statusConfig.pending
                   const Icon = s.icon
                   return (
                     <div key={item.id} className={`flex items-center gap-3 ${item.status === 'cancelled' ? 'opacity-40 line-through' : ''}`}>
@@ -158,7 +161,7 @@ export default function PaymentPage() {
                         {item.status === 'pending' && (
                           <button onClick={() => cancelItem(item.id)}
                             className="w-6 h-6 rounded-lg bg-rose-50 text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors"
-                            title="ยกเลิกรายการนี้">
+                            title={t.cancelItem}>
                             <X size={12} />
                           </button>
                         )}
@@ -168,7 +171,7 @@ export default function PaymentPage() {
                 })}
               </div>
               <div className="border-t border-orange-100 mt-4 pt-3 flex justify-between font-bold">
-                <span className="text-gray-600">รวม</span>
+                <span className="text-gray-600">{t.total}</span>
                 <span className="text-orange-500 text-lg">฿{order.total?.toFixed(0)}</span>
               </div>
             </div>
@@ -177,8 +180,8 @@ export default function PaymentPage() {
             {order.payment_status === 'unpaid' && (
               <div className="bg-white rounded-2xl border border-orange-100 shadow-sm p-5 space-y-4">
                 <div>
-                  <p className="font-bold text-sm text-gray-800">ชำระเงิน</p>
-                  <p className="text-xs text-gray-400 mt-0.5">ยอดชำระ <span className="text-orange-500 font-bold">฿{order.total?.toFixed(0)}</span></p>
+                  <p className="font-bold text-sm text-gray-800">{t.payment}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{t.amountDue} <span className="text-orange-500 font-bold">฿{order.total?.toFixed(0)}</span></p>
                 </div>
 
                 {restaurant?.promptpay ? (
@@ -193,18 +196,18 @@ export default function PaymentPage() {
                       )}
                       <p className="text-xs text-gray-400 mb-1">PromptPay</p>
                       <p className="font-mono font-bold text-gray-800 text-xl">{restaurant.promptpay}</p>
-                      <p className="text-xs text-gray-400 mt-1">กรุณาโอน ฿{order.total?.toFixed(0)} แล้วแนบสลิปด้านล่าง</p>
+                      <p className="text-xs text-gray-400 mt-1">{t.promptpayInstruction(order.total?.toFixed(0))}</p>
                     </div>
 
                     <div>
-                      <p className="text-xs font-bold text-orange-400 mb-2">แนบสลิปการโอนเงิน</p>
+                      <p className="text-xs font-bold text-orange-400 mb-2">{t.attachSlip}</p>
                       <label className={`flex flex-col items-center gap-2 border-2 border-dashed rounded-2xl p-4 cursor-pointer transition-colors ${slipPreview ? 'border-orange-300 bg-orange-50/50' : 'border-orange-200 hover:border-orange-300 hover:bg-orange-50/30'}`}>
                         {slipPreview ? (
                           <img src={slipPreview} alt="slip preview" className="max-h-48 rounded-xl object-contain" />
                         ) : (
                           <>
                             <ImagePlus size={28} className="text-orange-300" />
-                            <span className="text-sm text-gray-400">แตะเพื่อเลือกรูปสลิป</span>
+                            <span className="text-sm text-gray-400">{t.tapToSelectSlip}</span>
                           </>
                         )}
                         <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
@@ -213,19 +216,19 @@ export default function PaymentPage() {
                         <button onClick={submitSlip} disabled={submitting}
                           className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-400 to-rose-400 text-white font-bold py-3 rounded-xl mt-3 shadow-md shadow-orange-200 hover:shadow-lg transition-all active:scale-[.98] disabled:opacity-60">
                           <Upload size={16} />
-                          {submitting ? 'กำลังส่ง...' : 'ส่งสลิปให้พนักงาน'}
+                          {submitting ? t.sending : t.sendSlip}
                         </button>
                       )}
                       {submitDone && (
-                        <p className="text-center text-sm text-teal-500 mt-2 font-semibold">✓ ส่งสลิปแล้ว รอพนักงานยืนยัน</p>
+                        <p className="text-center text-sm text-teal-500 mt-2 font-semibold">{t.slipSent}</p>
                       )}
                     </div>
                   </>
                 ) : (
                   <div className="bg-orange-50 rounded-2xl p-5 text-center border border-orange-100">
                     <p className="text-3xl mb-2">🙋</p>
-                    <p className="text-sm font-bold text-gray-700">กรุณาแจ้งพนักงาน</p>
-                    <p className="text-xs text-gray-400 mt-1">เพื่อชำระเงิน</p>
+                    <p className="text-sm font-bold text-gray-700">{t.notifyStaff}</p>
+                    <p className="text-xs text-gray-400 mt-1">{t.toPayment}</p>
                   </div>
                 )}
               </div>
@@ -234,23 +237,23 @@ export default function PaymentPage() {
             {order.payment_status === 'pending_verification' && (
               <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5 text-center">
                 <Clock size={28} className="text-amber-500 mx-auto mb-2" />
-                <p className="text-amber-600 font-bold text-sm">รอพนักงานยืนยันการชำระเงิน</p>
-                <p className="text-xs text-amber-400 mt-1">โปรดรอสักครู่...</p>
+                <p className="text-amber-600 font-bold text-sm">{t.waitingVerification}</p>
+                <p className="text-xs text-amber-400 mt-1">{t.pleaseWait}</p>
               </div>
             )}
 
             {order.payment_status === 'unpaid' && (
               <a href={`/r/${params.slug}/table/${params.qrToken}/order`}
                 className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-dashed border-orange-300 text-orange-400 font-bold text-sm hover:bg-orange-50 transition-colors">
-                <PlusCircle size={18} /> สั่งอาหารเพิ่ม
+                <PlusCircle size={18} /> {t.orderMore}
               </a>
             )}
 
             {order.payment_status === 'paid' && (
               <div className="bg-green-50 rounded-2xl border border-green-200 p-8 text-center">
                 <CheckCircle2 size={40} className="text-green-500 mx-auto mb-3" />
-                <p className="font-bold text-green-600 text-xl">ชำระเงินเรียบร้อย</p>
-                <p className="text-gray-400 text-sm mt-2">ขอบคุณที่ใช้บริการ 🙏</p>
+                <p className="font-bold text-green-600 text-xl">{t.paymentComplete}</p>
+                <p className="text-gray-400 text-sm mt-2">{t.thankYou}</p>
               </div>
             )}
           </>

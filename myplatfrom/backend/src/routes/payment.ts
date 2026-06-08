@@ -1,9 +1,19 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { orders, tables } from '../db/schema'
+import { orders, tables, users } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys, publisher } from '../lib/redis'
+import { earnPoints, POINTS_PER_BAHT } from '../lib/loyalty'
+
+async function handleEarnPoints(order: any) {
+  if (!order.customer_id || order.total <= 0) return
+  const [user] = await db.select({ phone: users.phone, name: users.name })
+    .from(users).where(eq(users.id, order.customer_id)).limit(1)
+  if (!user?.phone) return
+  const pts = Math.floor(order.total * POINTS_PER_BAHT)
+  if (pts > 0) await earnPoints(order.restaurant_id, user.phone, user.name, pts, 'order', order.id, `ออเดอร์ ฿${order.total.toFixed(0)}`)
+}
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -39,6 +49,7 @@ export const paymentRoutes = new Elysia({ prefix: '/payment' })
     if (!order) { set.status = 404; return { error: 'Not found' } }
     await resetTable(order.table_id, payload.restaurantId!, order.id)
     await publisher.publish(keys.tableChannel(payload.restaurantId!, order.table_id), JSON.stringify({ type: 'PAYMENT_VERIFIED', data: { orderId: order.id } }))
+    await handleEarnPoints(order)
     return { success: true }
   }, { body: t.Object({ orderId: t.String() }) })
 
@@ -50,6 +61,7 @@ export const paymentRoutes = new Elysia({ prefix: '/payment' })
     if (!order) { set.status = 404; return { error: 'Not found' } }
     await resetTable(order.table_id, payload.restaurantId!, order.id)
     await publisher.publish(keys.tableChannel(payload.restaurantId!, order.table_id), JSON.stringify({ type: 'PAYMENT_VERIFIED', data: { orderId: order.id } }))
+    await handleEarnPoints(order)
     return { success: true }
   }, { body: t.Object({ orderId: t.String() }) })
 

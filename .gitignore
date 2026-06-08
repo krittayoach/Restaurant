@@ -41,3 +41,10 @@ redis-data/
 
 # Build output
 dist/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Resume / personal files
+*.docx
+*.pdf

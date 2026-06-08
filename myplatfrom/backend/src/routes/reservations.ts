@@ -4,6 +4,7 @@ import { db } from '../db'
 import { reservations, tables, restaurants } from '../db/schema'
 import { eq, and, gte, lte, ne, sql } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
+import { earnPoints, POINTS_PER_RESERVATION } from '../lib/loyalty'
 
 async function requireManager(headers: any, set: any) {
   const auth = headers['authorization']
@@ -112,15 +113,25 @@ export const reservationRoutes = new Elysia({ prefix: '/reservations' })
       .limit(1)
     if (conflict[0]) { set.status = 409; return { error: 'Table already reserved at this time' } }
 
+    const items = body.pre_order_items ?? []
+    if (items.length > 0 && !body.pre_order_slip) {
+      set.status = 400; return { error: 'pre_order_slip required when pre_order_items provided' }
+    }
+    const preTotal = items.reduce((s: number, i: any) => s + i.unit_price * i.quantity, 0)
+
     const [created] = await db.insert(reservations).values({
-      restaurant_id:  rid,
-      table_id:       body.table_id,
-      customer_name:  body.customer_name,
-      customer_phone: body.customer_phone,
-      party_size:     body.party_size,
-      reserved_at:    reservedAt,
-      notes:          body.notes ?? null,
-      status:         'confirmed',
+      restaurant_id:     rid,
+      table_id:          body.table_id,
+      customer_name:     body.customer_name,
+      customer_phone:    body.customer_phone,
+      party_size:        body.party_size,
+      reserved_at:       reservedAt,
+      notes:             body.notes ?? null,
+      status:            'confirmed',
+      pre_order_items:   items.length > 0 ? items : null,
+      pre_order_total:   preTotal,
+      pre_order_payment: items.length > 0 ? 'pending' : 'none',
+      pre_order_slip:    body.pre_order_slip ?? null,
     }).returning()
 
     set.status = 201
@@ -128,28 +139,39 @@ export const reservationRoutes = new Elysia({ prefix: '/reservations' })
   }, {
     params: t.Object({ slug: t.String() }),
     body: t.Object({
-      table_id:       t.String(),
-      customer_name:  t.String({ minLength: 1 }),
-      customer_phone: t.String({ minLength: 9 }),
-      party_size:     t.Number({ minimum: 1 }),
-      date:           t.String(),
-      time:           t.String(),
-      notes:          t.Optional(t.String()),
+      table_id:          t.String(),
+      customer_name:     t.String({ minLength: 1 }),
+      customer_phone:    t.String({ minLength: 9 }),
+      party_size:        t.Number({ minimum: 1 }),
+      date:              t.String(),
+      time:              t.String(),
+      notes:             t.Optional(t.String()),
+      pre_order_items:   t.Optional(t.Array(t.Object({
+        menu_id:    t.String(),
+        menu_name:  t.String(),
+        unit_price: t.Number(),
+        quantity:   t.Number(),
+        note:       t.Optional(t.String()),
+      }))),
+      pre_order_slip:    t.Optional(t.String()),
     }),
   })
 
   // Public: get single reservation (for confirmation page)
   .get('/public/booking/:id', async ({ params, set }) => {
     const [res] = await db.select({
-      id:             reservations.id,
-      customer_name:  reservations.customer_name,
-      customer_phone: reservations.customer_phone,
-      party_size:     reservations.party_size,
-      reserved_at:    reservations.reserved_at,
-      notes:          reservations.notes,
-      status:         reservations.status,
-      table_label:    tables.label,
-      table_seats:    tables.seats,
+      id:                  reservations.id,
+      customer_name:       reservations.customer_name,
+      customer_phone:      reservations.customer_phone,
+      party_size:          reservations.party_size,
+      reserved_at:         reservations.reserved_at,
+      notes:               reservations.notes,
+      status:              reservations.status,
+      table_label:         tables.label,
+      table_seats:         tables.seats,
+      pre_order_items:     reservations.pre_order_items,
+      pre_order_total:     reservations.pre_order_total,
+      pre_order_payment:   reservations.pre_order_payment,
     }).from(reservations)
       .innerJoin(tables, eq(reservations.table_id, tables.id))
       .where(eq(reservations.id, params.id))
@@ -158,6 +180,57 @@ export const reservationRoutes = new Elysia({ prefix: '/reservations' })
     return res
   }, {
     params: t.Object({ id: t.String() }),
+  })
+
+  // Manager: approve/reject pre-order payment
+  .patch('/:id/pre-order-payment', async ({ headers, params, body, set }) => {
+    const payload = await requireManager(headers, set)
+    if (!payload) return
+
+    const [res] = await db.select({ id: reservations.id, pre_order_payment: reservations.pre_order_payment })
+      .from(reservations)
+      .where(and(eq(reservations.id, params.id), eq(reservations.restaurant_id, payload.restaurantId!)))
+      .limit(1)
+    if (!res) { set.status = 404; return { error: 'Not found' } }
+
+    const newStatus = body.action === 'approve' ? 'paid' : 'rejected'
+    const [updated] = await db.update(reservations)
+      .set({ pre_order_payment: newStatus })
+      .where(eq(reservations.id, params.id))
+      .returning()
+    return updated
+  }, {
+    params: t.Object({ id: t.String() }),
+    body:   t.Object({ action: t.Union([t.Literal('approve'), t.Literal('reject')]) }),
+  })
+
+  // Manager: list reservations with pending pre-order payment
+  .get('/pending-preorders', async ({ headers, set }) => {
+    const payload = await requireManager(headers, set)
+    if (!payload) return
+
+    return db.select({
+      id:                reservations.id,
+      customer_name:     reservations.customer_name,
+      customer_phone:    reservations.customer_phone,
+      party_size:        reservations.party_size,
+      reserved_at:       reservations.reserved_at,
+      notes:             reservations.notes,
+      status:            reservations.status,
+      table_label:       tables.label,
+      table_id:          reservations.table_id,
+      pre_order_items:   reservations.pre_order_items,
+      pre_order_total:   reservations.pre_order_total,
+      pre_order_payment: reservations.pre_order_payment,
+      pre_order_slip:    reservations.pre_order_slip,
+    }).from(reservations)
+      .innerJoin(tables, eq(reservations.table_id, tables.id))
+      .where(and(
+        eq(reservations.restaurant_id, payload.restaurantId!),
+        eq(reservations.pre_order_payment, 'pending'),
+        eq(reservations.status, 'confirmed'),
+      ))
+      .orderBy(reservations.reserved_at)
   })
 
   // Manager: list reservations by date
@@ -171,15 +244,19 @@ export const reservationRoutes = new Elysia({ prefix: '/reservations' })
     const end   = new Date(`${date}T23:59:59`)
 
     return db.select({
-      id:             reservations.id,
-      customer_name:  reservations.customer_name,
-      customer_phone: reservations.customer_phone,
-      party_size:     reservations.party_size,
-      reserved_at:    reservations.reserved_at,
-      notes:          reservations.notes,
-      status:         reservations.status,
-      table_label:    tables.label,
-      table_id:       reservations.table_id,
+      id:                  reservations.id,
+      customer_name:       reservations.customer_name,
+      customer_phone:      reservations.customer_phone,
+      party_size:          reservations.party_size,
+      reserved_at:         reservations.reserved_at,
+      notes:               reservations.notes,
+      status:              reservations.status,
+      table_label:         tables.label,
+      table_id:            reservations.table_id,
+      pre_order_items:     reservations.pre_order_items,
+      pre_order_total:     reservations.pre_order_total,
+      pre_order_payment:   reservations.pre_order_payment,
+      pre_order_slip:      reservations.pre_order_slip,
     }).from(reservations)
       .innerJoin(tables, eq(reservations.table_id, tables.id))
       .where(and(
@@ -210,6 +287,7 @@ export const reservationRoutes = new Elysia({ prefix: '/reservations' })
 
     if (body.status === 'seated') {
       await db.update(tables).set({ status: 'occupied' }).where(eq(tables.id, res.table_id))
+      await earnPoints(res.restaurant_id, res.customer_phone, res.customer_name, POINTS_PER_RESERVATION, 'reservation', res.id, 'จองโต๊ะสำเร็จ')
     } else if (body.status === 'cancelled' || body.status === 'no_show') {
       await db.update(tables)
         .set({ status: 'available' })

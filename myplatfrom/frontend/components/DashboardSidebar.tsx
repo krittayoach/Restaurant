@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList,
-  ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings, Monitor, Package,
+  ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings, Monitor, Package, CreditCard,
 } from 'lucide-react'
 
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
   { href: '/orders',     label: 'หน้าร้าน',    emoji: '🪑', icon: ClipboardList,   roles: ['manager', 'employee'] },
   { href: '/kitchen',    label: 'ครัว',        emoji: '👨‍🍳', icon: ChefHat,         roles: ['manager', 'chef'] },
   { href: '/tables/qr',  label: 'QR โต๊ะ',    emoji: '📱', icon: QrCode,          roles: ['manager'] },
+  { href: '/payments',   label: 'ชำระเงิน',   emoji: '💳', icon: CreditCard,      roles: ['manager', 'employee'] },
   { href: '/promotions', label: 'โปรโมชั่น',   emoji: '🎁', icon: Tag,             roles: ['manager'] },
   { href: '/employees',  label: 'พนักงาน',     emoji: '👥', icon: Users,           roles: ['manager'] },
   { href: '/inventory',  label: 'คลังวัตถุดิบ', emoji: '📦', icon: Package,         roles: ['manager'] },

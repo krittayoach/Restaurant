@@ -1,6 +1,6 @@
 import {
   pgTable, uuid, varchar, boolean, integer, real,
-  timestamp, pgEnum, text,
+  timestamp, pgEnum, text, jsonb,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -150,9 +150,37 @@ export const reservations = pgTable('reservations', {
   customer_phone: varchar('customer_phone', { length: 20 }).notNull(),
   party_size:     integer('party_size').notNull(),
   reserved_at:    timestamp('reserved_at').notNull(),
-  notes:          text('notes'),
-  status:         reservationStatusEnum('status').default('confirmed').notNull(),
-  created_at:     timestamp('created_at').defaultNow().notNull(),
+  notes:               text('notes'),
+  status:              reservationStatusEnum('status').default('confirmed').notNull(),
+  pre_order_items:     jsonb('pre_order_items').$type<any[]>(),
+  pre_order_total:     real('pre_order_total').default(0).notNull(),
+  pre_order_payment:   varchar('pre_order_payment', { length: 20 }).default('none').notNull(),
+  pre_order_slip:      text('pre_order_slip'),
+  created_at:          timestamp('created_at').defaultNow().notNull(),
+})
+
+// ─── customers (loyalty profile, per-tenant) ─────────────────────────────────
+export const customers = pgTable('customers', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  phone:         varchar('phone', { length: 20 }).notNull(),
+  name:          varchar('name', { length: 100 }).notNull(),
+  total_points:  integer('total_points').default(0).notNull(),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
+  updated_at:    timestamp('updated_at').defaultNow().notNull(),
+})
+
+// ─── point_transactions ───────────────────────────────────────────────────────
+export const pointTransactions = pgTable('point_transactions', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  customer_id:   uuid('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  type:          varchar('type', { length: 10 }).notNull(),    // earn | redeem
+  points:        integer('points').notNull(),
+  source:        varchar('source', { length: 20 }).notNull(),  // order | reservation | manual
+  ref_id:        uuid('ref_id'),
+  note:          text('note'),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
 })
 
 // ─── plan_payments ────────────────────────────────────────────────────────────
