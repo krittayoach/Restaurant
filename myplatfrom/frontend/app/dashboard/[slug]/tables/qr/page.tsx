@@ -6,6 +6,7 @@ import QRCode from 'qrcode'
 import { QrCode, RefreshCw, ExternalLink, RotateCcw, Download, Plus, Pencil, Trash2, X, Check, CalendarClock, Users, Phone } from 'lucide-react'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
+import { Spinner } from '@/components/Spinner'
 
 const RES_STATUS: Record<string, { label: string; color: string }> = {
   confirmed: { label: 'ยืนยันแล้ว', color: 'text-accent bg-accent/10' },
@@ -33,6 +34,9 @@ export default function QRPage() {
   const { confirm } = useConfirm()
   const toast = useToast()
   const [loading, setLoading] = useState(false)
+  const [addSaving, setAddSaving] = useState(false)
+  const [busyId, setBusyId] = useState<Record<string, boolean>>({})
+  const [resBusyId, setResBusyId] = useState<Record<string, boolean>>({})
   const [addForm, setAddForm] = useState({ label: '', seats: '4' })
   const [addSubmitted, setAddSubmitted] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
@@ -52,19 +56,23 @@ export default function QRPage() {
   }
 
   async function updateResStatus(id: string, status: string) {
+    setResBusyId(b => ({ ...b, [`${id}_${status}`]: true }))
     try {
       await api.patch(`/reservations/${id}`, { status }, token)
       loadReservations(token, resDate)
       load(token)
     } catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setResBusyId(b => ({ ...b, [`${id}_${status}`]: false })) }
   }
 
   async function approvePreOrder(id: string, action: 'approve' | 'reject') {
+    setResBusyId(b => ({ ...b, [`${id}_${action}`]: true }))
     try {
       await api.patch(`/reservations/${id}/pre-order-payment`, { action }, token)
       loadReservations(token, resDate)
       toast.success(action === 'approve' ? 'ยืนยันชำระเงินแล้ว' : 'ปฏิเสธการชำระเงินแล้ว')
     } catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setResBusyId(b => ({ ...b, [`${id}_${action}`]: false })) }
   }
 
   const [viewSlip, setViewSlip] = useState<string | null>(null)
@@ -86,27 +94,35 @@ export default function QRPage() {
     e.preventDefault()
     setAddSubmitted(true)
     if (!addForm.label) return
+    setAddSaving(true)
     try {
       await api.post('/tables', { label: addForm.label, seats: parseInt(addForm.seats) || 4 }, token)
       setAddForm({ label: '', seats: '4' }); setAddSubmitted(false); setShowAdd(false); load(token)
     } catch (e: any) { toast.error(e.message ?? 'เพิ่มโต๊ะไม่สำเร็จ') }
+    finally { setAddSaving(false) }
   }
 
   async function saveEdit(id: string) {
     if (!editForm.label) return
+    setBusyId(b => ({ ...b, [`edit_${id}`]: true }))
     try { await api.patch(`/tables/${id}`, { label: editForm.label, seats: parseInt(editForm.seats) || 4 }, token); setEditingId(null); load(token) }
     catch (e: any) { toast.error(e.message ?? 'แก้ไขไม่สำเร็จ') }
+    finally { setBusyId(b => ({ ...b, [`edit_${id}`]: false })) }
   }
 
   async function deleteTable(id: string, label: string) {
     if (!await confirm({ title: `ลบโต๊ะ ${label}?`, danger: true, confirmLabel: 'ลบ' })) return
+    setBusyId(b => ({ ...b, [`del_${id}`]: true }))
     try { await api.delete(`/tables/${id}`, token); load(token) }
     catch (e: any) { toast.error(e.message ?? 'ลบไม่สำเร็จ') }
+    finally { setBusyId(b => ({ ...b, [`del_${id}`]: false })) }
   }
 
   async function resetQR(id: string) {
+    setBusyId(b => ({ ...b, [`qr_${id}`]: true }))
     try { await api.patch(`/tables/${id}/qr-token`, {}, token); load(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
+    finally { setBusyId(b => ({ ...b, [`qr_${id}`]: false })) }
   }
   async function resetAll() {
     if (!await confirm({ title: 'รีเซ็ต QR ทุกโต๊ะ?', message: 'QR เก่าจะใช้ไม่ได้ทันที', confirmLabel: 'รีเซ็ต' })) return
@@ -154,8 +170,10 @@ export default function QRPage() {
                 placeholder="4" min="1" className="input" />
             </div>
             <div className="flex gap-2 items-end">
-              <button type="submit" className="btn-primary">เพิ่มโต๊ะ</button>
-              <button type="button" onClick={() => { setShowAdd(false); setAddSubmitted(false) }} className="btn-secondary">ยกเลิก</button>
+              <button type="submit" disabled={addSaving} className="btn-primary gap-2 disabled:opacity-70">
+                {addSaving ? <><Spinner size={14} />กำลังเพิ่ม...</> : 'เพิ่มโต๊ะ'}
+              </button>
+              <button type="button" onClick={() => { setShowAdd(false); setAddSubmitted(false) }} disabled={addSaving} className="btn-secondary">ยกเลิก</button>
             </div>
           </form>
         </div>
@@ -203,18 +221,22 @@ export default function QRPage() {
                   <div className="flex flex-col gap-1.5 shrink-0 items-end">
                     {r.status === 'confirmed' && (
                       <div className="flex gap-1.5">
-                        <button onClick={() => updateResStatus(r.id, 'seated')}
-                          className="text-xs px-2.5 py-1.5 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
-                          เข้านั่ง
-                        </button>
-                        <button onClick={() => updateResStatus(r.id, 'no_show')}
-                          className="text-xs px-2.5 py-1.5 rounded-lg bg-bg3 text-muted hover:bg-border font-medium">
-                          ไม่มา
-                        </button>
-                        <button onClick={() => updateResStatus(r.id, 'cancelled')}
-                          className="text-xs px-2.5 py-1.5 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
-                          ยกเลิก
-                        </button>
+                        {(['seated', 'no_show', 'cancelled'] as const).map(status => {
+                          const busy = resBusyId[`${r.id}_${status}`]
+                          const anyBusy = Object.keys(resBusyId).some(k => k.startsWith(r.id) && resBusyId[k])
+                          const cfg = {
+                            seated:    { label: 'เข้านั่ง', cls: 'bg-green/10 text-green hover:bg-green/20' },
+                            no_show:   { label: 'ไม่มา',    cls: 'bg-bg3 text-muted hover:bg-border' },
+                            cancelled: { label: 'ยกเลิก',   cls: 'bg-rose/10 text-rose hover:bg-rose/20' },
+                          }[status]
+                          return (
+                            <button key={status} onClick={() => updateResStatus(r.id, status)}
+                              disabled={anyBusy}
+                              className={`text-xs px-2.5 py-1.5 rounded-lg font-medium flex items-center gap-1 disabled:opacity-50 ${cfg.cls}`}>
+                              {busy ? <Spinner size={11} /> : null}{cfg.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                     {r.pre_order_payment === 'pending' && r.pre_order_slip && (
@@ -224,12 +246,13 @@ export default function QRPage() {
                           ดูสลิป
                         </button>
                         <button onClick={() => approvePreOrder(r.id, 'approve')}
-                          className="text-xs px-2 py-1 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium">
-                          อนุมัติ ฿{r.pre_order_total?.toFixed(0)}
+                          disabled={resBusyId[`${r.id}_approve`] || resBusyId[`${r.id}_reject`]}
+                          className="text-xs px-2 py-1 rounded-lg bg-green/10 text-green hover:bg-green/20 font-medium flex items-center gap-1 disabled:opacity-50">
+                          {resBusyId[`${r.id}_approve`] ? <Spinner size={11} /> : null}อนุมัติ ฿{r.pre_order_total?.toFixed(0)}
                         </button>
                         <button onClick={() => approvePreOrder(r.id, 'reject')}
                           className="text-xs px-2 py-1 rounded-lg bg-rose/10 text-rose hover:bg-rose/20 font-medium">
-                          ปฏิเสธ
+                          {resBusyId[`${r.id}_reject`] ? <Spinner size={11} /> : null}ปฏิเสธ
                         </button>
                       </div>
                     )}
@@ -262,10 +285,11 @@ export default function QRPage() {
                   <div className="flex gap-1.5">
                     <input type="number" value={editForm.seats} onChange={e => setEditForm(f => ({ ...f, seats: e.target.value }))}
                       placeholder="ที่นั่ง" className="input text-sm py-1.5 w-20" />
-                    <button onClick={() => saveEdit(table.id)} className="flex-1 flex items-center justify-center gap-1 bg-green/10 text-green rounded-xl py-1.5 text-xs font-semibold hover:bg-green/20">
-                      <Check size={13} /> บันทึก
+                    <button onClick={() => saveEdit(table.id)} disabled={busyId[`edit_${table.id}`]}
+                      className="flex-1 flex items-center justify-center gap-1 bg-green/10 text-green rounded-xl py-1.5 text-xs font-semibold hover:bg-green/20 disabled:opacity-50">
+                      {busyId[`edit_${table.id}`] ? <Spinner size={12} /> : <Check size={13} />} บันทึก
                     </button>
-                    <button onClick={() => setEditingId(null)} className="w-8 flex items-center justify-center bg-bg3 text-muted rounded-xl hover:bg-border">
+                    <button onClick={() => setEditingId(null)} disabled={busyId[`edit_${table.id}`]} className="w-8 flex items-center justify-center bg-bg3 text-muted rounded-xl hover:bg-border">
                       <X size={13} />
                     </button>
                   </div>
@@ -283,9 +307,9 @@ export default function QRPage() {
                         className="w-6 h-6 rounded-lg bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20">
                         <Pencil size={11} />
                       </button>
-                      <button onClick={() => deleteTable(table.id, table.label)}
-                        className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20">
-                        <Trash2 size={11} />
+                      <button onClick={() => deleteTable(table.id, table.label)} disabled={busyId[`del_${table.id}`]}
+                        className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
+                        {busyId[`del_${table.id}`] ? <Spinner size={10} /> : <Trash2 size={11} />}
                       </button>
                     </div>
                   </div>
@@ -316,14 +340,14 @@ export default function QRPage() {
                     className="inline-flex items-center justify-center gap-1 bg-violet/10 text-violet rounded-xl py-2 text-xs font-semibold hover:bg-violet/20 transition-colors">
                     <Download size={11} /> บันทึก
                   </button>
-                  <button onClick={() => resetQR(table.id)}
-                    className="inline-flex items-center justify-center gap-1 bg-accent/10 text-accent rounded-xl py-2 text-xs font-semibold hover:bg-accent/20 transition-colors">
-                    <RefreshCw size={11} /> รีเซ็ต
+                  <button onClick={() => resetQR(table.id)} disabled={busyId[`qr_${table.id}`]}
+                    className="inline-flex items-center justify-center gap-1 bg-accent/10 text-accent rounded-xl py-2 text-xs font-semibold hover:bg-accent/20 transition-colors disabled:opacity-50">
+                    {busyId[`qr_${table.id}`] ? <Spinner size={11} /> : <RefreshCw size={11} />} รีเซ็ต
                   </button>
                 </div>
               ) : (
-                <button onClick={() => resetQR(table.id)} className="btn-primary w-full mt-auto">
-                  <QrCode size={14} /> สร้าง QR
+                <button onClick={() => resetQR(table.id)} disabled={busyId[`qr_${table.id}`]} className="btn-primary w-full mt-auto gap-2 disabled:opacity-70">
+                  {busyId[`qr_${table.id}`] ? <Spinner size={14} /> : <QrCode size={14} />} สร้าง QR
                 </button>
               ))}
             </div>
