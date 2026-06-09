@@ -99,6 +99,7 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
       promptpay: body.promptpay ?? null,
       open_time: body.open_time ?? '08:00',
       close_time: body.close_time ?? '22:00',
+      contact_email: body.contact_email ?? null,
     }).where(eq(restaurants.id, payload.restaurantId!)).returning()
     return updated
   }, {
@@ -107,6 +108,7 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
       promptpay: t.Optional(t.String()),
       open_time: t.Optional(t.String()),
       close_time: t.Optional(t.String()),
+      contact_email: t.Optional(t.String()),
     }),
   })
 

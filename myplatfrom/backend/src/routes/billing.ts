@@ -7,6 +7,7 @@ import { verifyJWT } from '../lib/jwt'
 import { uploadFile, getPublicUrl } from '../lib/storage'
 import { publisher, keys, redis } from '../lib/redis'
 import { logAudit } from '../lib/audit'
+import { sendEmail, tplPaymentApproved, tplPaymentRejected } from '../lib/email'
 
 const PLATFORM_PROMPTPAY = process.env.PLATFORM_PROMPTPAY_ID ?? '0812345678'
 const PLAN_DURATION_DAYS = 30
@@ -133,10 +134,14 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     const [pmt] = await db.select().from(planPayments).where(eq(planPayments.id, params.id)).limit(1)
     if (!pmt) { set.status = 404; return { error: 'Not found' } }
     if (pmt.status !== 'pending') { set.status = 400; return { error: 'Not pending' } }
-    const [currentRest] = await db.select({ plan_expires_at: restaurants.plan_expires_at }).from(restaurants).where(eq(restaurants.id, pmt.restaurant_id)).limit(1)
+    const [currentRest] = await db.select({ plan_expires_at: restaurants.plan_expires_at, contact_email: restaurants.contact_email, name: restaurants.name }).from(restaurants).where(eq(restaurants.id, pmt.restaurant_id)).limit(1)
     const expiresAt = calcExpiry(currentRest?.plan_expires_at ?? null)
     await db.update(planPayments).set({ status: 'approved', reviewed_by: payload.userId, updated_at: new Date() }).where(eq(planPayments.id, params.id))
     await db.update(restaurants).set({ plan: pmt.plan, plan_expires_at: expiresAt }).where(eq(restaurants.id, pmt.restaurant_id))
+    if (currentRest?.contact_email) {
+      const tpl = tplPaymentApproved(currentRest.name, pmt.plan, expiresAt)
+      sendEmail({ to: currentRest.contact_email, ...tpl })
+    }
     logAudit('PLAN_PAYMENT_APPROVE', {
       actorId: payload.userId, actorRole: 'super_admin',
       restaurantId: pmt.restaurant_id,
@@ -156,6 +161,11 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     await db.update(planPayments)
       .set({ status: 'rejected', note: body.note ?? null, reviewed_by: payload.userId, updated_at: new Date() })
       .where(eq(planPayments.id, params.id))
+    const [rejectedRest] = await db.select({ contact_email: restaurants.contact_email, name: restaurants.name }).from(restaurants).where(eq(restaurants.id, pmt.restaurant_id)).limit(1)
+    if (rejectedRest?.contact_email) {
+      const tpl = tplPaymentRejected(rejectedRest.name, pmt.plan, body.note)
+      sendEmail({ to: rejectedRest.contact_email, ...tpl })
+    }
     logAudit('PLAN_PAYMENT_REJECT', {
       actorId: payload.userId, actorRole: 'super_admin',
       restaurantId: pmt.restaurant_id,

@@ -5,7 +5,7 @@ import { api, getToken } from '@/lib/api'
 import {
   Settings, Save, Check, Lock, Eye, EyeOff, Zap, X,
   CreditCard, Smartphone, Upload, ChevronRight, Store,
-  Clock, Hash, Shield, ChevronUp,
+  Clock, Hash, Shield, ChevronUp, Mail,
 } from 'lucide-react'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
@@ -32,7 +32,7 @@ export default function SettingsPage() {
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [form, setForm] = useState({ name: '', promptpay: '', open_time: '08:00', close_time: '22:00' })
+  const [form, setForm] = useState({ name: '', promptpay: '', open_time: '08:00', close_time: '22:00', contact_email: '' })
   const [planInfo, setPlanInfo] = useState<any>(null)
 
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
@@ -59,7 +59,7 @@ export default function SettingsPage() {
       api.get(`/restaurants/${slug}`, t),
       api.get('/billing/plans', t).catch(() => ({ promptpay: '0812345678' })),
     ]).then(([r, billing]: any[]) => {
-      setForm({ name: r.name ?? '', promptpay: r.promptpay ?? '', open_time: r.open_time ?? '08:00', close_time: r.close_time ?? '22:00' })
+      setForm({ name: r.name ?? '', promptpay: r.promptpay ?? '', open_time: r.open_time ?? '08:00', close_time: r.close_time ?? '22:00', contact_email: r.contact_email ?? '' })
       setPlanInfo({ plan: r.plan, table_count: r.table_count, menu_count: r.menu_count, limits: r.plan_limits })
       setPlatformPromptpay(billing?.promptpay ?? '0812345678')
       setPageLoading(false)
@@ -121,6 +121,7 @@ export default function SettingsPage() {
         promptpay: form.promptpay.trim() || undefined,
         open_time: form.open_time,
         close_time: form.close_time,
+        contact_email: form.contact_email.trim() || undefined,
       }, token)
       setSaved(true); toast.success('บันทึกข้อมูลร้านเรียบร้อยแล้ว')
       setTimeout(() => setSaved(false), 2500)
@@ -233,6 +234,15 @@ export default function SettingsPage() {
               <input value={form.promptpay}
                 onChange={e => setForm(f => ({ ...f, promptpay: e.target.value }))}
                 placeholder="0812345678" className="input pl-9" />
+            </div>
+          </Field>
+
+          <Field label="อีเมลติดต่อ" hint="รับการแจ้งเตือนจากระบบ เช่น การอัปเกรดแพ็กเกจ, แจ้งเตือนหมดอายุ">
+            <div className="relative">
+              <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+              <input type="email" value={form.contact_email}
+                onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
+                placeholder="manager@restaurant.com" className="input pl-9" />
             </div>
           </Field>
 
