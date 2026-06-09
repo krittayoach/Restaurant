@@ -1,5 +1,14 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.8 (2026-06-09)
+
+- F: Rate limiting — `lib/rateLimit.ts` plugin; global 300 req/min, login 5/5 min, register 5/hr, customer-auth 30/10 min; Redis-backed + `Retry-After` header
+- F: Audit log — `audit_logs` table + `lib/audit.ts` fire-and-forget; `GET /audit-logs` (super_admin: all, manager: own); 11 action types: AUTH_LOGIN, AUTH_LOGIN_FAILED, AUTH_LOGOUT, AUTH_PASSWORD_CHANGE, AUTH_PASSWORD_RESET, RESTAURANT_REGISTER, RESTAURANT_SUSPEND, RESTAURANT_UNSUSPEND, RESTAURANT_PLAN_CHANGE, PLAN_PAYMENT_APPROVE, PLAN_PAYMENT_REJECT
+- F: Billing cron — `plan_expires_at` column; 30-day subscription cycle; `cron/billing.ts` รันทุก 1 ชั่วโมง downgrade expired → free + log `BILLING_DOWNGRADE`; admin UI แสดง expiry (ตัวแดงถ้า < 7 วัน)
+- F: Email notifications — `lib/email.ts` Resend API wrapper; `contact_email` field ใน restaurants; ส่งเมื่อ approve/reject slip + downgrade + 7-day reminder (Redis dedup); settings page เพิ่ม field กรอก email
+- B: `/start-app` skill รัน frontend ที่ port 3002 (เดิมเป็น 3000)
+- C: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` env vars; `routes/auditLogs.ts`
+
 ## Changelog — v2.7 (2026-06-09)
 
 - U: Icon-only button tooltips ครบทุกหน้า — CSS `[data-tooltip]` pseudo-element system + ใส่ทุกปุ่ม icon-only ใน menu, employees, tables/qr, orders, payments, inventory, settings, promotions, admin

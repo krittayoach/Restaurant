@@ -37,10 +37,16 @@
 
 ### สำหรับ Super Admin (`/admin`)
 - **ภาพรวม Platform** — ร้านทั้งหมด, MRR, ร้านใหม่เดือนนี้
-- **จัดการร้าน** — ค้นหา/กรอง, เปลี่ยน plan, ระงับ/เปิดใช้งาน (พร้อมเหตุผล)
+- **จัดการร้าน** — ค้นหา/กรอง, เปลี่ยน plan, ระงับ/เปิดใช้งาน (พร้อมเหตุผล), แสดงวันหมดอายุ plan
 - **ยืนยันการชำระเงิน** — อนุมัติหรือปฏิเสธคำขออัปเกรด plan
 - **Realtime Notifications** — แจ้งเตือนร้านใหม่และคำขออัปเกรดผ่าน SSE
 - **Single-session enforcement** — login ใหม่ invalidate session เก่าทันที
+- **Audit Log** — บันทึกการกระทำสำคัญทุกประเภท (login, suspend, billing, password reset ฯลฯ)
+
+### Security & Infrastructure
+- **Rate Limiting** — Redis-backed: global 300 req/min, login 5/5 min, register 5/hr
+- **Billing Cron** — ตรวจสอบทุก 1 ชั่วโมง, auto-downgrade plan ที่หมดอายุ (30-day cycle)
+- **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
 
 ---
 
@@ -133,6 +139,9 @@ MINIO_PORT=9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=restaurant-menu
+# Email (optional — ใช้ Resend)
+RESEND_API_KEY=re_xxxxxxxxxxxx
+PLATFORM_EMAIL_FROM=noreply@yourdomain.com
 ```
 
 **`frontend/.env.local`**
@@ -240,6 +249,7 @@ bun run dev --port 3002
 | `/promotions` | โปรโมชั่น |
 | `/billing` | แผนราคา, อัปเกรด plan |
 | `/admin/*` | Super admin — จัดการร้าน, MRR, ระงับร้าน |
+| `/audit-logs` | บันทึก audit (super_admin: ทั้งหมด, manager: เฉพาะร้านตัวเอง) |
 
 Swagger UI: http://localhost:3010/docs
 
@@ -255,6 +265,7 @@ restaurants ──< users (manager/employee/chef/customer)
             ──< reservations
             ──< customers ──< point_transactions
             ──< plan_payments
+            ──< audit_logs
 ```
 
 ---

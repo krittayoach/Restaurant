@@ -99,6 +99,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 | employee | `0811111111` / `0822222222` | `password123` |
 | chef | `0833333333` / `0844444444` | `password123` |
 
+## New Libs / Keys
+- `lib/rateLimit.ts` — `getIP()`, `checkRateLimit()`, `rateLimitPlugin()` (Elysia plugin)
+- `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget, เขียน `audit_logs` table
+- `lib/email.ts` — `sendEmail()` Resend API wrapper + templates (TH)
+- `cron/billing.ts` — `startBillingCron()` รันตอน startup, ทุก 1 ชั่วโมง
+- Redis key `billing:reminder:{restaurantId}` — กัน reminder email ซ้ำ TTL 8 วัน
+- Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM`
+
 ## Gotchas
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
 - Next.js middleware ใช้ Edge runtime → `jose` ไม่ใช้ `jsonwebtoken`
@@ -115,7 +123,11 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 
 ## Backlog — Phase 3
 - [x] Admin dashboard — MRR, จัดการร้าน, suspend with reason, single-session enforcement
-- [ ] billing cron + email · rate limiting · audit log · multi-branch
+- [x] Rate limiting — global 300/min, login 5/5min, register 5/hr, customer-auth 30/10min
+- [x] Audit log — `audit_logs` table, `GET /audit-logs`, admin UI (11 action types)
+- [x] Billing cron — `plan_expires_at`, auto-downgrade ทุก 1 ชั่วโมง
+- [x] Email — Resend API, 4 Thai templates, approve/reject/downgrade/7-day reminder
+- [ ] multi-branch
 ## /update-claude Instructions
 1. List changes: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
 2. CLAUDE.md — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ≤120 บรรทัด
