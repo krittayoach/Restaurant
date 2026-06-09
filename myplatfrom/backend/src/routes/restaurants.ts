@@ -1,16 +1,18 @@
 import { Elysia, t } from 'elysia'
 import bcrypt from 'bcryptjs'
 import { db } from '../db'
-import { restaurants, users, tables, menus } from '../db/schema'
+import { restaurants, tables, menus } from '../db/schema'
 import { eq, or, desc, sql, count } from 'drizzle-orm'
 
-export const PLAN_LIMITS: Record<string, { tables: number; menus: number; price: number }> = {
-  free:  { tables: 5,        menus: 20,  price: 0   },
-  basic: { tables: 20,       menus: 100, price: 299  },
-  pro:   { tables: Infinity, menus: Infinity, price: 799 },
+export const PLAN_LIMITS: Record<string, { tables: number; menus: number; employees: number; promotions: number; price: number }> = {
+  free:  { tables: 5,        menus: 20,        employees: 3,        promotions: 2,        price: 0   },
+  basic: { tables: 20,       menus: 100,       employees: 15,       promotions: 10,       price: 299  },
+  pro:   { tables: Infinity, menus: Infinity,  employees: Infinity, promotions: Infinity, price: 799 },
 }
 import { randomBytes } from 'crypto'
 import { verifyJWT } from '../lib/jwt'
+import { publisher, keys } from '../lib/redis'
+import { requireSuperAdmin } from '../lib/auth'
 
 export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
 
@@ -44,6 +46,11 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
     }))
     await db.insert(tables).values(defaultTables)
 
+    publisher.publish(keys.adminChannel(), JSON.stringify({
+      type: 'NEW_RESTAURANT',
+      restaurant: { id: restaurant.id, name: restaurant.name, slug: restaurant.slug, plan: 'free' },
+      ts: Date.now(),
+    }))
     return { restaurant: { id: restaurant.id, slug: restaurant.slug, name: restaurant.name }, manager: { id: manager.id, name: manager.name } }
   }, {
     body: t.Object({
@@ -59,12 +66,10 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
   // GET /restaurants/all  (super_admin only)
   .get('/all', async ({ headers, set }) => {
     const token = headers.authorization?.replace('Bearer ', '') ?? ''
-    let payload: any
-    try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
-    if (payload.role !== 'super_admin') { set.status = 403; return { error: 'Forbidden' } }
+    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
     return db.select({
       id: restaurants.id, slug: restaurants.slug, name: restaurants.name,
-      plan: restaurants.plan, is_active: restaurants.is_active, created_at: restaurants.created_at,
+      plan: restaurants.plan, is_active: restaurants.is_active, suspend_reason: restaurants.suspend_reason, created_at: restaurants.created_at,
     }).from(restaurants).orderBy(desc(restaurants.created_at))
   })
 
@@ -93,9 +98,7 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
   // GET /restaurants/billing  (super_admin)
   .get('/billing', async ({ headers, set }) => {
     const token = headers.authorization?.replace('Bearer ', '') ?? ''
-    let payload: any
-    try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
-    if (payload.role !== 'super_admin') { set.status = 403; return { error: 'Forbidden' } }
+    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
     const summary = await db.select({
       plan: restaurants.plan,
       count: count(),
@@ -107,12 +110,32 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
     return { summary, revenue, plans: PLAN_LIMITS }
   })
 
+  // PATCH /restaurants/:id/toggle-active  (super_admin) — suspend / unsuspend
+  .patch('/:id/toggle-active', async ({ headers, params, body, set }) => {
+    const token = headers.authorization?.replace('Bearer ', '') ?? ''
+    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
+    const [current] = await db.select({ is_active: restaurants.is_active }).from(restaurants).where(eq(restaurants.id, params.id))
+    if (!current) { set.status = 404; return { error: 'Not found' } }
+    const willSuspend = current.is_active
+    if (willSuspend && !(body as any)?.reason?.trim()) {
+      set.status = 400; return { error: 'กรุณาระบุเหตุผลในการระงับ' }
+    }
+    const [updated] = await db.update(restaurants)
+      .set({
+        is_active: !current.is_active,
+        suspend_reason: willSuspend ? (body as any).reason.trim() : null,
+      })
+      .where(eq(restaurants.id, params.id))
+      .returning({ id: restaurants.id, name: restaurants.name, is_active: restaurants.is_active, suspend_reason: restaurants.suspend_reason })
+    return updated
+  }, {
+    body: t.Optional(t.Object({ reason: t.Optional(t.String()) })),
+  })
+
   // PATCH /restaurants/:id/plan  (super_admin)
   .patch('/:id/plan', async ({ headers, params, body, set }) => {
     const token = headers.authorization?.replace('Bearer ', '') ?? ''
-    let payload: any
-    try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
-    if (payload.role !== 'super_admin') { set.status = 403; return { error: 'Forbidden' } }
+    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
     const [updated] = await db.update(restaurants)
       .set({ plan: body.plan as any })
       .where(eq(restaurants.id, params.id))

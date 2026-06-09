@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
-import { promotions } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { promotions, restaurants } from '../db/schema'
+import { eq, and, count } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys } from '../lib/redis'
+import { PLAN_LIMITS } from './restaurants'
 
 async function auth(headers: any, set: any) {
   const token = headers.authorization?.replace('Bearer ', '') ?? ''
@@ -22,6 +23,13 @@ export const promotionRoutes = new Elysia({ prefix: '/promotions' })
   .post('/', async ({ headers, body, set }) => {
     const user = await auth(headers, set); if (!user) return { error: 'Unauthorized' }
     if (user.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
+    const [rest] = await db.select({ plan: restaurants.plan }).from(restaurants).where(eq(restaurants.id, user.restaurantId!)).limit(1)
+    const limit = PLAN_LIMITS[rest?.plan ?? 'free'].promotions
+    const [{ count: promoCount }] = await db.select({ count: count() }).from(promotions).where(eq(promotions.restaurant_id, user.restaurantId!))
+    if (promoCount >= limit) {
+      set.status = 402
+      return { error: 'Plan limit reached', plan: rest?.plan, limit, current: promoCount }
+    }
     const b = body as any
     const [p] = await db.insert(promotions).values({
       restaurant_id: user.restaurantId!,

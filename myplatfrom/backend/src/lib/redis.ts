@@ -15,6 +15,8 @@ export const keys = {
   tableStatus: (restaurantId: string, tableId: string) => `${restaurantId}:table:${tableId}:status`,
   tableChannel: (restaurantId: string, tableId: string) => `${restaurantId}:table:${tableId}`,
   loginRateLimit: (ip: string) => `ratelimit:login:${ip}`,
+  adminChannel: () => 'platform:admin',
+  superAdminSession: () => 'super_admin:session',
 }
 
 export const SESSION_TTL = 86400        // 24h

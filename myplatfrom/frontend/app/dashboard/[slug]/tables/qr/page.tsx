@@ -289,7 +289,7 @@ export default function QRPage() {
                       className="flex-1 flex items-center justify-center gap-1 bg-green/10 text-green rounded-xl py-1.5 text-xs font-semibold hover:bg-green/20 disabled:opacity-50">
                       {busyId[`edit_${table.id}`] ? <Spinner size={12} /> : <Check size={13} />} บันทึก
                     </button>
-                    <button onClick={() => setEditingId(null)} disabled={busyId[`edit_${table.id}`]} className="w-8 flex items-center justify-center bg-bg3 text-muted rounded-xl hover:bg-border">
+                    <button onClick={() => setEditingId(null)} disabled={busyId[`edit_${table.id}`]} data-tooltip="ยกเลิก" className="w-8 flex items-center justify-center bg-bg3 text-muted rounded-xl hover:bg-border">
                       <X size={13} />
                     </button>
                   </div>
@@ -304,11 +304,11 @@ export default function QRPage() {
                     <span className="text-xl">{s.emoji}</span>
                     <div className="flex gap-1">
                       <button onClick={() => { setEditingId(table.id); setEditForm({ label: table.label, seats: String(table.seats) }) }}
-                        className="w-6 h-6 rounded-lg bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20">
+                        data-tooltip="แก้ไขโต๊ะ" className="w-6 h-6 rounded-lg bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20">
                         <Pencil size={11} />
                       </button>
                       <button onClick={() => deleteTable(table.id, table.label)} disabled={busyId[`del_${table.id}`]}
-                        className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
+                        data-tooltip="ลบโต๊ะ" className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
                         {busyId[`del_${table.id}`] ? <Spinner size={10} /> : <Trash2 size={11} />}
                       </button>
                     </div>

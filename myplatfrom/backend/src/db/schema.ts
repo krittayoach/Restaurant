@@ -22,9 +22,10 @@ export const restaurants = pgTable('restaurants', {
   promptpay:  varchar('promptpay', { length: 20 }),
   open_time:  varchar('open_time', { length: 5 }).default('08:00'),
   close_time: varchar('close_time', { length: 5 }).default('22:00'),
-  plan:       planEnum('plan').default('free').notNull(),
-  is_active:  boolean('is_active').default(true).notNull(),
-  created_at: timestamp('created_at').defaultNow().notNull(),
+  plan:           planEnum('plan').default('free').notNull(),
+  is_active:      boolean('is_active').default(true).notNull(),
+  suspend_reason: text('suspend_reason'),
+  created_at:     timestamp('created_at').defaultNow().notNull(),
 })
 
 // ─── users ────────────────────────────────────────────────────────────────────

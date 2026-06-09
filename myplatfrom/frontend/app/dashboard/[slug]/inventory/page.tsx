@@ -230,10 +230,10 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex gap-1.5 justify-end">
-                          <button onClick={() => saveEdit(ing.id)} disabled={busyId[ing.id]} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
+                          <button onClick={() => saveEdit(ing.id)} disabled={busyId[ing.id]} data-tooltip="บันทึก" className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
                             {busyId[ing.id] ? <Spinner size={13} /> : <Check size={14} />}
                           </button>
-                          <button onClick={() => setEditingId(null)} disabled={busyId[ing.id]} className="p-1.5 bg-bg3 text-muted rounded-lg hover:bg-border"><X size={14} /></button>
+                          <button onClick={() => setEditingId(null)} disabled={busyId[ing.id]} data-tooltip="ยกเลิก" className="p-1.5 bg-bg3 text-muted rounded-lg hover:bg-border"><X size={14} /></button>
                         </div>
                       </td>
                     </>
@@ -250,10 +250,10 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-1.5 justify-end">
                             <input type="number" value={adjustDelta} onChange={e => setAdjustDelta(e.target.value)}
                               placeholder="+100 หรือ -50" className="input py-1 text-xs w-28 text-right" step="0.1" autoFocus />
-                            <button onClick={() => adjust(ing.id)} disabled={busyId[`adj_${ing.id}`]} className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
+                            <button onClick={() => adjust(ing.id)} disabled={busyId[`adj_${ing.id}`]} data-tooltip="ยืนยัน" className="p-1.5 bg-green/10 text-green rounded-lg hover:bg-green/20 disabled:opacity-50">
                               {busyId[`adj_${ing.id}`] ? <Spinner size={12} /> : <Check size={13} />}
                             </button>
-                            <button onClick={() => { setAdjustId(null); setAdjustDelta('') }} disabled={busyId[`adj_${ing.id}`]} className="p-1.5 bg-bg3 text-muted rounded-lg"><X size={13} /></button>
+                            <button onClick={() => { setAdjustId(null); setAdjustDelta('') }} disabled={busyId[`adj_${ing.id}`]} data-tooltip="ยกเลิก" className="p-1.5 bg-bg3 text-muted rounded-lg"><X size={13} /></button>
                           </div>
                         ) : (
                           <button onClick={() => { setAdjustId(ing.id); setAdjustDelta('') }}
@@ -266,9 +266,9 @@ export default function InventoryPage() {
                       <td className="px-4 py-3">
                         <div className="flex gap-1.5 justify-end">
                           <button onClick={() => { setEditingId(ing.id); setEditForm({ name: ing.name, unit: ing.unit, quantity: String(ing.quantity), low_threshold: String(ing.low_threshold) }) }}
-                            className="p-1.5 bg-blue/10 text-blue rounded-lg hover:bg-blue/20"><Pencil size={13} /></button>
+                            data-tooltip="แก้ไข" className="p-1.5 bg-blue/10 text-blue rounded-lg hover:bg-blue/20"><Pencil size={13} /></button>
                           <button onClick={() => deleteIngredient(ing.id, ing.name)} disabled={busyId[`del_${ing.id}`]}
-                            className="p-1.5 bg-rose/10 text-rose rounded-lg hover:bg-rose/20 disabled:opacity-50">
+                            data-tooltip="ลบ" className="p-1.5 bg-rose/10 text-rose rounded-lg hover:bg-rose/20 disabled:opacity-50">
                             {busyId[`del_${ing.id}`] ? <Spinner size={12} /> : <Trash2 size={13} />}
                           </button>
                         </div>

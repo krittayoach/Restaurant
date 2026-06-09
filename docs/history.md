@@ -1,5 +1,16 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.7 (2026-06-09)
+
+- U: Icon-only button tooltips ครบทุกหน้า — CSS `[data-tooltip]` pseudo-element system + ใส่ทุกปุ่ม icon-only ใน menu, employees, tables/qr, orders, payments, inventory, settings, promotions, admin
+- F: Admin logout confirmation modal — กด "ออกจากระบบ" ต้องยืนยันก่อน
+- F: Suspend restaurant with reason — admin กรอกเหตุผล (required) ก่อนระงับ; เหตุผลแสดงใน dashboard ของร้านที่ถูกระงับ
+- F: Dashboard layout แสดงหน้า "ร้านถูกระงับ" พร้อมเหตุผลเมื่อ `is_active = false`
+- F: Super admin single-session enforcement — login ใหม่ invalidate session เก่าทันที; ทุก super_admin route เช็ค Redis ผ่าน `requireSuperAdmin()`
+- B: Login redirect ไป `/admin` แทน dashboard — แก้ `router.push` → `window.location.href`
+- C: Schema `restaurants.suspend_reason text` + db:push
+- C: Redis key `super_admin:session` + `backend/src/lib/auth.ts` (`requireSuperAdmin` helper)
+
 ## Changelog — v2.6 (2026-06-08)
 
 - U: Menu page (dashboard) จัดกลุ่มตาม category + section headers + search bar

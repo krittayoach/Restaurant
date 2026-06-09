@@ -5,15 +5,21 @@ import { eq, desc } from 'drizzle-orm'
 import { PLAN_LIMITS } from './restaurants'
 import { verifyJWT } from '../lib/jwt'
 import { uploadFile, getPublicUrl } from '../lib/storage'
+import { publisher, keys, redis } from '../lib/redis'
 
 const PLATFORM_PROMPTPAY = process.env.PLATFORM_PROMPTPAY_ID ?? '0812345678'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
   if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
+  const token = auth.slice(7)
   try {
-    const payload = await verifyJWT(auth.slice(7))
+    const payload = await verifyJWT(token)
     if (!roles.includes(payload.role)) { set.status = 403; return null }
+    if (payload.role === 'super_admin') {
+      const session = await redis.get(keys.session(token))
+      if (!session) { set.status = 401; return null }
+    }
     return payload
   } catch { set.status = 401; return null }
 }
@@ -56,6 +62,19 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     }).returning()
     if (isCard) {
       await db.update(restaurants).set({ plan: body.plan as any }).where(eq(restaurants.id, payload.restaurantId!))
+    }
+    if (!isCard) {
+      const [rest] = await db.select({ name: restaurants.name }).from(restaurants)
+        .where(eq(restaurants.id, payload.restaurantId!)).limit(1)
+      publisher.publish(keys.adminChannel(), JSON.stringify({
+        type: 'NEW_PAYMENT',
+        restaurant_id: payload.restaurantId,
+        restaurant_name: rest?.name ?? 'Unknown',
+        plan: body.plan,
+        amount,
+        payment_id: payment.id,
+        ts: Date.now(),
+      }))
     }
     return { payment, upgraded: isCard }
   }, {

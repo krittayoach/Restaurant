@@ -385,7 +385,7 @@ export default function SettingsPage() {
                       <div className="relative">
                         <img src={slipPreview} alt="slip" className="w-full h-48 object-contain rounded-xl border border-border bg-bg3" />
                         <button onClick={() => { setSlipFile(null); setSlipPreview('') }}
-                          className="absolute top-2 right-2 w-7 h-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
+                          data-tooltip="ลบสลิป" className="absolute top-2 right-2 w-7 h-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
                           <X size={13} />
                         </button>
                       </div>

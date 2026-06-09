@@ -110,7 +110,7 @@ export default function PaymentsPage() {
             {loading ? 'กำลังโหลด…' : total === 0 ? 'ไม่มีรายการรอตรวจสอบ' : `${total} รายการรอตรวจสอบ`}
           </p>
         </div>
-        <button onClick={load} disabled={loading}
+        <button onClick={load} disabled={loading} data-tooltip="รีเฟรช"
           className="w-9 h-9 rounded-2xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>

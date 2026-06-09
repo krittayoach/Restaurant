@@ -32,6 +32,14 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     }
 
     const token = await signJWT({ userId: user.id, restaurantId: user.restaurant_id ?? null, role: user.role })
+
+    // super_admin: invalidate previous session before creating new one
+    if (user.role === 'super_admin') {
+      const prevToken = await redis.get(keys.superAdminSession())
+      if (prevToken) await redis.del(keys.session(prevToken))
+      await redis.set(keys.superAdminSession(), token, 'EX', SESSION_TTL)
+    }
+
     await redis.set(keys.session(token), JSON.stringify({ userId: user.id, restaurantId: user.restaurant_id, role: user.role }), 'EX', SESSION_TTL)
 
     await redis.del(rateLimitKey)
@@ -113,6 +121,13 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
   .post('/logout', async ({ cookie: { session } }) => {
     const token = session.value
     if (token) {
+      try {
+        const payload = await verifyJWT(token)
+        if ((payload as any).role === 'super_admin') {
+          const current = await redis.get(keys.superAdminSession())
+          if (current === token) await redis.del(keys.superAdminSession())
+        }
+      } catch {}
       await redis.del(keys.session(token))
       session.remove()
     }

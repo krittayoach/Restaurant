@@ -204,10 +204,10 @@ export default function MenuManagePage() {
                     <input value={renamingCatVal} onChange={e => setRenamingCatVal(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && renameCategory(c.id)}
                       className="input py-1.5 text-sm flex-1" autoFocus />
-                    <button onClick={() => renameCategory(c.id)} disabled={busyId[c.id]} className="w-8 h-8 rounded-lg bg-green/10 text-green flex items-center justify-center hover:bg-green/20 disabled:opacity-50">
+                    <button onClick={() => renameCategory(c.id)} disabled={busyId[c.id]} data-tooltip="บันทึก" className="w-8 h-8 rounded-lg bg-green/10 text-green flex items-center justify-center hover:bg-green/20 disabled:opacity-50">
                       {busyId[c.id] ? <Spinner size={13} /> : <Check size={14} />}
                     </button>
-                    <button onClick={() => setRenamingCatId(null)} className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center">
+                    <button onClick={() => setRenamingCatId(null)} data-tooltip="ยกเลิก" className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center">
                       <X size={14} />
                     </button>
                   </>
@@ -216,11 +216,11 @@ export default function MenuManagePage() {
                     <span className="flex-1 text-sm font-medium">{catEmoji[c.name] ?? '📂'} {c.name}</span>
                     <span className="text-xs text-muted">{menus.filter(m => m.category_id === c.id).length} เมนู</span>
                     <button onClick={() => { setRenamingCatId(c.id); setRenamingCatVal(c.name) }}
-                      className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center hover:text-text">
+                      data-tooltip="แก้ไขชื่อ" className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center hover:text-text">
                       <Pencil size={13} />
                     </button>
                     <button onClick={() => deleteCategory(c.id)} disabled={busyId[c.id]}
-                      className="w-8 h-8 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
+                      data-tooltip="ลบหมวดหมู่" className="w-8 h-8 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
                       {busyId[c.id] ? <Spinner size={13} /> : <Trash2 size={13} />}
                     </button>
                   </>
@@ -381,15 +381,15 @@ export default function MenuManagePage() {
                     </div>
                     {/* actions */}
                     <div className="flex border-t border-border">
-                      <button onClick={() => openEdit(menu)} className="flex-1 py-2 text-blue hover:bg-blue/5 transition-colors flex items-center justify-center" title="แก้ไข">
+                      <button onClick={() => openEdit(menu)} className="flex-1 py-2 text-blue hover:bg-blue/5 transition-colors flex items-center justify-center" data-tooltip="แก้ไข">
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => toggle(menu.id)} disabled={busyId[menu.id]}
                         className={`flex-1 py-2 transition-colors flex items-center justify-center disabled:opacity-50 ${menu.is_available ? 'text-green hover:bg-green/5' : 'text-muted hover:bg-bg3'}`}
-                        title={menu.is_available ? 'เปิดขาย' : 'ปิดขาย'}>
+                        data-tooltip={menu.is_available ? 'เปิดขาย' : 'ปิดขาย'}>
                         {busyId[menu.id] ? <Spinner size={12} /> : menu.is_available ? <Eye size={13} /> : <EyeOff size={13} />}
                       </button>
-                      <button onClick={() => del(menu.id)} disabled={busyId[menu.id]} className="flex-1 py-2 text-rose hover:bg-rose/5 transition-colors flex items-center justify-center disabled:opacity-50">
+                      <button onClick={() => del(menu.id)} disabled={busyId[menu.id]} data-tooltip="ลบเมนู" className="flex-1 py-2 text-rose hover:bg-rose/5 transition-colors flex items-center justify-center disabled:opacity-50">
                         {busyId[menu.id] ? <Spinner size={12} /> : <Trash2 size={13} />}
                       </button>
                     </div>

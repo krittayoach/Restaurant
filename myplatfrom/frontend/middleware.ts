@@ -3,18 +3,6 @@ import { jwtVerify } from 'jose'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
-const ROLE_ROUTES: Record<string, string[]> = {
-  '/dashboard/[slug]': ['manager'],
-  '/dashboard/[slug]/kitchen': ['chef'],
-  '/dashboard/[slug]/orders': ['employee'],
-  '/dashboard/[slug]/menu': ['employee', 'manager'],
-  '/dashboard/[slug]/tables': ['employee', 'manager'],
-  '/dashboard/[slug]/tables/qr': ['manager'],
-  '/dashboard/[slug]/promotions': ['manager'],
-  '/dashboard/[slug]/employees': ['manager'],
-  '/dashboard/[slug]/reports': ['manager'],
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -53,10 +41,8 @@ export async function middleware(req: NextRequest) {
 
     // Staff dashboard routes
     if (pathname.startsWith('/dashboard/')) {
-      const parts = pathname.split('/')
-      const slug = parts[2]
+      if (role === 'super_admin') return NextResponse.redirect(new URL('/admin', req.url))
 
-      // Slug must match restaurantId — enforce role-based access
       if (pathname.includes('/kitchen') && role !== 'chef' && role !== 'manager') {
         return NextResponse.redirect(new URL('/login', req.url))
       }

@@ -106,15 +106,17 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 - Register endpoint: `POST /restaurants/register` (ไม่ใช่ `/auth/register`)
 - `.next` cache เสีย → `rm -rf frontend/.next` แล้ว restart
 - `bun run build` ระหว่าง dev → corrupt `.next` — ใช้ `tsc --noEmit` แทน
-- `GET /restaurants/:slug` — เช็ค UUID format ก่อน query (Postgres error)
-- KDS `/kds/[slug]` อยู่นอก dashboard layout — middleware ครอบ `/kds/:path*` แยก
-- `sw.js` ต้องอยู่ใน `public/` — scope `/`, cache KDS shell + Next.js chunks
-- `next.config.js` ต้องมี — ตั้ง `no-cache` header ให้ `sw.js` เพื่อรับ SW update
-- `Spinner` component อยู่ที่ `components/Spinner.tsx` — ใช้ `border-current` รับ color จาก parent
+- `GET /restaurants/:slug` — เช็ค UUID format ก่อน query · KDS อยู่นอก dashboard layout
+- `sw.js` ใน `public/` — scope `/`, `next.config.js` ตั้ง `no-cache` header
+- `Spinner` ที่ `components/Spinner.tsx` — ใช้ `border-current` รับ color จาก parent
+- Login ต้องใช้ `window.location.href` (ไม่ใช่ `router.push`) — ให้ browser reload เต็มรูปแบบเพื่อ cookie ใหม่ถูกส่งก่อน middleware อ่าน
+- Super admin routes ทุกตัวต้องใช้ `requireSuperAdmin()` จาก `lib/auth.ts` — เช็คทั้ง JWT + Redis session
+- `data-tooltip="label"` บน element ใดก็ได้ → tooltip CSS-only ผ่าน `::after` pseudo-element ใน globals.css
 
 ## Backlog — Phase 3
-- [ ] Admin dashboard (MRR, จัดการร้าน, suspend, impersonate) · billing cron + email · rate limiting · audit log · multi-branch
+- [x] Admin dashboard — MRR, จัดการร้าน, suspend with reason, single-session enforcement
+- [ ] billing cron + email · rate limiting · audit log · multi-branch
 ## /update-claude Instructions
-1. **List changes** แบ่งเป็น: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
-2. **CLAUDE.md** — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ต้องอยู่ที่ ≤120 บรรทัด
-3. **docs/history.md** — prepend `## Changelog — vX.Y (YYYY-MM-DD)` พร้อม bullet points
+1. List changes: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
+2. CLAUDE.md — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ≤120 บรรทัด
+3. docs/history.md — prepend `## Changelog — vX.Y (YYYY-MM-DD)` พร้อม bullet points

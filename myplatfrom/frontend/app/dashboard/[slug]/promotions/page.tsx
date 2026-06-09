@@ -168,13 +168,13 @@ export default function PromotionsPage() {
               {p.is_active ? 'ใช้งาน' : 'ปิด'}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
-              <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" title="แก้ไข">
+              <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
                 <Pencil size={13} />
               </button>
               <button onClick={() => togglePromo(p.id)} disabled={busyId[p.id]} className="text-muted hover:text-text transition-colors disabled:opacity-50">
                 {busyId[p.id] ? <Spinner size={16} /> : p.is_active ? <ToggleRight size={22} className="text-green" /> : <ToggleLeft size={22} />}
               </button>
-              <button onClick={() => del(p.id, p.name)} disabled={busyId[p.id]} className="w-8 h-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" title="ลบ">
+              <button onClick={() => del(p.id, p.name)} disabled={busyId[p.id]} className="w-8 h-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
                 {busyId[p.id] ? <Spinner size={13} /> : <Trash2 size={13} />}
               </button>
             </div>

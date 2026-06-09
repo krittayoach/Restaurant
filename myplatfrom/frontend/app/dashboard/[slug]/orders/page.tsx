@@ -172,7 +172,7 @@ export default function OrdersPage() {
                       </span>
                       {item.status === 'pending' && (
                         <button onClick={() => cancelItem(item.id)} disabled={busyId[`cancel_${item.id}`]}
-                          className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
+                          data-tooltip="ยกเลิกรายการ" className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
                           {busyId[`cancel_${item.id}`] ? <Spinner size={10} /> : <X size={11} />}
                         </button>
                       )}

@@ -174,13 +174,13 @@ export default function EmployeesPage() {
               <span className={`badge ${r.cls} shrink-0 hidden sm:inline-flex`}>{r.label}</span>
               <p className="font-display font-bold text-green text-sm shrink-0">฿{(emp.salary ?? 0).toLocaleString()}</p>
               <div className="flex gap-1.5 shrink-0">
-                <button onClick={() => openEdit(emp)} className="w-9 h-9 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" title="แก้ไข">
+                <button onClick={() => openEdit(emp)} className="w-9 h-9 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
                   <Pencil size={14} />
                 </button>
-                <button onClick={() => toggle(emp.id)} disabled={busyId[emp.id]} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 ${emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green'}`} title={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
+                <button onClick={() => toggle(emp.id)} disabled={busyId[emp.id]} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 ${emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green'}`} data-tooltip={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
                   {busyId[emp.id] ? <Spinner size={13} /> : emp.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                 </button>
-                <button onClick={() => del(emp.id, emp.name)} disabled={busyId[emp.id]} className="w-9 h-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" title="ลบ">
+                <button onClick={() => del(emp.id, emp.name)} disabled={busyId[emp.id]} className="w-9 h-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
                   {busyId[emp.id] ? <Spinner size={13} /> : <Trash2 size={14} />}
                 </button>
               </div>

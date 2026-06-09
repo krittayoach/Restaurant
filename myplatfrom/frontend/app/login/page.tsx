@@ -23,11 +23,11 @@ export default function LoginPage() {
       saveToken(data.token)
       const { role, restaurantSlug } = data.user
       const base = `/dashboard/${restaurantSlug}`
-      if (role === 'super_admin') router.push('/admin')
-      else if (role === 'manager') router.push(base)
-      else if (role === 'chef') router.push(`${base}/kitchen`)
-      else if (role === 'employee') router.push(`${base}/orders`)
-      else router.push('/')
+      if (role === 'super_admin') window.location.href = '/admin'
+      else if (role === 'manager') window.location.href = base
+      else if (role === 'chef') window.location.href = `${base}/kitchen`
+      else if (role === 'employee') window.location.href = `${base}/orders`
+      else window.location.href = '/'
     } catch (err: any) {
       setError(err.message)
     } finally { setLoading(false) }

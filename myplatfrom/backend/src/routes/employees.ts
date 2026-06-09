@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia'
 import bcrypt from 'bcryptjs'
 import { db } from '../db'
-import { users, attendance, salaryPayments } from '../db/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { users, restaurants, attendance, salaryPayments } from '../db/schema'
+import { eq, and, inArray, count } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
+import { PLAN_LIMITS } from './restaurants'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -29,6 +30,14 @@ export const employeeRoutes = new Elysia({ prefix: '/employees' })
   .post('/', async ({ headers, body, set }) => {
     const payload = await requireAuth(headers, ['manager'], set)
     if (!payload) return
+    const [rest] = await db.select({ plan: restaurants.plan }).from(restaurants).where(eq(restaurants.id, payload.restaurantId!)).limit(1)
+    const limit = PLAN_LIMITS[rest?.plan ?? 'free'].employees
+    const [{ count: empCount }] = await db.select({ count: count() }).from(users)
+      .where(and(eq(users.restaurant_id, payload.restaurantId!), inArray(users.role, ['manager', 'employee', 'chef']), eq(users.is_active, true)))
+    if (empCount >= limit) {
+      set.status = 402
+      return { error: `Plan limit reached`, plan: rest?.plan, limit, current: empCount }
+    }
     const hashedPw = await bcrypt.hash(body.password, 10)
     const [emp] = await db.insert(users).values({
       restaurant_id: payload.restaurantId!,

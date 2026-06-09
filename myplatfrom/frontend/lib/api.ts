@@ -1,8 +1,11 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 const TOKEN_KEY = 'authToken'
-export const saveToken = (t: string) => { if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, t) }
-export const getToken  = (): string  => { if (typeof window === 'undefined') return ''; return localStorage.getItem(TOKEN_KEY) ?? '' }
+export const saveToken  = (t: string) => { if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, t) }
+export const getToken   = (): string  => {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem(TOKEN_KEY) ?? ''
+}
 export const clearToken = () => { if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_KEY) }
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
@@ -17,6 +20,9 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     if (res.status === 401 && typeof window !== 'undefined') {
       clearToken()
       window.location.href = '/login'
+    }
+    if (res.status === 402 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('plan-limit-reached', { detail: err }))
     }
     throw new Error(msg)
   }
