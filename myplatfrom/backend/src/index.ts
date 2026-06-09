@@ -20,6 +20,7 @@ import { customerRoutes } from './routes/customers'
 import { adminRoutes } from './routes/admin'
 import { auditLogRoutes } from './routes/auditLogs'
 import { rateLimitPlugin } from './lib/rateLimit'
+import { startBillingCron } from './cron/billing'
 
 const app = new Elysia()
   .use(cors({
@@ -63,3 +64,5 @@ const app = new Elysia()
 
 console.log(`🚀 Backend running at http://localhost:${app.server?.port}`)
 console.log(`📖 Swagger docs at http://localhost:${app.server?.port}/docs`)
+
+startBillingCron()

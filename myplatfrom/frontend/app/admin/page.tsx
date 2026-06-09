@@ -421,10 +421,16 @@ export default function AdminPage() {
                     <ChevronDown size={10} className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
                   </div>
 
-                  {/* Joined date */}
-                  <p className="text-xs text-muted shrink-0 hidden md:block">
-                    {new Date(r.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
-                  </p>
+                  {/* Plan expiry */}
+                  <div className="text-xs text-muted shrink-0 hidden md:block text-right">
+                    {r.plan !== 'free' && r.plan_expires_at ? (
+                      <span className={new Date(r.plan_expires_at) < new Date(Date.now() + 7 * 86400000) ? 'text-rose font-semibold' : ''}>
+                        หมด {new Date(r.plan_expires_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                      </span>
+                    ) : (
+                      <span>{new Date(r.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+                    )}
+                  </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -665,6 +671,7 @@ const AUDIT_LABELS: Record<string, { label: string; color: string }> = {
   RESTAURANT_PLAN_CHANGE:{ label: 'เปลี่ยน Plan',          color: 'bg-blue/10 text-blue' },
   PLAN_PAYMENT_APPROVE:  { label: 'อนุมัติการชำระ',        color: 'bg-green/10 text-green' },
   PLAN_PAYMENT_REJECT:   { label: 'ปฏิเสธการชำระ',         color: 'bg-rose/10 text-rose' },
+  BILLING_DOWNGRADE:     { label: 'Downgrade อัตโนมัติ',   color: 'bg-rose/10 text-rose' },
 }
 
 function AuditRow({ log }: { log: any }) {

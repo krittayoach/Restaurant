@@ -84,7 +84,7 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
     try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
     return db.select({
       id: restaurants.id, slug: restaurants.slug, name: restaurants.name,
-      plan: restaurants.plan, is_active: restaurants.is_active, suspend_reason: restaurants.suspend_reason, created_at: restaurants.created_at,
+      plan: restaurants.plan, plan_expires_at: restaurants.plan_expires_at, is_active: restaurants.is_active, suspend_reason: restaurants.suspend_reason, created_at: restaurants.created_at,
     }).from(restaurants).orderBy(desc(restaurants.created_at))
   })
 

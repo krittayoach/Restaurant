@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { planPayments, restaurants, users } from '../db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
 import { PLAN_LIMITS } from './restaurants'
 import { verifyJWT } from '../lib/jwt'
 import { uploadFile, getPublicUrl } from '../lib/storage'
@@ -9,6 +9,14 @@ import { publisher, keys, redis } from '../lib/redis'
 import { logAudit } from '../lib/audit'
 
 const PLATFORM_PROMPTPAY = process.env.PLATFORM_PROMPTPAY_ID ?? '0812345678'
+const PLAN_DURATION_DAYS = 30
+
+function calcExpiry(currentExpiry: Date | null): Date {
+  const base = currentExpiry && currentExpiry > new Date() ? currentExpiry : new Date()
+  const d = new Date(base)
+  d.setDate(d.getDate() + PLAN_DURATION_DAYS)
+  return d
+}
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -46,7 +54,7 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
   .post('/upgrade', async ({ headers, body, set }) => {
     const payload = await requireAuth(headers, ['manager'], set)
     if (!payload) return
-    const [rest] = await db.select({ plan: restaurants.plan }).from(restaurants)
+    const [rest] = await db.select({ plan: restaurants.plan, plan_expires_at: restaurants.plan_expires_at }).from(restaurants)
       .where(eq(restaurants.id, payload.restaurantId!)).limit(1)
     if (!rest) { set.status = 404; return { error: 'Restaurant not found' } }
     if (rest.plan === body.plan) { set.status = 400; return { error: 'Already on this plan' } }
@@ -62,7 +70,8 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
       slip_url: body.slip_url ?? null,
     }).returning()
     if (isCard) {
-      await db.update(restaurants).set({ plan: body.plan as any }).where(eq(restaurants.id, payload.restaurantId!))
+      const expiresAt = calcExpiry(rest.plan_expires_at)
+      await db.update(restaurants).set({ plan: body.plan as any, plan_expires_at: expiresAt }).where(eq(restaurants.id, payload.restaurantId!))
     }
     if (!isCard) {
       const [rest] = await db.select({ name: restaurants.name }).from(restaurants)
@@ -124,8 +133,10 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     const [pmt] = await db.select().from(planPayments).where(eq(planPayments.id, params.id)).limit(1)
     if (!pmt) { set.status = 404; return { error: 'Not found' } }
     if (pmt.status !== 'pending') { set.status = 400; return { error: 'Not pending' } }
+    const [currentRest] = await db.select({ plan_expires_at: restaurants.plan_expires_at }).from(restaurants).where(eq(restaurants.id, pmt.restaurant_id)).limit(1)
+    const expiresAt = calcExpiry(currentRest?.plan_expires_at ?? null)
     await db.update(planPayments).set({ status: 'approved', reviewed_by: payload.userId, updated_at: new Date() }).where(eq(planPayments.id, params.id))
-    await db.update(restaurants).set({ plan: pmt.plan }).where(eq(restaurants.id, pmt.restaurant_id))
+    await db.update(restaurants).set({ plan: pmt.plan, plan_expires_at: expiresAt }).where(eq(restaurants.id, pmt.restaurant_id))
     logAudit('PLAN_PAYMENT_APPROVE', {
       actorId: payload.userId, actorRole: 'super_admin',
       restaurantId: pmt.restaurant_id,
