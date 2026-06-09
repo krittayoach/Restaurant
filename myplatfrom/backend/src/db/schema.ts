@@ -223,6 +223,21 @@ export const salaryPayments = pgTable('salary_payments', {
   paid_at:       timestamp('paid_at').defaultNow().notNull(),
 })
 
+// ─── audit_logs ───────────────────────────────────────────────────────────────
+export const auditLogs = pgTable('audit_logs', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
+  actor_id:      uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+  actor_name:    varchar('actor_name', { length: 100 }),
+  actor_role:    varchar('actor_role', { length: 20 }),
+  action:        varchar('action', { length: 60 }).notNull(),
+  entity_type:   varchar('entity_type', { length: 40 }),
+  entity_id:     varchar('entity_id', { length: 100 }),
+  meta:          jsonb('meta').$type<Record<string, any>>(),
+  ip:            varchar('ip', { length: 60 }),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
+})
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
   users:       many(users),

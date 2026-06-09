@@ -4,7 +4,7 @@ import { api, getToken } from '@/lib/api'
 import {
   ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp, Zap, X,
   ExternalLink, Users, Power, PowerOff, Search, ChevronDown,
-  BadgeCheck, Bell, UserPlus, CreditCard,
+  BadgeCheck, Bell, UserPlus, CreditCard, History,
 } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
@@ -48,10 +48,29 @@ export default function AdminPage() {
   const [suspendReason, setSuspendReason] = useState('')
   const [suspendSubmitted, setSuspendSubmitted] = useState(false)
 
+  const [auditLogs, setAuditLogs]   = useState<any[]>([])
+  const [auditPage, setAuditPage]   = useState(1)
+  const [auditHasMore, setAuditHasMore] = useState(false)
+  const [auditLoading, setAuditLoading] = useState(false)
+
   const [rejectId, setRejectId]   = useState<string | null>(null)
   const [rejectNote, setRejectNote] = useState('')
   const [rejecting, setRejecting]   = useState(false)
   const [busyId, setBusyId]         = useState<Record<string, boolean>>({})
+
+  const loadAuditLogs = useCallback(async (t: string, page: number) => {
+    setAuditLoading(true)
+    try {
+      const data = await api.get(`/audit-logs?page=${page}&limit=20`, t)
+      if (page === 1) {
+        setAuditLogs(data.logs ?? [])
+      } else {
+        setAuditLogs(prev => [...prev, ...(data.logs ?? [])])
+      }
+      setAuditHasMore((data.logs ?? []).length === 20)
+    } catch {}
+    finally { setAuditLoading(false) }
+  }, [])
 
   const reloadData = useCallback((t: string) => {
     Promise.all([
@@ -64,7 +83,8 @@ export default function AdminPage() {
       setPendingPayments(pending ?? [])
       setLoadingRests(false)
     })
-  }, [])
+    loadAuditLogs(t, 1)
+  }, [loadAuditLogs])
 
   useEffect(() => {
     const t = getToken()
@@ -498,6 +518,37 @@ export default function AdminPage() {
           )}
         </div>
 
+        {/* Audit Log */}
+        <div className="card p-6 anim-up">
+          <div className="flex items-center gap-2.5 mb-5">
+            <History size={18} className="text-yellow" />
+            <h2 className="font-display font-semibold text-base">Audit Log</h2>
+            <span className="text-xs text-muted">บันทึกการกระทำสำคัญ</span>
+          </div>
+          {auditLogs.length === 0 && !auditLoading ? (
+            <p className="text-muted text-sm text-center py-6">ยังไม่มีบันทึก</p>
+          ) : (
+            <div className="space-y-1.5">
+              {auditLogs.map(log => (
+                <AuditRow key={log.id} log={log} />
+              ))}
+            </div>
+          )}
+          {auditHasMore && (
+            <button
+              onClick={() => {
+                const next = auditPage + 1
+                setAuditPage(next)
+                loadAuditLogs(token, next)
+              }}
+              disabled={auditLoading}
+              className="mt-4 w-full py-2.5 rounded-2xl bg-bg3 text-sm text-muted hover:text-text transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              {auditLoading ? <Spinner size={14} /> : null}
+              {auditLoading ? 'กำลังโหลด…' : 'โหลดเพิ่ม'}
+            </button>
+          )}
+        </div>
+
       </div>
 
       {/* Reject modal */}
@@ -598,6 +649,40 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
         <p className="text-xs text-muted">{label}</p>
         <p className={`font-display font-bold text-xl mt-0.5 ${color}`}>{value}</p>
       </div>
+    </div>
+  )
+}
+
+const AUDIT_LABELS: Record<string, { label: string; color: string }> = {
+  AUTH_LOGIN:            { label: 'เข้าสู่ระบบ',         color: 'bg-green/10 text-green' },
+  AUTH_LOGIN_FAILED:     { label: 'เข้าสู่ระบบล้มเหลว',   color: 'bg-rose/10 text-rose' },
+  AUTH_LOGOUT:           { label: 'ออกจากระบบ',           color: 'bg-bg3 text-muted' },
+  AUTH_PASSWORD_CHANGE:  { label: 'เปลี่ยนรหัสผ่าน',       color: 'bg-blue/10 text-blue' },
+  AUTH_PASSWORD_RESET:   { label: 'รีเซ็ตรหัสผ่าน',       color: 'bg-yellow/10 text-yellow' },
+  RESTAURANT_REGISTER:   { label: 'ลงทะเบียนร้าน',        color: 'bg-accent/10 text-accent' },
+  RESTAURANT_SUSPEND:    { label: 'ระงับร้าน',             color: 'bg-rose/10 text-rose' },
+  RESTAURANT_UNSUSPEND:  { label: 'เปิดใช้งานร้าน',        color: 'bg-green/10 text-green' },
+  RESTAURANT_PLAN_CHANGE:{ label: 'เปลี่ยน Plan',          color: 'bg-blue/10 text-blue' },
+  PLAN_PAYMENT_APPROVE:  { label: 'อนุมัติการชำระ',        color: 'bg-green/10 text-green' },
+  PLAN_PAYMENT_REJECT:   { label: 'ปฏิเสธการชำระ',         color: 'bg-rose/10 text-rose' },
+}
+
+function AuditRow({ log }: { log: any }) {
+  const info = AUDIT_LABELS[log.action] ?? { label: log.action, color: 'bg-bg3 text-muted' }
+  const time = new Date(log.created_at).toLocaleString('th-TH', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  })
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg3 transition-colors text-sm">
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg shrink-0 ${info.color}`}>{info.label}</span>
+      <span className="text-muted truncate flex-1">
+        {log.actor_name ? <span className="text-text font-medium">{log.actor_name}</span> : <span className="text-muted italic">—</span>}
+        {log.actor_role && <span className="text-muted text-xs ml-1.5">({log.actor_role})</span>}
+        {log.meta?.restaurantName && <span className="text-muted"> · {log.meta.restaurantName}</span>}
+        {log.meta?.reason && <span className="text-muted text-xs"> — {log.meta.reason}</span>}
+      </span>
+      {log.ip && <span className="text-xs text-muted font-mono shrink-0 hidden md:block">{log.ip}</span>}
+      <span className="text-xs text-muted shrink-0">{time}</span>
     </div>
   )
 }

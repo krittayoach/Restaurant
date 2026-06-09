@@ -5,28 +5,31 @@ import { users, restaurants } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { signJWT, verifyJWT } from '../lib/jwt'
 import { redis, keys, SESSION_TTL, RATE_LIMIT_TTL, RATE_LIMIT_MAX } from '../lib/redis'
+import { checkRateLimit, getIP } from '../lib/rateLimit'
+import { logAudit } from '../lib/audit'
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
 
   // POST /auth/login
   .post('/login', async ({ body, request, set, cookie: { session } }) => {
-    const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
-    const rateLimitKey = keys.loginRateLimit(ip)
-    const attempts = await redis.incr(rateLimitKey)
-    if (attempts === 1) await redis.expire(rateLimitKey, RATE_LIMIT_TTL)
-    if (attempts > RATE_LIMIT_MAX) {
+    const ip = getIP(request)
+    const limited = await checkRateLimit(keys.loginRateLimit(ip), RATE_LIMIT_MAX, RATE_LIMIT_TTL)
+    if (limited) {
       set.status = 429
+      set.headers['Retry-After'] = String(RATE_LIMIT_TTL)
       return { error: 'Too many login attempts. Try again in 5 minutes.' }
     }
 
     const [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1)
     if (!user || !user.password || !user.is_active) {
+      logAudit('AUTH_LOGIN_FAILED', { meta: { phone: body.phone }, ip })
       set.status = 401
       return { error: 'Invalid credentials' }
     }
 
     const valid = await bcrypt.compare(body.password, user.password)
     if (!valid) {
+      logAudit('AUTH_LOGIN_FAILED', { actorId: user.id, actorName: user.name, actorRole: user.role, restaurantId: user.restaurant_id, meta: { phone: body.phone }, ip })
       set.status = 401
       return { error: 'Invalid credentials' }
     }
@@ -42,7 +45,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 
     await redis.set(keys.session(token), JSON.stringify({ userId: user.id, restaurantId: user.restaurant_id, role: user.role }), 'EX', SESSION_TTL)
 
-    await redis.del(rateLimitKey)
+    await redis.del(keys.loginRateLimit(ip))
     session.set({ value: token, httpOnly: true, sameSite: 'strict', maxAge: SESSION_TTL, path: '/' })
 
     let restaurantSlug: string | null = null
@@ -51,13 +54,21 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       restaurantSlug = rest?.slug ?? null
     }
 
+    logAudit('AUTH_LOGIN', { actorId: user.id, actorName: user.name, actorRole: user.role, restaurantId: user.restaurant_id, ip })
+
     return { token, user: { id: user.id, name: user.name, role: user.role, restaurantId: user.restaurant_id, restaurantSlug } }
   }, {
     body: t.Object({ phone: t.String(), password: t.String() }),
   })
 
   // POST /auth/customer
-  .post('/customer', async ({ body, cookie: { customerSession } }) => {
+  .post('/customer', async ({ body, request, set, cookie: { customerSession } }) => {
+    const limited = await checkRateLimit(keys.customerAuthRateLimit(getIP(request)), 30, 600)
+    if (limited) {
+      set.status = 429
+      set.headers['Retry-After'] = '600'
+      return { error: 'Too many requests. Please try again in 10 minutes.' }
+    }
     const [existing] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1)
     let customer = existing
 
@@ -91,6 +102,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     const valid = await bcrypt.compare(body.currentPassword, user.password)
     if (!valid) { set.status = 400; return { error: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' } }
     await db.update(users).set({ password: await bcrypt.hash(body.newPassword, 10) }).where(eq(users.id, user.id))
+    logAudit('AUTH_PASSWORD_CHANGE', { actorId: user.id, actorName: user.name, actorRole: user.role, restaurantId: user.restaurant_id })
     return { success: true }
   }, {
     body: t.Object({
@@ -109,6 +121,11 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     const [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1)
     if (!user) { set.status = 404; return { error: 'ไม่พบผู้ใช้งานนี้' } }
     await db.update(users).set({ password: await bcrypt.hash(body.newPassword, 10) }).where(eq(users.id, user.id))
+    logAudit('AUTH_PASSWORD_RESET', {
+      actorId: payload.userId, actorRole: 'super_admin',
+      entityType: 'user', entityId: user.id,
+      meta: { targetName: user.name, targetRole: user.role },
+    })
     return { success: true, name: user.name, role: user.role }
   }, {
     body: t.Object({
@@ -127,6 +144,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
           const current = await redis.get(keys.superAdminSession())
           if (current === token) await redis.del(keys.superAdminSession())
         }
+        logAudit('AUTH_LOGOUT', { actorId: (payload as any).userId, actorRole: (payload as any).role, restaurantId: (payload as any).restaurantId })
       } catch {}
       await redis.del(keys.session(token))
       session.remove()

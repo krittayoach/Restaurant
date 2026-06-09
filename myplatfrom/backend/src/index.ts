@@ -18,6 +18,8 @@ import { inventoryRoutes } from './routes/inventory'
 import { billingRoutes } from './routes/billing'
 import { customerRoutes } from './routes/customers'
 import { adminRoutes } from './routes/admin'
+import { auditLogRoutes } from './routes/auditLogs'
+import { rateLimitPlugin } from './lib/rateLimit'
 
 const app = new Elysia()
   .use(cors({
@@ -30,6 +32,7 @@ const app = new Elysia()
     credentials: true,
   }))
   .use(swagger({ path: '/docs' }))
+  .use(rateLimitPlugin('global', 300, 60))
   .onAfterHandle(({ response, set }) => {
     if ((response === undefined || response === null) && (set.status as number) >= 400) {
       if (set.status === 401) return { error: 'Unauthorized' }
@@ -54,6 +57,7 @@ const app = new Elysia()
   .use(billingRoutes)
   .use(customerRoutes)
   .use(adminRoutes)
+  .use(auditLogRoutes)
   .get('/health', () => ({ status: 'ok', ts: new Date().toISOString() }))
   .listen(process.env.PORT ?? 3001)
 

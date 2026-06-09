@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import bcrypt from 'bcryptjs'
 import { db } from '../db'
-import { restaurants, tables, menus } from '../db/schema'
+import { restaurants, tables, menus, users } from '../db/schema'
 import { eq, or, desc, sql, count } from 'drizzle-orm'
 
 export const PLAN_LIMITS: Record<string, { tables: number; menus: number; employees: number; promotions: number; price: number }> = {
@@ -13,11 +13,19 @@ import { randomBytes } from 'crypto'
 import { verifyJWT } from '../lib/jwt'
 import { publisher, keys } from '../lib/redis'
 import { requireSuperAdmin } from '../lib/auth'
+import { checkRateLimit, getIP } from '../lib/rateLimit'
+import { logAudit } from '../lib/audit'
 
 export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
 
   // POST /restaurants/register
-  .post('/register', async ({ body, set }) => {
+  .post('/register', async ({ body, request, set }) => {
+    const limited = await checkRateLimit(keys.registerRateLimit(getIP(request)), 5, 3600)
+    if (limited) {
+      set.status = 429
+      set.headers['Retry-After'] = '3600'
+      return { error: 'Too many registration attempts. Please try again in 1 hour.' }
+    }
     const existing = await db.select().from(restaurants).where(eq(restaurants.slug, body.slug)).limit(1)
     if (existing.length > 0) { set.status = 400; return { error: 'Slug already taken' } }
 
@@ -51,6 +59,13 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
       restaurant: { id: restaurant.id, name: restaurant.name, slug: restaurant.slug, plan: 'free' },
       ts: Date.now(),
     }))
+    logAudit('RESTAURANT_REGISTER', {
+      restaurantId: restaurant.id,
+      actorId: manager.id, actorName: manager.name, actorRole: 'manager',
+      entityType: 'restaurant', entityId: restaurant.id,
+      meta: { slug: restaurant.slug, name: restaurant.name },
+      ip: getIP(request),
+    })
     return { restaurant: { id: restaurant.id, slug: restaurant.slug, name: restaurant.name }, manager: { id: manager.id, name: manager.name } }
   }, {
     body: t.Object({
@@ -113,8 +128,9 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
   // PATCH /restaurants/:id/toggle-active  (super_admin) — suspend / unsuspend
   .patch('/:id/toggle-active', async ({ headers, params, body, set }) => {
     const token = headers.authorization?.replace('Bearer ', '') ?? ''
-    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
-    const [current] = await db.select({ is_active: restaurants.is_active }).from(restaurants).where(eq(restaurants.id, params.id))
+    let adminPayload: any
+    try { adminPayload = await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
+    const [current] = await db.select({ is_active: restaurants.is_active, name: restaurants.name }).from(restaurants).where(eq(restaurants.id, params.id))
     if (!current) { set.status = 404; return { error: 'Not found' } }
     const willSuspend = current.is_active
     if (willSuspend && !(body as any)?.reason?.trim()) {
@@ -127,6 +143,12 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
       })
       .where(eq(restaurants.id, params.id))
       .returning({ id: restaurants.id, name: restaurants.name, is_active: restaurants.is_active, suspend_reason: restaurants.suspend_reason })
+    logAudit(willSuspend ? 'RESTAURANT_SUSPEND' : 'RESTAURANT_UNSUSPEND', {
+      actorId: adminPayload?.userId, actorRole: 'super_admin',
+      restaurantId: params.id,
+      entityType: 'restaurant', entityId: params.id,
+      meta: { restaurantName: current.name, reason: willSuspend ? (body as any)?.reason : undefined },
+    })
     return updated
   }, {
     body: t.Optional(t.Object({ reason: t.Optional(t.String()) })),
@@ -135,12 +157,19 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
   // PATCH /restaurants/:id/plan  (super_admin)
   .patch('/:id/plan', async ({ headers, params, body, set }) => {
     const token = headers.authorization?.replace('Bearer ', '') ?? ''
-    try { await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
+    let adminPayload: any
+    try { adminPayload = await requireSuperAdmin(token) } catch (e: any) { set.status = e.message === 'Forbidden' ? 403 : 401; return { error: e.message } }
     const [updated] = await db.update(restaurants)
       .set({ plan: body.plan as any })
       .where(eq(restaurants.id, params.id))
       .returning({ id: restaurants.id, name: restaurants.name, plan: restaurants.plan })
     if (!updated) { set.status = 404; return { error: 'Not found' } }
+    logAudit('RESTAURANT_PLAN_CHANGE', {
+      actorId: adminPayload?.userId, actorRole: 'super_admin',
+      restaurantId: params.id,
+      entityType: 'restaurant', entityId: params.id,
+      meta: { restaurantName: updated.name, plan: body.plan },
+    })
     return updated
   }, {
     body: t.Object({ plan: t.Union([t.Literal('free'), t.Literal('basic'), t.Literal('pro')]) }),

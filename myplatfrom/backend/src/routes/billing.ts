@@ -6,6 +6,7 @@ import { PLAN_LIMITS } from './restaurants'
 import { verifyJWT } from '../lib/jwt'
 import { uploadFile, getPublicUrl } from '../lib/storage'
 import { publisher, keys, redis } from '../lib/redis'
+import { logAudit } from '../lib/audit'
 
 const PLATFORM_PROMPTPAY = process.env.PLATFORM_PROMPTPAY_ID ?? '0812345678'
 
@@ -125,6 +126,12 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     if (pmt.status !== 'pending') { set.status = 400; return { error: 'Not pending' } }
     await db.update(planPayments).set({ status: 'approved', reviewed_by: payload.userId, updated_at: new Date() }).where(eq(planPayments.id, params.id))
     await db.update(restaurants).set({ plan: pmt.plan }).where(eq(restaurants.id, pmt.restaurant_id))
+    logAudit('PLAN_PAYMENT_APPROVE', {
+      actorId: payload.userId, actorRole: 'super_admin',
+      restaurantId: pmt.restaurant_id,
+      entityType: 'plan_payment', entityId: params.id,
+      meta: { plan: pmt.plan, amount: pmt.amount },
+    })
     return { success: true, plan: pmt.plan }
   })
 
@@ -138,6 +145,12 @@ export const billingRoutes = new Elysia({ prefix: '/billing' })
     await db.update(planPayments)
       .set({ status: 'rejected', note: body.note ?? null, reviewed_by: payload.userId, updated_at: new Date() })
       .where(eq(planPayments.id, params.id))
+    logAudit('PLAN_PAYMENT_REJECT', {
+      actorId: payload.userId, actorRole: 'super_admin',
+      restaurantId: pmt.restaurant_id,
+      entityType: 'plan_payment', entityId: params.id,
+      meta: { plan: pmt.plan, amount: pmt.amount, note: body.note },
+    })
     return { success: true }
   }, {
     body: t.Object({ note: t.Optional(t.String()) }),

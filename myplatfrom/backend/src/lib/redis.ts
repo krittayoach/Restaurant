@@ -15,6 +15,8 @@ export const keys = {
   tableStatus: (restaurantId: string, tableId: string) => `${restaurantId}:table:${tableId}:status`,
   tableChannel: (restaurantId: string, tableId: string) => `${restaurantId}:table:${tableId}`,
   loginRateLimit: (ip: string) => `ratelimit:login:${ip}`,
+  registerRateLimit: (ip: string) => `ratelimit:register:${ip}`,
+  customerAuthRateLimit: (ip: string) => `ratelimit:customer-auth:${ip}`,
   adminChannel: () => 'platform:admin',
   superAdminSession: () => 'super_admin:session',
 }

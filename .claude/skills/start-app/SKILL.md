@@ -1,6 +1,6 @@
 ---
 name: start-app
-description: Start the Restaurant SaaS app — Docker, backend (Elysia :3001), and frontend (Next.js :3000)
+description: Start the Restaurant SaaS app — Docker, backend (Elysia :3010), and frontend (Next.js :3002)
 triggers:
   - "รัน"
   - "start"
@@ -33,13 +33,13 @@ echo $! > /tmp/backend.pid
 
 # 4. Frontend
 cd /Users/admin/Restaurant/myplatfrom/frontend
-bun run dev > /tmp/frontend.log 2>&1 &
+bun run dev --port 3002 > /tmp/frontend.log 2>&1 &
 echo $! > /tmp/frontend.pid
 
 # 5. Verify (after ~5s)
 sleep 5
-curl -s http://localhost:3001/health
-curl -s -o /dev/null -w "Frontend: %{http_code}" http://localhost:3000
+curl -s http://localhost:3010/health
+curl -s -o /dev/null -w "Frontend: %{http_code}" http://localhost:3002
 ```
 
-**Ports:** Frontend :3000 · Backend :3001 · PostgreSQL :5433 · Redis :6380 · MinIO :9000/:9001
+**Ports:** Frontend :3002 · Backend :3010 · PostgreSQL :5433 · Redis :6380 · MinIO :9000/:9001
