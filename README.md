@@ -33,7 +33,14 @@
 - **คลังวัตถุดิบ** — ติดตามสต็อก, แจ้งเตือนของใกล้หมด
 - **รายงาน** — รายได้รายวัน/รายเดือน, เมนูขายดี, Export CSV/PDF
 - **การจองโต๊ะ** — ดู/จัดการ, อนุมัติสลิป Pre-order
-- **แผน (Billing)** — ดู plan, อัปเกรด Free → Basic → Pro
+- **แผน (Billing)** — ดู plan, อัปเกรด Free → Basic → Pro พร้อม plan limits (tables/menus/employees/promotions)
+
+### สำหรับ Super Admin (`/admin`)
+- **ภาพรวม Platform** — ร้านทั้งหมด, MRR, ร้านใหม่เดือนนี้
+- **จัดการร้าน** — ค้นหา/กรอง, เปลี่ยน plan, ระงับ/เปิดใช้งาน (พร้อมเหตุผล)
+- **ยืนยันการชำระเงิน** — อนุมัติหรือปฏิเสธคำขออัปเกรด plan
+- **Realtime Notifications** — แจ้งเตือนร้านใหม่และคำขออัปเกรดผ่าน SSE
+- **Single-session enforcement** — login ใหม่ invalidate session เก่าทันที
 
 ---
 
@@ -88,6 +95,7 @@ myplatfrom/
 │       └── lib/
 │           ├── redis.ts            # Redis client + pub/sub
 │           ├── jwt.ts              # JWT sign/verify
+│           ├── auth.ts             # requireSuperAdmin() — JWT + Redis check
 │           ├── storage.ts          # MinIO upload
 │           └── loyalty.ts          # Points system
 └── docker-compose.yml              # PostgreSQL + Redis + MinIO
@@ -162,6 +170,7 @@ bun run dev --port 3002
 | Staff Login | http://localhost:3002/login |
 | Dashboard | http://localhost:3002/dashboard/demo-restaurant |
 | KDS ครัว | http://localhost:3002/kds/demo-restaurant |
+| Super Admin | http://localhost:3002/admin |
 | สั่งอาหาร (ลูกค้า) | สแกน QR จาก dashboard → QR โต๊ะ |
 | จองโต๊ะ | http://localhost:3002/r/demo-restaurant/reserve |
 | พอร์ทัลแต้ม | http://localhost:3002/r/demo-restaurant/me |
@@ -170,7 +179,13 @@ bun run dev --port 3002
 
 ## 🔑 Demo Credentials
 
-ร้าน: **demo-restaurant**
+**Super Admin** (เข้าที่ `/admin`)
+
+| Role | เบอร์ | รหัสผ่าน |
+|---|---|---|
+| Super Admin | `0800000000` | `password123` |
+
+**ร้าน: demo-restaurant** (เข้าที่ `/login`)
 
 | Role | เบอร์ | รหัสผ่าน |
 |---|---|---|
@@ -223,7 +238,8 @@ bun run dev --port 3002
 | `/inventory` | คลังวัตถุดิบ |
 | `/reports` | รายงานรายได้, เมนูขายดี |
 | `/promotions` | โปรโมชั่น |
-| `/billing` | แผนราคา, อัปเกรด |
+| `/billing` | แผนราคา, อัปเกรด plan |
+| `/admin/*` | Super admin — จัดการร้าน, MRR, ระงับร้าน |
 
 Swagger UI: http://localhost:3010/docs
 
@@ -247,10 +263,19 @@ restaurants ──< users (manager/employee/chef/customer)
 
 | Role | Dashboard | สั่งอาหาร | ครัว | ชำระเงิน | จัดการพนักงาน | รายงาน |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
+| `super_admin` | `/admin` | - | - | - | - | - |
 | `manager` | ✅ | - | ✅ | ✅ | ✅ | ✅ |
 | `employee` | ✅ | - | - | ✅ | - | - |
 | `chef` | KDS เท่านั้น | - | ✅ | - | - | - |
 | `customer` | - | ✅ | - | ✅ | - | - |
+
+**Plan Limits**
+
+| Plan | โต๊ะ | เมนู | พนักงาน | โปรโมชั่น | ราคา/เดือน |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Free | 5 | 20 | 3 | 2 | ฟรี |
+| Basic | 20 | 100 | 15 | 10 | ฿299 |
+| Pro | ∞ | ∞ | ∞ | ∞ | ฿799 |
 
 ---
 
