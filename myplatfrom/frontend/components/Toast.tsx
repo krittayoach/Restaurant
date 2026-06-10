@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { X, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { cn } from '@/lib/cn'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
@@ -20,7 +21,7 @@ interface ToastCtx {
 
 const Ctx = createContext<ToastCtx>({ success: () => {}, error: () => {}, warning: () => {}, info: () => {} })
 
-const CONFIG: Record<ToastType, { icon: any; card: string; icon_cls: string; bar: string }> = {
+const CONFIG: Record<ToastType, { icon: React.ElementType; card: string; icon_cls: string; bar: string }> = {
   success: { icon: CheckCircle2,   card: 'border-green/30 bg-green/5',   icon_cls: 'text-green',  bar: 'bg-green' },
   error:   { icon: AlertCircle,    card: 'border-rose/30 bg-rose/5',     icon_cls: 'text-rose',   bar: 'bg-rose' },
   warning: { icon: AlertTriangle,  card: 'border-yellow/30 bg-yellow/5', icon_cls: 'text-yellow', bar: 'bg-yellow' },
@@ -53,28 +54,33 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={ctx}>
       {children}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 w-[calc(100vw-2rem)] max-w-[360px] pointer-events-none">
+      <div className="fixed top-4 right-4 z-toast flex flex-col gap-2.5 w-[calc(100vw-2rem)] max-w-[360px] pointer-events-none">
         {toasts.map(toast => {
           const { icon: Icon, card, icon_cls, bar } = CONFIG[toast.type]
           return (
             <div key={toast.id}
-              className={`relative overflow-hidden card border ${card} shadow-xl pointer-events-auto
-                flex items-start gap-3 px-4 py-3.5
-                ${toast.exiting ? 'anim-toast-out' : 'anim-toast'}`}>
-              <Icon size={18} className={`${icon_cls} shrink-0 mt-0.5`} />
+              className={cn(
+                'relative overflow-hidden card border shadow-xl pointer-events-auto flex items-start gap-3 px-4 py-3.5',
+                card,
+                toast.exiting ? 'anim-toast-out' : 'anim-toast'
+              )}>
+              <Icon size={18} className={cn(icon_cls, 'shrink-0 mt-0.5')} />
               <p className="flex-1 text-sm text-text leading-snug">{toast.message}</p>
-              <button onClick={() => dismiss(toast.id)}
+              <button
+                onClick={() => dismiss(toast.id)}
+                aria-label="ปิด"
                 className="text-muted hover:text-text transition-colors shrink-0 -mr-1">
                 <X size={15} />
               </button>
-              {/* progress bar */}
-              <div className={`absolute bottom-0 left-0 h-[3px] ${bar} opacity-60`}
-                style={{ animation: `shrinkWidth ${DURATION}ms linear forwards` }} />
+              <div
+                className={cn('absolute bottom-0 left-0 h-[3px] opacity-60 origin-left', bar)}
+                style={{ animation: `shrinkWidth ${DURATION}ms linear forwards` }}
+              />
             </div>
           )
         })}
       </div>
-      <style>{`@keyframes shrinkWidth { from { width: 100% } to { width: 0% } }`}</style>
+      <style>{`@keyframes shrinkWidth { from { transform: scaleX(1) } to { transform: scaleX(0) } }`}</style>
     </Ctx.Provider>
   )
 }

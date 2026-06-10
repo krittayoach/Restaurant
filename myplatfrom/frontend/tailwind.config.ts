@@ -25,6 +25,10 @@ const config: Config = {
         mono:    ['DM Mono', 'monospace'],
         display: ['Mitr', 'Noto Sans Thai', 'sans-serif'],
       },
+      zIndex: {
+        modal: '50',
+        toast: '60',
+      },
     },
   },
   plugins: [],
