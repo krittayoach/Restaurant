@@ -108,6 +108,9 @@ body {
 }
 
 @layer utilities {
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
   .anim-up    { animation: fadeInUp .45s cubic-bezier(.2,.7,.3,1) both; }
   .anim-in    { animation: fadeIn .4s ease both; }
   .anim-pop   { animation: popIn .3s cubic-bezier(.2,.8,.3,1) both; }

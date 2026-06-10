@@ -1,11 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList,
   ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings, Monitor, Package, CreditCard,
 } from 'lucide-react'
+import { cn } from '@/lib/cn'
+import { useConfirm } from './ConfirmModal'
 
 const NAV = [
   { href: '',            label: 'ภาพรวม',     emoji: '🏠', icon: LayoutDashboard, roles: ['manager'] },
@@ -28,17 +29,24 @@ const ROLE_LABEL: Record<string, string> = {
 export default function DashboardSidebar({ slug, restaurantName, role }: { slug: string; restaurantName: string; role: string }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { confirm } = useConfirm()
   const nav = NAV.filter(n => n.roles.includes(role))
-  const [showLogoutModal, setShowLogoutModal] = useState(false)
-
-  async function confirmLogout() {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
-    router.push('/login')
-  }
 
   const isActive = (href: string) => {
     const full = `/dashboard/${slug}${href}`
     return href === '' ? pathname === full : pathname.startsWith(full)
+  }
+
+  async function handleLogout() {
+    const ok = await confirm({
+      title: 'ออกจากระบบ?',
+      message: 'คุณต้องการออกจากระบบใช่ไหม',
+      danger: true,
+      confirmLabel: 'ออกจากระบบ',
+    })
+    if (!ok) return
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
+    router.push('/login')
   }
 
   return (
@@ -47,7 +55,7 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
       <aside className="hidden md:flex w-64 shrink-0 flex-col h-full bg-bg2/80 backdrop-blur border-r border-border">
         <div className="px-5 py-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-accent to-rose flex items-center justify-center text-xl shadow-lg shadow-accent/30">
+            <div className="size-11 rounded-2xl bg-accent flex items-center justify-center text-xl shadow-lg shadow-accent/30">
               🍜
             </div>
             <div className="min-w-0">
@@ -62,11 +70,12 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
             const active = isActive(item.href)
             return (
               <Link key={item.href} href={`/dashboard/${slug}${item.href}`}
-                className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-medium transition-all ${
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-medium transition-all',
                   active
-                    ? 'bg-gradient-to-r from-accent to-accent2 text-white shadow-lg shadow-accent/30'
+                    ? 'bg-accent text-white shadow-lg shadow-accent/30'
                     : 'text-muted hover:bg-bg3 hover:text-text'
-                }`}>
+                )}>
                 <span className="text-base w-5 text-center">{item.emoji}</span>
                 {item.label}
               </Link>
@@ -83,7 +92,7 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
 
         <div className="p-3 border-t border-border">
           <div className="flex items-center gap-3 px-3 py-2 mb-1">
-            <div className="w-9 h-9 rounded-full bg-bg3 flex items-center justify-center text-sm">
+            <div className="size-9 rounded-full bg-bg3 flex items-center justify-center text-sm">
               {role === 'chef' ? '👨‍🍳' : role === 'employee' ? '🧑‍💼' : '👔'}
             </div>
             <div className="min-w-0">
@@ -91,7 +100,7 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
               <p className="text-xs text-muted font-mono truncate">{slug.slice(0, 14)}</p>
             </div>
           </div>
-          <button onClick={() => setShowLogoutModal(true)}
+          <button onClick={handleLogout}
             className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-2xl text-sm font-medium text-muted hover:bg-rose/10 hover:text-rose transition-all">
             <LogOut size={15} /> ออกจากระบบ
           </button>
@@ -99,48 +108,29 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-30 bg-bg2/90 backdrop-blur border-b border-border px-4 h-14 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 inset-x-0 z-30 bg-bg2/90 backdrop-blur border-b border-border px-4 h-14 flex items-center justify-between pt-safe">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-rose flex items-center justify-center text-base">🍜</div>
+          <div className="size-9 rounded-xl bg-accent flex items-center justify-center text-base">🍜</div>
           <p className="font-display font-semibold text-sm truncate max-w-[160px]">{restaurantName}</p>
         </div>
-        <button onClick={() => setShowLogoutModal(true)} className="w-9 h-9 rounded-xl bg-bg3 flex items-center justify-center text-muted active:scale-90 transition-transform">
+        <button
+          onClick={handleLogout}
+          aria-label="ออกจากระบบ"
+          className="size-9 rounded-xl bg-bg3 flex items-center justify-center text-muted active:scale-90 transition-transform">
           <LogOut size={16} />
         </button>
       </div>
 
-      {/* Logout confirmation modal */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)}>
-          <div className="bg-bg2 border border-border rounded-3xl p-6 w-full max-w-sm shadow-2xl anim-pop" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-rose/10 mx-auto mb-4">
-              <LogOut size={24} className="text-rose" />
-            </div>
-            <h3 className="font-display font-bold text-lg text-center text-text mb-1">ออกจากระบบ?</h3>
-            <p className="text-sm text-muted text-center mb-6">คุณต้องการออกจากระบบใช่ไหม</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowLogoutModal(false)}
-                className="flex-1 btn-secondary">
-                ยกเลิก
-              </button>
-              <button onClick={confirmLogout}
-                className="flex-1 py-2.5 rounded-2xl bg-rose text-white text-sm font-semibold hover:bg-rose/90 transition-colors">
-                ออกจากระบบ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-bg2/95 backdrop-blur border-t border-border px-1.5 py-1.5 flex items-center gap-0.5 overflow-x-auto">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-bg2/95 backdrop-blur border-t border-border px-1.5 py-1.5 flex items-center gap-0.5 overflow-x-auto pb-safe">
         {nav.map(item => {
           const active = isActive(item.href)
           return (
             <Link key={item.href} href={`/dashboard/${slug}${item.href}`}
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl min-w-[58px] transition-all ${
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl min-w-[58px] transition-all',
                 active ? 'bg-accent/10 text-accent' : 'text-muted'
-              }`}>
+              )}>
               <span className="text-base">{item.emoji}</span>
               <span className="text-[10px] font-medium whitespace-nowrap">{item.label}</span>
             </Link>
