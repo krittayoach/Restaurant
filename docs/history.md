@@ -1,5 +1,10 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.10 (2026-06-10)
+
+- C: เพิ่ม `/update-claude` skill — list changes → confirm → อัปเดต CLAUDE.md + history.md + README.md อัตโนมัติ
+- B: `stop-app` skill — แก้ port จาก 3001→3010 และ 3000→3002 ให้ตรงกับ backend/frontend จริง
+
 ## Changelog — v2.9 (2026-06-10)
 
 - U: baseline-ui refactor ครบทุก 21 หน้า — `size-*` แทน `w-X h-X`, `cn()` แทน template string class logic, ลบ `bg-gradient-to-*` ทั้งหมด (solid token colors), `text-balance` บน h1 ทุกตัว, `aria-label` บน icon-only buttons, `z-modal`/`z-toast` แทน `z-50`, `pb-safe` บน fixed bottom bar, raw Tailwind colors → project tokens (`accent`, `rose`, `green`, `yellow`, `blue`)

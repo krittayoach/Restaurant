@@ -12,8 +12,8 @@ triggers:
 
 ## Steps
 
-1. Kill backend process (port 3001)
-2. Kill frontend process (port 3000)
+1. Kill backend process (port 3010)
+2. Kill frontend process (port 3002)
 3. Stop Docker containers
 
 ```bash
@@ -22,12 +22,12 @@ triggers:
 [ -f /tmp/frontend.pid ] && kill $(cat /tmp/frontend.pid) 2>/dev/null; rm -f /tmp/frontend.pid
 
 # Fallback: kill by port
-lsof -ti:3001 | xargs kill -9 2>/dev/null || true
-lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+lsof -ti:3010 | xargs kill -9 2>/dev/null || true
+lsof -ti:3002 | xargs kill -9 2>/dev/null || true
 
 # Stop Docker
 cd /Users/admin/Restaurant/myplatfrom
 docker compose down
 ```
 
-Confirm with: `lsof -i:3000 -i:3001` (should return empty)
+Confirm with: `lsof -i:3010 -i:3002` (should return empty)

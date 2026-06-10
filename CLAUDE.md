@@ -68,6 +68,7 @@ Hook: `useSSE(path, onMessage)` — auto-reconnect 3s
 
 ```bash
 /start-app                         # Docker + db:push + backend :3010 + frontend :3002
+/stop-app                          # kill backend + frontend + docker compose down
 docker compose up -d               # PostgreSQL :5433 · Redis :6380 · MinIO :9000
 cd backend  && bun run dev         # Elysia :3010
 cd frontend && bun run dev --port 3002

@@ -16,14 +16,14 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
   const token = cookies().get('session')?.value ?? ''
   const { weekly, bestseller } = await getData(token)
 
-  const totalRevenue = weekly.reduce((s: number, d: any) => s + (d.total ?? 0), 0)
-  const totalOrders  = weekly.reduce((s: number, d: any) => s + (d.count ?? 0), 0)
+  const totalRevenue = weekly.reduce((s: number, d: any) => s + (Number(d.total) || 0), 0)
+  const totalOrders  = weekly.reduce((s: number, d: any) => s + (Number(d.count) || 0), 0)
   const avgOrder     = totalOrders > 0 ? totalRevenue / totalOrders : 0
   const maxDay       = Math.max(...weekly.map((d: any) => d.total ?? 0), 1)
 
   const stats = [
     { label: 'รายได้ 7 วัน',  value: `฿${totalRevenue.toLocaleString()}`, emoji: '💰', bg: 'bg-accent/10',  text: 'text-accent' },
-    { label: 'ออเดอร์',       value: totalOrders,                          emoji: '🧾', bg: 'bg-blue/10',    text: 'text-blue' },
+    { label: 'ออเดอร์',       value: totalOrders.toLocaleString(),         emoji: '🧾', bg: 'bg-blue/10',    text: 'text-blue' },
     { label: 'เฉลี่ย/ออเดอร์', value: `฿${avgOrder.toFixed(0)}`,            emoji: '📈', bg: 'bg-green/10',   text: 'text-green' },
   ]
   const quick = [
@@ -46,7 +46,7 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
         {stats.map((s, i) => (
           <div key={s.label} className={cn('card card-hover rounded-3xl p-4 md:p-5 anim-up', s.bg)} style={{ animationDelay: `${i * 80}ms` }}>
             <div className="text-2xl md:text-3xl mb-2">{s.emoji}</div>
-            <p className={cn('font-display font-bold text-lg md:text-3xl leading-tight', s.text)}>{s.value}</p>
+            <p className={cn('font-display font-bold text-lg md:text-3xl leading-tight truncate', s.text)}>{s.value}</p>
             <p className="text-muted text-xs mt-1">{s.label}</p>
           </div>
         ))}
@@ -86,8 +86,8 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
                       {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                     </span>
                     <span className="flex-1 text-sm truncate">{item.menu_name}</span>
-                    <span className="text-xs text-muted">×{item.total_qty}</span>
-                    <span className="text-xs font-semibold text-green">฿{parseFloat(item.revenue).toLocaleString()}</span>
+                    <span className="w-10 text-right text-xs text-muted shrink-0 tabular-nums">×{item.total_qty}</span>
+                    <span className="w-16 text-right text-xs font-semibold text-green shrink-0 tabular-nums">฿{parseFloat(item.revenue).toLocaleString()}</span>
                   </div>
                 ))}
           </div>
