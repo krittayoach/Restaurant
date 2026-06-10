@@ -67,28 +67,16 @@ Hook: `useSSE(path, onMessage)` — auto-reconnect 3s
 ## Dev Setup
 
 ```bash
-/start-app   # Docker + db:push + backend :3010 + frontend :3002
-/stop-app    # kill processes + docker compose down
-
-docker compose up -d               # PostgreSQL :5433 + Redis :6380
+/start-app                         # Docker + db:push + backend :3010 + frontend :3002
+docker compose up -d               # PostgreSQL :5433 · Redis :6380 · MinIO :9000
 cd backend  && bun run dev         # Elysia :3010
 cd frontend && bun run dev --port 3002
-bun run db:push                    # push schema
+bun run db:push                    # push schema · npx tsc --noEmit (type check)
 ```
 
-**Ports:** Frontend 3002 · Backend 3010 · PostgreSQL 5433 · Redis 6380 · MinIO 9000/9001
-
-**Env:**
-```bash
-# backend/.env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/restaurant_saas
-REDIS_URL=redis://localhost:6380
-JWT_SECRET=dev-secret-change-in-production
-PORT=3010
-PLATFORM_PROMPTPAY_ID=0812345678
-# frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:3010
-```
+**Env:** `DATABASE_URL` · `REDIS_URL` · `JWT_SECRET` · `PORT=3010` · `PLATFORM_PROMPTPAY_ID`  
+MinIO: `MINIO_ENDPOINT/PORT/ACCESS_KEY/SECRET_KEY/BUCKET` · Email: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM`  
+Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 
 ## Demo Data
 - slug: `demo-restaurant` · Tables: T1–T10
@@ -100,12 +88,10 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 | chef | `0833333333` / `0844444444` | `password123` |
 
 ## New Libs / Keys
-- `lib/rateLimit.ts` — `getIP()`, `checkRateLimit()`, `rateLimitPlugin()` (Elysia plugin)
-- `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget, เขียน `audit_logs` table
-- `lib/email.ts` — `sendEmail()` Resend API wrapper + templates (TH)
-- `cron/billing.ts` — `startBillingCron()` รันตอน startup, ทุก 1 ชั่วโมง
-- Redis key `billing:reminder:{restaurantId}` — กัน reminder email ซ้ำ TTL 8 วัน
-- Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM`
+- `lib/rateLimit.ts` — `rateLimitPlugin()` Elysia plugin; Redis-backed rate limiting
+- `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget → `audit_logs` table
+- `lib/email.ts` + `cron/billing.ts` — Resend email; billing auto-downgrade hourly
+- Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` · Redis: `billing:reminder:{rid}` TTL 8d
 
 ## Gotchas
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
@@ -121,12 +107,15 @@ NEXT_PUBLIC_API_URL=http://localhost:3010
 - Super admin routes ทุกตัวต้องใช้ `requireSuperAdmin()` จาก `lib/auth.ts` — เช็คทั้ง JWT + Redis session
 - `data-tooltip="label"` บน element ใดก็ได้ → tooltip CSS-only ผ่าน `::after` pseudo-element ใน globals.css
 
-## Backlog — Phase 3
-- [x] Admin dashboard — MRR, จัดการร้าน, suspend with reason, single-session enforcement
-- [x] Rate limiting — global 300/min, login 5/5min, register 5/hr, customer-auth 30/10min
-- [x] Audit log — `audit_logs` table, `GET /audit-logs`, admin UI (11 action types)
-- [x] Billing cron — `plan_expires_at`, auto-downgrade ทุก 1 ชั่วโมง
-- [x] Email — Resend API, 4 Thai templates, approve/reject/downgrade/7-day reminder
+## UI Conventions (baseline-ui)
+- `cn()` จาก `@/lib/cn` — ใช้แทน template string class logic ทุกที่
+- `size-{n}` แทน `w-X h-X` สำหรับ square elements
+- ห้ามใช้ `bg-gradient-to-*` — ใช้ solid token colors เท่านั้น
+- `text-balance` บน heading ทุกตัว; `aria-label` บน icon-only buttons
+- `z-modal` / `z-toast` แทน `z-50` / `z-[9999]`; `pb-safe` บน fixed bottom bars
+- Color tokens: `accent` (orange), `rose`, `green`, `blue`, `yellow`, `muted`, `bg`/`bg2`/`bg3`, `border`
+
+## Backlog
 - [ ] multi-branch
 ## /update-claude Instructions
 1. List changes: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm

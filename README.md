@@ -54,7 +54,7 @@
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 14 App Router, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 14 App Router, TypeScript, Tailwind CSS v3 + design tokens |
 | **Backend** | [Elysia](https://elysiajs.com/) + Bun |
 | **Database** | PostgreSQL 16 + Drizzle ORM |
 | **Cache / Realtime** | Redis 7 — Pub/Sub + Server-Sent Events (SSE) |
@@ -315,6 +315,7 @@ bun run src/db/seed-demo.ts  # เพิ่ม demo data
 # Frontend
 bun run dev --port 3002   # รัน frontend
 bun run build             # build production
+npx tsc --noEmit          # type check (ใช้แทน build ระหว่าง dev)
 ```
 
 ---

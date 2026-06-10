@@ -1,5 +1,11 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.9 (2026-06-10)
+
+- U: baseline-ui refactor ครบทุก 21 หน้า — `size-*` แทน `w-X h-X`, `cn()` แทน template string class logic, ลบ `bg-gradient-to-*` ทั้งหมด (solid token colors), `text-balance` บน h1 ทุกตัว, `aria-label` บน icon-only buttons, `z-modal`/`z-toast` แทน `z-50`, `pb-safe` บน fixed bottom bar, raw Tailwind colors → project tokens (`accent`, `rose`, `green`, `yellow`, `blue`)
+- B: Dashboard overview — order count เป็น string concatenation จาก PostgreSQL (`d.count` เป็น string); แก้ด้วย `Number()` ใน reduce; เพิ่ม `toLocaleString()` และ `truncate` บน stats values
+- U: Dashboard bestseller list — fixed-width columns `w-10`/`w-16` + `text-right` + `tabular-nums` ให้จำนวนและเงินเรียงตรงกันทุกแถว
+
 ## Changelog — v2.8 (2026-06-09)
 
 - F: Rate limiting — `lib/rateLimit.ts` plugin; global 300 req/min, login 5/5 min, register 5/hr, customer-auth 30/10 min; Redis-backed + `Retry-After` header
