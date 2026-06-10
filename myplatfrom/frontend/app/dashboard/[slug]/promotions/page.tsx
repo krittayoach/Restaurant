@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { Plus, Tag, ToggleLeft, ToggleRight, Pencil, Trash2, X } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
@@ -95,7 +96,7 @@ export default function PromotionsPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text">🎁 โปรโมชั่น</h1>
+          <h1 className="font-display font-bold text-2xl text-text text-balance">🎁 โปรโมชั่น</h1>
           <p className="text-muted text-sm mt-0.5">{promos.length} รายการ</p>
         </div>
         <button onClick={openAdd} className="btn-primary flex items-center gap-2">
@@ -113,7 +114,7 @@ export default function PromotionsPage() {
             <div>
               <label className="block text-xs text-muted mb-1.5">ชื่อโปรโมชั่น <span className="text-rose">*</span></label>
               <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ลด 10% วันสุดท้าย"
-                className={`input ${formSubmitted && !form.name ? 'input-error' : ''}`} />
+                className={cn('input', formSubmitted && !form.name && 'input-error')} />
               {formSubmitted && !form.name && <p className="field-error">กรุณากรอกชื่อโปรโมชั่น</p>}
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -152,8 +153,8 @@ export default function PromotionsPage() {
 
       <div className="space-y-2">
         {promos.map((p: any) => (
-          <div key={p.id} className={`card flex items-center gap-4 p-4 transition-all ${!p.is_active ? 'opacity-50' : 'hover:border-border2'} ${editingId === p.id ? 'ring-2 ring-accent/40' : ''}`}>
-            <div className="w-9 h-9 rounded-xl bg-violet/10 flex items-center justify-center shrink-0">
+          <div key={p.id} className={cn('card flex items-center gap-4 p-4 transition-all', !p.is_active ? 'opacity-50' : 'hover:border-border2', editingId === p.id && 'ring-2 ring-accent/40')}>
+            <div className="size-9 rounded-xl bg-violet/10 flex items-center justify-center shrink-0">
               <Tag size={16} className="text-violet" />
             </div>
             <div className="flex-1 min-w-0">
@@ -168,13 +169,13 @@ export default function PromotionsPage() {
               {p.is_active ? 'ใช้งาน' : 'ปิด'}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
-              <button onClick={() => openEdit(p)} className="w-8 h-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
+              <button onClick={() => openEdit(p)} className="size-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
                 <Pencil size={13} />
               </button>
               <button onClick={() => togglePromo(p.id)} disabled={busyId[p.id]} className="text-muted hover:text-text transition-colors disabled:opacity-50">
                 {busyId[p.id] ? <Spinner size={16} /> : p.is_active ? <ToggleRight size={22} className="text-green" /> : <ToggleLeft size={22} />}
               </button>
-              <button onClick={() => del(p.id, p.name)} disabled={busyId[p.id]} className="w-8 h-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
+              <button onClick={() => del(p.id, p.name)} disabled={busyId[p.id]} className="size-8 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
                 {busyId[p.id] ? <Spinner size={13} /> : <Trash2 size={13} />}
               </button>
             </div>

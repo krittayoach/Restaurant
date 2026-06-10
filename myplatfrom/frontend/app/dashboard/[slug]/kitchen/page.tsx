@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { Clock } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
@@ -58,9 +59,9 @@ export default function KitchenPage() {
   }
 
   const cards = [
-    { label: 'รอทำ',        count: stats.pending, emoji: '⏳', cls: 'from-yellow/15 to-yellow/5 text-yellow' },
-    { label: 'กำลังทำ',     count: stats.cooking, emoji: '🔥', cls: 'from-accent/15 to-accent/5 text-accent' },
-    { label: 'พร้อมเสิร์ฟ', count: stats.ready,   emoji: '✅', cls: 'from-green/15 to-green/5 text-green' },
+    { label: 'รอทำ',        count: stats.pending, emoji: '⏳', bg: 'bg-yellow/10', text: 'text-yellow' },
+    { label: 'กำลังทำ',     count: stats.cooking, emoji: '🔥', bg: 'bg-accent/10', text: 'text-accent' },
+    { label: 'พร้อมเสิร์ฟ', count: stats.ready,   emoji: '✅', bg: 'bg-green/10',  text: 'text-green' },
   ]
 
   if (pageLoading) return <LoadingScreen />
@@ -69,14 +70,14 @@ export default function KitchenPage() {
     <div className="p-5 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text">👨‍🍳 Kitchen Board</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">👨‍🍳 Kitchen Board</h1>
           <p className="text-xs text-muted font-mono mt-0.5 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green pulse-ring inline-block" /> realtime
+            <span className="size-2 rounded-full bg-green pulse-ring inline-block" /> realtime
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           {cards.map(s => (
-            <div key={s.label} className={`rounded-2xl px-4 py-2.5 bg-gradient-to-br ${s.cls} border border-border text-center`}>
+            <div key={s.label} className={cn('rounded-2xl px-4 py-2.5 border border-border text-center', s.bg, s.text)}>
               <div className="text-base">{s.emoji}</div>
               <div className="font-display font-bold text-xl leading-none">{s.count}</div>
               <div className="text-[10px] text-muted mt-0.5">{s.label}</div>

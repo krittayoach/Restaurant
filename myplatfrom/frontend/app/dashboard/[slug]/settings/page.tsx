@@ -10,6 +10,7 @@ import {
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
+import { cn } from '@/lib/cn'
 
 const PLAN_PRICE: Record<string, number> = { free: 0, basic: 299, pro: 799 }
 const PLAN_FEATURES: Record<string, string[]> = {
@@ -153,7 +154,7 @@ export default function SettingsPage() {
 
       {/* ── Header ── */}
       <div className="anim-up">
-        <h1 className="font-display font-bold text-2xl text-text">ตั้งค่า</h1>
+        <h1 className="font-display font-bold text-2xl text-text text-balance">ตั้งค่า</h1>
         <p className="text-muted text-sm mt-0.5">จัดการข้อมูลร้านและการใช้งาน</p>
       </div>
 
@@ -290,6 +291,7 @@ export default function SettingsPage() {
                   placeholder="••••••••" className="input pr-11" />
                 <button type="button"
                   onClick={() => setShowPw(v => ({ ...v, [key]: !v[key] }))}
+                  aria-label={showPw[key] ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors">
                   {showPw[key] ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -309,7 +311,7 @@ export default function SettingsPage() {
 
       {/* ── Upgrade Modal ── */}
       {showUpgrade && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-end sm:items-center justify-center p-4"
           onClick={() => { if (!paying && !uploading) setShowUpgrade(false) }}>
           <div className="bg-bg2 rounded-3xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -318,7 +320,8 @@ export default function SettingsPage() {
                 <span className="font-display font-bold text-lg">อัปเกรดแพ็กเกจ</span>
               </div>
               <button onClick={() => { if (!paying && !uploading) setShowUpgrade(false) }}
-                className="w-8 h-8 rounded-xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
+                aria-label="ปิด"
+              className="size-8 rounded-xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
                 <X size={15} />
               </button>
             </div>
@@ -367,7 +370,7 @@ export default function SettingsPage() {
                   ].map(m => (
                     <button key={m.key} onClick={() => setUpgradeStep(m.key as any)}
                       className="w-full p-4 rounded-2xl border-2 border-border bg-bg3 hover:border-accent/30 transition-all flex items-center gap-3 text-left">
-                      <div className={`w-10 h-10 rounded-xl ${m.bg} flex items-center justify-center shrink-0`}>{m.icon}</div>
+                      <div className={cn('size-10 rounded-xl flex items-center justify-center shrink-0', m.bg)}>{m.icon}</div>
                       <div>
                         <p className="font-semibold text-sm">{m.title}</p>
                         <p className="text-xs text-muted">{m.sub}</p>
@@ -395,7 +398,7 @@ export default function SettingsPage() {
                       <div className="relative">
                         <img src={slipPreview} alt="slip" className="w-full h-48 object-contain rounded-xl border border-border bg-bg3" />
                         <button onClick={() => { setSlipFile(null); setSlipPreview('') }}
-                          data-tooltip="ลบสลิป" className="absolute top-2 right-2 w-7 h-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
+                          aria-label="ลบสลิป" data-tooltip="ลบสลิป" className="absolute top-2 right-2 size-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
                           <X size={13} />
                         </button>
                       </div>
@@ -452,7 +455,7 @@ export default function SettingsPage() {
 
               {upgradeStep === 'done' && (
                 <div className="text-center py-6 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-green/10 flex items-center justify-center mx-auto">
+                  <div className="size-16 rounded-full bg-green/10 flex items-center justify-center mx-auto">
                     <Check size={30} className="text-green" />
                   </div>
                   <div>
@@ -465,8 +468,8 @@ export default function SettingsPage() {
 
               {upgradeStep === 'pending' && (
                 <div className="text-center py-6 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto">
-                    <Smartphone size={30} className="text-amber-500" />
+                  <div className="size-16 rounded-full bg-yellow/10 flex items-center justify-center mx-auto">
+                    <Smartphone size={30} className="text-yellow" />
                   </div>
                   <div>
                     <p className="font-display font-bold text-xl">รอการตรวจสอบ</p>

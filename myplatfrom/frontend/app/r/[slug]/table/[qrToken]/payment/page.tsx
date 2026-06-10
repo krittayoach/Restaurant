@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import QRCode from 'qrcode'
 import { CheckCircle2, Clock, Flame, UtensilsCrossed, XCircle, Upload, ImagePlus, PlusCircle, X } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import { Spinner } from '@/components/Spinner'
 
@@ -102,20 +103,20 @@ export default function PaymentPage() {
   } as Record<string, { label: string; icon: any; cls: string; bg: string }>
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="text-center">
-        <div className="w-10 h-10 rounded-full border-[3px] border-orange-400 border-t-transparent animate-spin mx-auto mb-3" />
+        <div className="size-10 rounded-full border-[3px] border-accent border-t-transparent animate-spin mx-auto mb-3" />
         <p className="text-orange-400 text-sm font-medium">{t.loading}</p>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen pb-10" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
+    <div className="min-h-screen pb-10 bg-bg">
       {/* Header */}
       <div className="sticky top-0 bg-white/90 backdrop-blur border-b border-orange-100 px-4 py-3 shadow-sm">
         <div className="max-w-lg mx-auto flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-400 flex items-center justify-center text-lg shadow-md">
+          <div className="size-9 rounded-xl bg-accent flex items-center justify-center text-lg shadow-md">
             🧾
           </div>
           <div className="flex-1">
@@ -125,7 +126,7 @@ export default function PaymentPage() {
           <div className="flex items-center gap-2">
             <LangToggle lang={lang} setLang={setLang} />
             <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${pulse ? 'bg-green-400 scale-125' : 'bg-green-400'} animate-pulse`} />
+              <span className={cn('size-2 rounded-full transition-all duration-300 bg-green animate-pulse', pulse && 'scale-125')} />
               <span className="text-xs text-gray-400">realtime</span>
             </div>
           </div>
@@ -189,7 +190,7 @@ export default function PaymentPage() {
 
                 {restaurant?.promptpay ? (
                   <>
-                    <div className="bg-gradient-to-br from-orange-50 to-rose-50 rounded-2xl p-4 text-center border border-orange-100">
+                    <div className="bg-bg3 rounded-2xl p-4 text-center border border-border">
                       {promptpayQR && (
                         <div className="flex justify-center mb-3">
                           <div className="bg-white rounded-2xl p-2 shadow-md border border-orange-100">
@@ -217,7 +218,7 @@ export default function PaymentPage() {
                       </label>
                       {slipPreview && !submitDone && (
                         <button onClick={submitSlip} disabled={submitting}
-                          className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-400 to-rose-400 text-white font-bold py-3 rounded-xl mt-3 shadow-md shadow-orange-200 hover:shadow-lg transition-all active:scale-[.98] disabled:opacity-60">
+                          className="flex items-center justify-center gap-2 w-full bg-accent text-white font-bold py-3 rounded-xl mt-3 shadow-md shadow-accent/20 hover:bg-accent2 hover:shadow-lg transition-all active:scale-[.98] disabled:opacity-60">
                           {submitting ? <Spinner size={16} /> : <Upload size={16} />}
                           {submitting ? t.sending : t.sendSlip}
                         </button>

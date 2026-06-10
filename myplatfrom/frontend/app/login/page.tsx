@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { api, saveToken } from '@/lib/api'
 import { Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
+import { cn } from '@/lib/cn'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -36,7 +37,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left brand panel */}
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-gradient-to-br from-accent via-accent2 to-rose flex-col items-center justify-center p-12 text-white">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-accent flex-col items-center justify-center p-12 text-white">
         <div className="absolute top-12 left-16 text-6xl floaty opacity-90">🍜</div>
         <div className="absolute top-1/3 right-20 text-5xl floaty opacity-90" style={{ animationDelay: '.8s' }}>🍕</div>
         <div className="absolute bottom-24 left-24 text-5xl floaty opacity-90" style={{ animationDelay: '1.4s' }}>🍤</div>
@@ -44,7 +45,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 text-center anim-up">
           <div className="text-7xl mb-6 floaty">🧑‍🍳</div>
-          <h1 className="font-display font-bold text-4xl mb-3">Restaurant SaaS</h1>
+          <h1 className="font-display font-bold text-4xl mb-3 text-balance">Restaurant SaaS</h1>
           <p className="text-white/90 max-w-xs leading-relaxed">
             จัดการร้านอาหารง่ายๆ ตั้งแต่เมนู ออเดอร์ ครัว ไปจนถึงรายงานยอดขาย
           </p>
@@ -55,11 +56,11 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm anim-up">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-rose flex items-center justify-center text-2xl shadow-lg shadow-accent/30">🍜</div>
+            <div className="size-12 rounded-2xl bg-accent flex items-center justify-center text-2xl shadow-lg shadow-accent/30">🍜</div>
             <span className="font-display font-bold text-2xl">Restaurant SaaS</span>
           </div>
 
-          <h2 className="font-display font-bold text-3xl text-text mb-2">สวัสดีครับ 👋</h2>
+          <h2 className="font-display font-bold text-3xl text-text mb-2 text-balance">สวัสดีครับ 👋</h2>
           <p className="text-muted text-sm mb-8">เข้าสู่ระบบสำหรับผู้จัดการและพนักงาน</p>
 
           {error && (
@@ -73,7 +74,7 @@ export default function LoginPage() {
                 <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                 <input type="tel" value={form.phone} placeholder="0XX-XXX-XXXX"
                   onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  className={`input pl-11 ${submitted && !form.phone ? 'input-error' : ''}`} />
+                  className={cn('input pl-11', submitted && !form.phone && 'input-error')} />
               </div>
               {submitted && !form.phone && <p className="field-error">กรุณากรอกเบอร์โทรศัพท์</p>}
             </div>
@@ -83,8 +84,9 @@ export default function LoginPage() {
                 <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
                 <input type={showPw ? 'text' : 'password'} value={form.password} placeholder="••••••••"
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  className={`input pl-11 pr-11 ${submitted && !form.password ? 'input-error' : ''}`} />
+                  className={cn('input pl-11 pr-11', submitted && !form.password && 'input-error')} />
                 <button type="button" onClick={() => setShowPw(v => !v)}
+                  aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors p-1">
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

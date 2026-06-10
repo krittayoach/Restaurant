@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { useSSE } from '@/hooks/useSSE'
 import { WifiOff, Download, RefreshCw } from 'lucide-react'
+import { cn } from '@/lib/cn'
 
 interface OrderItem {
   id: string
@@ -232,7 +233,7 @@ export default function KDSPage() {
       {isOnline && pendingActions > 0 && (
         <div className="bg-yellow/90 text-black text-center text-sm py-2 font-medium flex items-center justify-center gap-2 shrink-0">
           {syncing
-            ? <><div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" /> กำลังซิงค์ข้อมูลออฟไลน์...</>
+            ? <><div className="size-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" /> กำลังซิงค์ข้อมูลออฟไลน์...</>
             : <><RefreshCw size={14} /> กำลังส่งข้อมูลที่ค้างไว้ {pendingActions} รายการ</>}
         </div>
       )}
@@ -250,12 +251,12 @@ export default function KDSPage() {
         <div className="flex items-center gap-1.5 ml-2">
           {isOnline ? (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-green pulse-ring" />
+              <span className="size-2.5 rounded-full bg-green pulse-ring" />
               <span className="text-xs text-green font-medium">realtime</span>
             </>
           ) : (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-rose" />
+              <span className="size-2.5 rounded-full bg-rose" />
               <span className="text-xs text-rose font-medium">ออฟไลน์</span>
             </>
           )}
@@ -276,7 +277,7 @@ export default function KDSPage() {
             { emoji: '✅', label: 'พร้อมเสิร์ฟ', count: stats.ready,   cls: 'text-green'  },
           ].map(s => (
             <div key={s.label} className="text-center">
-              <p className={`font-display font-bold text-2xl leading-none ${s.cls}`}>{s.count}</p>
+              <p className={cn('font-display font-bold text-2xl leading-none', s.cls)}>{s.count}</p>
               <p className="text-[10px] text-muted">{s.label}</p>
             </div>
           ))}
@@ -315,12 +316,12 @@ export default function KDSPage() {
 
               return (
                 <div key={order.id}
-                  className={`rounded-2xl border-2 overflow-hidden flex flex-col ${urgent ? 'border-rose/60 bg-rose/5' : 'border-border bg-bg2'}`}>
+                  className={cn('rounded-2xl border-2 overflow-hidden flex flex-col', urgent ? 'border-rose/60 bg-rose/5' : 'border-border bg-bg2')}>
 
-                  <div className={`px-4 py-3 flex items-center justify-between ${urgent ? 'bg-rose/10' : 'bg-bg3'}`}>
+                  <div className={cn('px-4 py-3 flex items-center justify-between', urgent ? 'bg-rose/10' : 'bg-bg3')}>
                     <div>
                       <p className="font-display font-bold text-3xl text-text leading-none">{tableLabel}</p>
-                      <p className={`text-sm font-semibold mt-0.5 ${urgent ? 'text-rose' : 'text-muted'}`}>
+                      <p className={cn('text-sm font-semibold mt-0.5', urgent ? 'text-rose' : 'text-muted')}>
                         {mins} นาที {urgent ? '🔥' : ''}
                       </p>
                     </div>
@@ -333,11 +334,7 @@ export default function KDSPage() {
                   <div className="p-3 space-y-2 flex-1">
                     {items.map(item => (
                       <div key={item.id}
-                        className={`rounded-xl p-3 border ${
-                          item.status === 'ready'   ? 'bg-green/10 border-green/20' :
-                          item.status === 'cooking' ? 'bg-accent/10 border-accent/20' :
-                                                      'bg-bg3 border-border'
-                        }`}>
+                        className={cn('rounded-xl p-3 border', item.status === 'ready' ? 'bg-green/10 border-green/20' : item.status === 'cooking' ? 'bg-accent/10 border-accent/20' : 'bg-bg3 border-border')}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-base text-text leading-tight">
@@ -346,11 +343,7 @@ export default function KDSPage() {
                             </p>
                             {item.note && <p className="text-sm text-yellow mt-0.5">📝 {item.note}</p>}
                           </div>
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-lg shrink-0 ${
-                            item.status === 'ready'   ? 'bg-green/20 text-green' :
-                            item.status === 'cooking' ? 'bg-accent/20 text-accent' :
-                                                        'bg-yellow/20 text-yellow'
-                          }`}>
+                          <span className={cn('text-xs font-semibold px-2 py-1 rounded-lg shrink-0', item.status === 'ready' ? 'bg-green/20 text-green' : item.status === 'cooking' ? 'bg-accent/20 text-accent' : 'bg-yellow/20 text-yellow')}>
                             {item.status === 'ready' ? 'พร้อม' : item.status === 'cooking' ? 'กำลังทำ' : 'รอทำ'}
                           </span>
                         </div>

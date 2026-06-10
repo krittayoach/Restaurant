@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import QRCode from 'qrcode'
 import { QrCode, RefreshCw, ExternalLink, RotateCcw, Download, Plus, Pencil, Trash2, X, Check, CalendarClock, Users, Phone } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
@@ -140,7 +141,7 @@ export default function QRPage() {
     <div className="p-5 md:p-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text">📱 QR Code โต๊ะ</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">📱 QR Code โต๊ะ</h1>
           <p className="text-muted text-sm mt-0.5">{tables.length} โต๊ะ · ลูกค้าสแกนเพื่อสั่ง</p>
         </div>
         <div className="flex gap-2">
@@ -162,7 +163,7 @@ export default function QRPage() {
             <div className="flex-1 min-w-[120px]">
               <label className="block text-xs text-muted mb-1.5">ชื่อโต๊ะ <span className="text-rose">*</span></label>
               <input value={addForm.label} onChange={e => setAddForm(f => ({ ...f, label: e.target.value }))}
-                placeholder="T11" className={`input ${addSubmitted && !addForm.label ? 'input-error' : ''}`} autoFocus />
+                placeholder="T11" className={cn('input', addSubmitted && !addForm.label && 'input-error')} autoFocus />
             </div>
             <div className="w-28">
               <label className="block text-xs text-muted mb-1.5">ที่นั่ง</label>
@@ -276,7 +277,7 @@ export default function QRPage() {
           const qrImg = qrImages[table.id]
           const isEditing = editingId === table.id
           return (
-            <div key={table.id} className={`card card-hover p-4 flex flex-col anim-up ${isEditing ? 'ring-2 ring-accent/40' : ''}`} style={{ animationDelay: `${i * 30}ms` }}>
+            <div key={table.id} className={cn('card card-hover p-4 flex flex-col anim-up', isEditing && 'ring-2 ring-accent/40')} style={{ animationDelay: `${i * 30}ms` }}>
               {/* Header */}
               {isEditing ? (
                 <div className="mb-3 space-y-2">
@@ -304,11 +305,11 @@ export default function QRPage() {
                     <span className="text-xl">{s.emoji}</span>
                     <div className="flex gap-1">
                       <button onClick={() => { setEditingId(table.id); setEditForm({ label: table.label, seats: String(table.seats) }) }}
-                        data-tooltip="แก้ไขโต๊ะ" className="w-6 h-6 rounded-lg bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20">
+                        data-tooltip="แก้ไขโต๊ะ" className="size-6 rounded-lg bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20">
                         <Pencil size={11} />
                       </button>
                       <button onClick={() => deleteTable(table.id, table.label)} disabled={busyId[`del_${table.id}`]}
-                        data-tooltip="ลบโต๊ะ" className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
+                        data-tooltip="ลบโต๊ะ" className="size-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
                         {busyId[`del_${table.id}`] ? <Spinner size={10} /> : <Trash2 size={11} />}
                       </button>
                     </div>
@@ -357,11 +358,11 @@ export default function QRPage() {
 
       {/* Slip preview modal */}
       {viewSlip && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setViewSlip(null)}>
+        <div className="fixed inset-0 z-modal bg-black/60 flex items-center justify-center p-4" onClick={() => setViewSlip(null)}>
           <div className="bg-white rounded-2xl p-4 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-text">สลิปโอนเงิน</p>
-              <button onClick={() => setViewSlip(null)} className="text-muted hover:text-text text-xl leading-none">×</button>
+              <button onClick={() => setViewSlip(null)} aria-label="ปิด" className="size-8 flex items-center justify-center rounded-xl bg-bg3 text-muted hover:text-text transition-colors">×</button>
             </div>
             <img src={viewSlip} alt="slip" className="w-full rounded-xl object-contain max-h-96" />
           </div>

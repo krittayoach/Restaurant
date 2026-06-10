@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Star, Calendar, Receipt, Download, FileText } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { api, getToken } from '@/lib/api'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { Spinner } from '@/components/Spinner'
@@ -114,7 +115,7 @@ export default function ReportsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text">รายงาน</h1>
+          <h1 className="font-display font-bold text-2xl text-text text-balance">รายงาน</h1>
           <p className="text-muted text-sm mt-0.5">ยอดขายและสถิติร้าน</p>
         </div>
         {!loading && data && (
@@ -163,7 +164,7 @@ export default function ReportsPage() {
             { label: 'เดือนนี้', f: today.slice(0, 8) + '01', t: today },
           ].map(p => (
             <button key={p.label} onClick={() => { setFrom(p.f); setTo(p.t); load(p.f, p.t) }}
-              className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${from === p.f && to === p.t ? 'bg-accent text-white' : 'bg-bg3 text-muted hover:bg-border'}`}>
+              className={cn('text-xs px-3 py-1.5 rounded-lg font-medium transition-colors', from === p.f && to === p.t ? 'bg-accent text-white' : 'bg-bg3 text-muted hover:bg-border')}>
               {p.label}
             </button>
           ))}
@@ -182,7 +183,7 @@ export default function ReportsPage() {
               const Icon = s.icon
               return (
                 <div key={s.label} className="card p-5">
-                  <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
+                  <div className={cn('size-9 rounded-xl flex items-center justify-center mb-3', s.bg)}>
                     <Icon size={18} className={s.color} />
                   </div>
                   <p className={`font-display font-bold text-xl ${s.color} truncate`}>{s.value}</p>
@@ -225,7 +226,7 @@ export default function ReportsPage() {
                   ? <p className="text-muted text-sm">ยังไม่มีข้อมูล</p>
                   : bestseller.map((item: any, i: number) => (
                       <div key={item.menu_name} className="flex items-center gap-2.5">
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i < 3 ? 'bg-accent text-white' : 'bg-bg3 text-muted'}`}>{i + 1}</span>
+                        <span className={cn('size-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0', i < 3 ? 'bg-accent text-white' : 'bg-bg3 text-muted')}>{i + 1}</span>
                         <span className="flex-1 text-sm truncate">{item.menu_name}</span>
                         <span className="text-xs text-muted">×{item.total_qty}</span>
                         <span className="text-xs font-semibold text-green">฿{parseFloat(item.revenue).toLocaleString()}</span>

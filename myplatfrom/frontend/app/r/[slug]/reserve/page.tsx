@@ -290,7 +290,7 @@ export default function ReservePage() {
 
                 {restaurant?.promptpay ? (
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-orange-50 to-rose-50 rounded-2xl p-4 text-center border border-orange-100">
+                    <div className="bg-bg3 rounded-2xl p-4 text-center border border-border">
                       {promptpayQR && (
                         <div className="flex justify-center mb-3">
                           <div className="bg-white rounded-2xl p-2 shadow-md border border-orange-100">
@@ -342,13 +342,13 @@ export default function ReservePage() {
 function MiniMenuCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: number; onAdd: () => void; onRemove: () => void }) {
   return (
     <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden flex flex-col">
-      <div className="aspect-square w-full bg-gradient-to-br from-orange-50 to-rose-50 overflow-hidden relative">
+      <div className="aspect-square w-full bg-bg3 overflow-hidden relative">
         {item.image
           ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
         }
         {qty > 0 && (
-          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
+          <div className="absolute top-1 right-1 size-4 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center shadow">
             {qty}
           </div>
         )}
@@ -363,12 +363,12 @@ function MiniMenuCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: num
             <button type="button" onClick={onRemove} className="flex-1 py-1 flex items-center justify-center text-orange-400 hover:bg-orange-50">
               <Minus size={11} />
             </button>
-            <button type="button" onClick={onAdd} className="flex-1 py-1 flex items-center justify-center bg-gradient-to-r from-orange-400 to-rose-400 text-white">
+            <button type="button" onClick={onAdd} className="flex-1 py-1 flex items-center justify-center bg-accent text-white">
               <Plus size={11} />
             </button>
           </>
         ) : (
-          <button type="button" onClick={onAdd} className="w-full py-1 flex items-center justify-center bg-gradient-to-r from-orange-400 to-rose-400 text-white rounded-b-xl">
+          <button type="button" onClick={onAdd} className="w-full py-1 flex items-center justify-center bg-accent text-white rounded-b-xl">
             <Plus size={11} />
           </button>
         )}

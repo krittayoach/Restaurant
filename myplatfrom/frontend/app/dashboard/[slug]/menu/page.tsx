@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { Plus, Eye, EyeOff, Trash2, X, Pencil, Tag, Check, ImagePlus, Search } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
@@ -174,7 +175,7 @@ export default function MenuManagePage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 anim-up gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text">จัดการเมนู</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">จัดการเมนู</h1>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-muted text-sm">{menus.length} รายการ</span>
             {totalVisible > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-green/10 text-green font-medium">{totalVisible} เปิดขาย</span>}
@@ -204,10 +205,10 @@ export default function MenuManagePage() {
                     <input value={renamingCatVal} onChange={e => setRenamingCatVal(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && renameCategory(c.id)}
                       className="input py-1.5 text-sm flex-1" autoFocus />
-                    <button onClick={() => renameCategory(c.id)} disabled={busyId[c.id]} data-tooltip="บันทึก" className="w-8 h-8 rounded-lg bg-green/10 text-green flex items-center justify-center hover:bg-green/20 disabled:opacity-50">
+                    <button onClick={() => renameCategory(c.id)} disabled={busyId[c.id]} data-tooltip="บันทึก" className="size-8 rounded-lg bg-green/10 text-green flex items-center justify-center hover:bg-green/20 disabled:opacity-50">
                       {busyId[c.id] ? <Spinner size={13} /> : <Check size={14} />}
                     </button>
-                    <button onClick={() => setRenamingCatId(null)} data-tooltip="ยกเลิก" className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center">
+                    <button onClick={() => setRenamingCatId(null)} data-tooltip="ยกเลิก" className="size-8 rounded-lg bg-bg2 text-muted flex items-center justify-center">
                       <X size={14} />
                     </button>
                   </>
@@ -216,11 +217,11 @@ export default function MenuManagePage() {
                     <span className="flex-1 text-sm font-medium">{catEmoji[c.name] ?? '📂'} {c.name}</span>
                     <span className="text-xs text-muted">{menus.filter(m => m.category_id === c.id).length} เมนู</span>
                     <button onClick={() => { setRenamingCatId(c.id); setRenamingCatVal(c.name) }}
-                      data-tooltip="แก้ไขชื่อ" className="w-8 h-8 rounded-lg bg-bg2 text-muted flex items-center justify-center hover:text-text">
+                      data-tooltip="แก้ไขชื่อ" className="size-8 rounded-lg bg-bg2 text-muted flex items-center justify-center hover:text-text">
                       <Pencil size={13} />
                     </button>
                     <button onClick={() => deleteCategory(c.id)} disabled={busyId[c.id]}
-                      data-tooltip="ลบหมวดหมู่" className="w-8 h-8 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
+                      data-tooltip="ลบหมวดหมู่" className="size-8 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 disabled:opacity-50">
                       {busyId[c.id] ? <Spinner size={13} /> : <Trash2 size={13} />}
                     </button>
                   </>
@@ -252,13 +253,13 @@ export default function MenuManagePage() {
               <div>
                 <label className="block text-xs text-muted mb-1.5 ml-1">ชื่อเมนู <span className="text-rose">*</span></label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ผัดกระเพรา"
-                  className={`input ${formSubmitted && !form.name ? 'input-error' : ''}`} />
+                  className={cn('input', formSubmitted && !form.name && 'input-error')} />
                 {formSubmitted && !form.name && <p className="field-error">กรุณากรอกชื่อเมนู</p>}
               </div>
               <div>
                 <label className="block text-xs text-muted mb-1.5 ml-1">ราคา (฿) <span className="text-rose">*</span></label>
                 <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="70"
-                  className={`input ${formSubmitted && !form.price ? 'input-error' : ''}`} />
+                  className={cn('input', formSubmitted && !form.price && 'input-error')} />
                 {formSubmitted && !form.price && <p className="field-error">กรุณากรอกราคา</p>}
               </div>
             </div>
@@ -275,15 +276,15 @@ export default function MenuManagePage() {
             </div>
             <div>
               <label className="block text-xs text-muted mb-1.5 ml-1">รูปภาพ</label>
-              <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''} ${form.image ? 'border-accent/40 bg-accent/5' : 'border-border hover:border-accent/40'}`}>
+              <label className={cn('flex items-center gap-3 border-2 border-dashed rounded-xl p-3 cursor-pointer transition-colors', uploading && 'opacity-60 pointer-events-none', form.image ? 'border-accent/40 bg-accent/5' : 'border-border hover:border-accent/40')}>
                 {uploading ? (
-                  <div className="w-14 h-14 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
-                    <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                  <div className="size-14 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
+                    <div className="size-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : form.image ? (
-                  <img src={form.image} alt="preview" className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                  <img src={form.image} alt="preview" className="size-14 rounded-lg object-cover shrink-0" />
                 ) : (
-                  <div className="w-14 h-14 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
+                  <div className="size-14 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
                     <ImagePlus size={20} className="text-muted" />
                   </div>
                 )}
@@ -329,7 +330,7 @@ export default function MenuManagePage() {
         <div className="flex gap-2 flex-wrap">
           {[{ id: 'all', name: 'ทั้งหมด' }, ...categories].map(c => (
             <button key={c.id} onClick={() => setFilterCat(c.id)}
-              className={`px-3.5 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${filterCat === c.id ? 'bg-accent text-white shadow-md shadow-accent/30' : 'bg-bg2 text-muted border border-border hover:border-border2'}`}>
+              className={cn('px-3.5 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap', filterCat === c.id ? 'bg-accent text-white shadow-md shadow-accent/30' : 'bg-bg2 text-muted border border-border hover:border-border2')}>
               {(catEmoji[(c as any).name] ?? '') + ' ' + c.name}
             </button>
           ))}
@@ -358,7 +359,7 @@ export default function MenuManagePage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {items.map((menu: any, i: number) => (
                   <div key={menu.id}
-                    className={`card card-hover flex flex-col overflow-hidden anim-up ${!menu.is_available ? 'opacity-50' : ''} ${editingId === menu.id ? 'ring-2 ring-accent/40' : ''}`}
+                    className={cn('card card-hover flex flex-col overflow-hidden anim-up', !menu.is_available && 'opacity-50', editingId === menu.id && 'ring-2 ring-accent/40')}
                     style={{ animationDelay: `${i * 15}ms` }}>
                     {/* image */}
                     <div className="w-full aspect-square bg-bg3 relative overflow-hidden">
@@ -369,7 +370,7 @@ export default function MenuManagePage() {
                           {catEmoji[category.name] ?? '🍴'}
                         </div>
                       )}
-                      <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${menu.is_available ? 'bg-green' : 'bg-rose'}`} />
+                      <div className={cn('absolute top-2 right-2 size-2 rounded-full', menu.is_available ? 'bg-green' : 'bg-rose')} />
                     </div>
                     {/* info */}
                     <div className="p-2.5 flex-1 flex flex-col">
@@ -385,7 +386,7 @@ export default function MenuManagePage() {
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => toggle(menu.id)} disabled={busyId[menu.id]}
-                        className={`flex-1 py-2 transition-colors flex items-center justify-center disabled:opacity-50 ${menu.is_available ? 'text-green hover:bg-green/5' : 'text-muted hover:bg-bg3'}`}
+                        className={cn('flex-1 py-2 transition-colors flex items-center justify-center disabled:opacity-50', menu.is_available ? 'text-green hover:bg-green/5' : 'text-muted hover:bg-bg3')}
                         data-tooltip={menu.is_available ? 'เปิดขาย' : 'ปิดขาย'}>
                         {busyId[menu.id] ? <Spinner size={12} /> : menu.is_available ? <Eye size={13} /> : <EyeOff size={13} />}
                       </button>

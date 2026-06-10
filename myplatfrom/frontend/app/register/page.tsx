@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
+import { cn } from '@/lib/cn'
 
 const FIELDS = [
   { key: 'name',        label: 'ชื่อร้านอาหาร',          placeholder: 'ร้านอร่อยริมทาง',  type: 'text', span: true },
@@ -39,12 +40,12 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md anim-up">
         <div className="flex items-center gap-3 mb-7 justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent to-rose flex items-center justify-center text-2xl shadow-lg shadow-accent/30 floaty">🍜</div>
+          <div className="size-12 rounded-2xl bg-accent flex items-center justify-center text-2xl shadow-lg shadow-accent/30 floaty">🍜</div>
           <span className="font-display font-bold text-2xl">Restaurant SaaS</span>
         </div>
 
         <div className="card p-8">
-          <h2 className="font-display font-bold text-2xl text-text mb-1">เปิดร้านใหม่ 🎉</h2>
+          <h2 className="font-display font-bold text-2xl text-text mb-1 text-balance">เปิดร้านใหม่ 🎉</h2>
           <p className="text-muted text-sm mb-7">สร้างบัญชีและร้านของคุณในไม่กี่วินาที</p>
 
           {error && <div className="bg-rose/10 border border-rose/20 text-rose rounded-2xl px-4 py-3 text-sm mb-5 anim-pop">{error}</div>}
@@ -60,9 +61,10 @@ export default function RegisterPage() {
                     type={f.type === 'password' ? (showPw ? 'text' : 'password') : f.type}
                     placeholder={f.placeholder} value={(form as any)[f.key]}
                     onChange={e => setForm(v => ({ ...v, [f.key]: e.target.value }))}
-                    className={`input ${f.type === 'password' ? 'pr-11' : ''} ${submitted && !f.optional && !(form as any)[f.key] ? 'input-error' : ''}`} />
+                    className={cn('input', f.type === 'password' && 'pr-11', submitted && !f.optional && !(form as any)[f.key] && 'input-error')} />
                   {f.type === 'password' && (
                     <button type="button" onClick={() => setShowPw(v => !v)}
+                      aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors p-1">
                       {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>

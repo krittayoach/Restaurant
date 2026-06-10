@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { cn } from '@/lib/cn'
 
 const API = process.env.NEXT_PUBLIC_API_URL!
 
@@ -21,9 +22,9 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
   const maxDay       = Math.max(...weekly.map((d: any) => d.total ?? 0), 1)
 
   const stats = [
-    { label: 'รายได้ 7 วัน',  value: `฿${totalRevenue.toLocaleString()}`, emoji: '💰', grad: 'from-accent to-accent2' },
-    { label: 'ออเดอร์',       value: totalOrders,                          emoji: '🧾', grad: 'from-blue to-violet' },
-    { label: 'เฉลี่ย/ออเดอร์', value: `฿${avgOrder.toFixed(0)}`,            emoji: '📈', grad: 'from-green to-teal' },
+    { label: 'รายได้ 7 วัน',  value: `฿${totalRevenue.toLocaleString()}`, emoji: '💰', bg: 'bg-accent/10',  text: 'text-accent' },
+    { label: 'ออเดอร์',       value: totalOrders,                          emoji: '🧾', bg: 'bg-blue/10',    text: 'text-blue' },
+    { label: 'เฉลี่ย/ออเดอร์', value: `฿${avgOrder.toFixed(0)}`,            emoji: '📈', bg: 'bg-green/10',   text: 'text-green' },
   ]
   const quick = [
     { href: 'menu',       label: 'จัดการเมนู', emoji: '🍽️' },
@@ -36,17 +37,17 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
   return (
     <div className="p-5 md:p-8 max-w-5xl mx-auto">
       <div className="mb-7 anim-up">
-        <h1 className="font-display font-bold text-2xl md:text-3xl text-text">ภาพรวมร้าน 👋</h1>
+        <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">ภาพรวมร้าน 👋</h1>
         <p className="text-muted text-sm mt-1">สรุปผลประกอบการ 7 วันล่าสุด</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 md:gap-4 mb-7">
         {stats.map((s, i) => (
-          <div key={s.label} className={`card-hover rounded-3xl p-4 md:p-5 text-white bg-gradient-to-br ${s.grad} anim-up`} style={{ animationDelay: `${i * 80}ms` }}>
+          <div key={s.label} className={cn('card card-hover rounded-3xl p-4 md:p-5 anim-up', s.bg)} style={{ animationDelay: `${i * 80}ms` }}>
             <div className="text-2xl md:text-3xl mb-2">{s.emoji}</div>
-            <p className="font-display font-bold text-lg md:text-3xl leading-tight">{s.value}</p>
-            <p className="text-white/85 text-xs mt-1">{s.label}</p>
+            <p className={cn('font-display font-bold text-lg md:text-3xl leading-tight', s.text)}>{s.value}</p>
+            <p className="text-muted text-xs mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -66,7 +67,7 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
                         <span className="font-semibold text-accent">฿{parseFloat(d.total).toLocaleString()}</span>
                       </div>
                       <div className="h-2.5 bg-bg3 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-accent to-accent2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-accent rounded-full transition-all origin-left" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   )
@@ -81,7 +82,7 @@ export default async function ManagerDashboard({ params }: { params: { slug: str
             {bestseller.length === 0 ? <p className="text-muted text-sm">ยังไม่มีข้อมูล</p>
               : bestseller.map((item: any, i: number) => (
                   <div key={item.menu_name} className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-accent text-white' : i < 3 ? 'bg-accent/15 text-accent' : 'bg-bg3 text-muted'}`}>
+                    <span className={cn('size-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0', i === 0 ? 'bg-accent text-white' : i < 3 ? 'bg-accent/15 text-accent' : 'bg-bg3 text-muted')}>
                       {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                     </span>
                     <span className="flex-1 text-sm truncate">{item.menu_name}</span>

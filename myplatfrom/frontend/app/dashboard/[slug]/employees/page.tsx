@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { Plus, UserCheck, UserX, X, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
@@ -93,7 +94,7 @@ export default function EmployeesPage() {
     <div className="p-5 md:p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text">👥 พนักงาน</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">👥 พนักงาน</h1>
           <p className="text-muted text-sm mt-0.5">{employees.filter(e => e.is_active).length} คนกำลังทำงาน</p>
         </div>
         <button onClick={openAdd} className="btn-primary"><Plus size={16} /> เพิ่มคน</button>
@@ -128,6 +129,7 @@ export default function EmployeesPage() {
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••"
                     className={`input pr-11 ${formSubmitted && ((!editingId && !form.password) || (form.password && form.password.length < 6)) ? 'input-error' : ''}`} />
                   <button type="button" onClick={() => setShowPw(v => !v)}
+                    aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors p-1">
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -164,9 +166,9 @@ export default function EmployeesPage() {
         {employees.map((emp: any, i: number) => {
           const r = ROLE[emp.role] ?? { label: emp.role, emoji: '👤', cls: 'bg-bg3 text-muted' }
           return (
-            <div key={emp.id} className={`card card-hover flex items-center gap-3 md:gap-4 p-4 anim-up ${!emp.is_active ? 'opacity-50' : ''} ${editingId === emp.id ? 'ring-2 ring-accent/40' : ''}`}
+            <div key={emp.id} className={cn('card card-hover flex items-center gap-3 md:gap-4 p-4 anim-up', !emp.is_active && 'opacity-50', editingId === emp.id && 'ring-2 ring-accent/40')}
               style={{ animationDelay: `${i * 40}ms` }}>
-              <div className="w-11 h-11 rounded-2xl bg-bg3 flex items-center justify-center text-xl shrink-0">{r.emoji}</div>
+              <div className="size-11 rounded-2xl bg-bg3 flex items-center justify-center text-xl shrink-0">{r.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{emp.name}</p>
                 <p className="text-xs text-muted font-mono">{emp.phone}</p>
@@ -174,13 +176,13 @@ export default function EmployeesPage() {
               <span className={`badge ${r.cls} shrink-0 hidden sm:inline-flex`}>{r.label}</span>
               <p className="font-display font-bold text-green text-sm shrink-0">฿{(emp.salary ?? 0).toLocaleString()}</p>
               <div className="flex gap-1.5 shrink-0">
-                <button onClick={() => openEdit(emp)} className="w-9 h-9 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
+                <button onClick={() => openEdit(emp)} className="size-9 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
                   <Pencil size={14} />
                 </button>
-                <button onClick={() => toggle(emp.id)} disabled={busyId[emp.id]} className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 ${emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green'}`} data-tooltip={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
+                <button onClick={() => toggle(emp.id)} disabled={busyId[emp.id]} className={cn('size-9 rounded-xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-50', emp.is_active ? 'bg-rose/10 text-rose' : 'bg-green/10 text-green')} data-tooltip={emp.is_active ? 'ระงับ' : 'เปิดใช้งาน'}>
                   {busyId[emp.id] ? <Spinner size={13} /> : emp.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
                 </button>
-                <button onClick={() => del(emp.id, emp.name)} disabled={busyId[emp.id]} className="w-9 h-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
+                <button onClick={() => del(emp.id, emp.name)} disabled={busyId[emp.id]} className="size-9 rounded-xl bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors disabled:opacity-50" data-tooltip="ลบ">
                   {busyId[emp.id] ? <Spinner size={13} /> : <Trash2 size={14} />}
                 </button>
               </div>

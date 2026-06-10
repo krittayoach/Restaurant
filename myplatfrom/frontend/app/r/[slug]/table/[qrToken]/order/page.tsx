@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Plus, Minus, ShoppingCart, MessageSquare, UtensilsCrossed } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import Link from 'next/link'
 import { Star } from 'lucide-react'
@@ -86,16 +87,16 @@ export default function OrderPage() {
   const uncategorized = menus.filter(m => !m.category_id)
 
   if (pageLoading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="text-center">
-        <div className="w-10 h-10 rounded-full border-[3px] border-orange-400 border-t-transparent animate-spin mx-auto mb-3" />
+        <div className="size-10 rounded-full border-[3px] border-accent border-t-transparent animate-spin mx-auto mb-3" />
         <p className="text-orange-400 text-sm font-medium">{t.loadingMenu}</p>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #fff8f0 0%, #fff3e6 100%)' }}>
+    <div className="min-h-screen bg-bg">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-orange-100 px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between max-w-lg mx-auto">
@@ -111,10 +112,10 @@ export default function OrderPage() {
             </Link>
             <LangToggle lang={lang} setLang={setLang} />
             <button onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="relative w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center hover:bg-orange-100 transition-colors">
+              className="relative size-10 rounded-xl bg-bg3 border border-border flex items-center justify-center hover:bg-border transition-colors">
               <ShoppingCart size={18} className="text-orange-400" />
               {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-400 text-white text-xs font-bold flex items-center justify-center shadow">
+                <span className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center shadow">
                   {cart.reduce((s, i) => s + i.quantity, 0)}
                 </span>
               )}
@@ -279,10 +280,10 @@ export default function OrderPage() {
       </div>
 
       {/* Fixed bottom */}
-      <div className="fixed bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-orange-100">
+      <div className="fixed bottom-0 inset-x-0 p-4 pb-safe bg-bg2/95 backdrop-blur border-t border-border">
         <div className="max-w-lg mx-auto">
           <button onClick={submitOrder} disabled={cart.length === 0 || loading}
-            className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-[.98] ${cart.length > 0 ? 'bg-gradient-to-r from-orange-400 to-rose-400 text-white shadow-lg shadow-orange-200 hover:shadow-xl' : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}>
+            className={cn('flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-[.98]', cart.length > 0 ? 'btn-primary shadow-lg hover:shadow-xl py-4' : 'bg-bg3 text-muted cursor-not-allowed')}>
             <ShoppingCart size={18} />
             {loading ? t.sending : cart.length > 0
               ? (existingOrderId ? t.addOrderBtn(total.toFixed(0)) : t.orderBtn(total.toFixed(0)))
@@ -298,7 +299,7 @@ function MenuItemCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: num
   return (
     <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col transition-all ${qty > 0 ? 'border-orange-300 shadow-orange-100' : 'border-orange-100'}`}>
       {/* Image */}
-      <div className="aspect-square w-full bg-gradient-to-br from-orange-50 to-rose-50 overflow-hidden relative">
+      <div className="aspect-square w-full bg-bg3 overflow-hidden relative">
         {(item as any).image ? (
           <img src={(item as any).image} alt={item.name} className="w-full h-full object-cover" />
         ) : (

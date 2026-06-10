@@ -54,8 +54,8 @@ export default function CustomerPortalPage() {
         {/* Header */}
         <div className="text-center relative">
           <div className="absolute right-0 top-0"><LangToggle lang={lang} setLang={setLang} /></div>
-          <div className="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-3">
-            <Star size={28} className="text-orange-400" />
+          <div className="size-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
+            <Star size={28} className="text-accent" />
           </div>
           <h1 className="font-display font-bold text-2xl text-text">
             {lang === 'th' ? 'แต้มสะสม & การจอง' : 'Rewards & Bookings'}
@@ -108,7 +108,7 @@ export default function CustomerPortalPage() {
         {data?.found && (
           <>
             {/* Points card */}
-            <div className="card p-6 bg-gradient-to-br from-orange-50 to-rose-50 border-orange-100">
+            <div className="card p-6 bg-accent/5 border-accent/20">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted font-medium">
@@ -122,8 +122,8 @@ export default function CustomerPortalPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="w-14 h-14 rounded-2xl bg-orange-100 flex items-center justify-center">
-                    <Star size={28} className="text-orange-400" />
+                  <div className="size-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+                    <Star size={28} className="text-accent" />
                   </div>
                 </div>
               </div>

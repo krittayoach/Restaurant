@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import { CheckCircle2, Banknote, BadgeCheck, X } from 'lucide-react'
+import { cn } from '@/lib/cn'
 import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
@@ -87,7 +88,7 @@ export default function OrdersPage() {
     <div className="p-5 md:p-8">
       <div className="flex items-center justify-between mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text">🪑 หน้าร้าน</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">🪑 หน้าร้าน</h1>
           <p className="text-muted text-sm mt-0.5">สถานะโต๊ะแบบเรียลไทม์</p>
         </div>
       </div>
@@ -95,7 +96,7 @@ export default function OrdersPage() {
       <div className="flex gap-1.5 p-1.5 bg-bg2 border border-border rounded-2xl w-fit mb-6 shadow-sm flex-wrap">
         {tabs.map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${tab === key ? 'bg-accent text-white shadow-md shadow-accent/30' : 'text-muted hover:text-text'}`}>
+            className={cn('px-4 py-2 rounded-xl text-sm font-semibold transition-all', tab === key ? 'bg-accent text-white shadow-md shadow-accent/30' : 'text-muted hover:text-text')}>
             {label}
           </button>
         ))}
@@ -107,12 +108,12 @@ export default function OrdersPage() {
           {tables.map((table, i) => {
             const s = TABLE_STATUS[table.status] ?? { label: table.status, emoji: '⚪', ring: 'ring-border', text: 'text-muted' }
             return (
-              <div key={table.id} className={`card card-hover p-4 ring-2 ${s.ring} anim-up`} style={{ animationDelay: `${i * 30}ms` }}>
+              <div key={table.id} className={cn('card card-hover p-4 ring-2 anim-up', s.ring)} style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start justify-between mb-2">
                   <span className="font-display font-bold text-2xl">{table.label}</span>
                   <span className="text-lg">{s.emoji}</span>
                 </div>
-                <p className={`text-xs font-semibold ${s.text}`}>{s.label}</p>
+                <p className={cn('text-xs font-semibold', s.text)}>{s.label}</p>
                 <p className="text-xs text-muted mt-0.5">🪑 {table.seats} ที่นั่ง</p>
               </div>
             )
@@ -153,7 +154,7 @@ export default function OrdersPage() {
             const ps = PAYMENT_STATUS[order.payment_status] ?? PAYMENT_STATUS.unpaid
             const hasSlip = order.payment_status === 'pending_verification' && order.slip_path
             return (
-              <div key={order.id} className={`card p-4 anim-up ${order.payment_status === 'pending_verification' ? 'ring-2 ring-yellow/30' : ''}`}
+              <div key={order.id} className={cn('card p-4 anim-up', order.payment_status === 'pending_verification' && 'ring-2 ring-yellow/30')}
                 style={{ animationDelay: `${i * 40}ms` }}>
                 <div className="flex items-center gap-3 mb-3">
                   <span className="font-display font-bold text-xl">โต๊ะ {order.table?.label ?? '–'}</span>
@@ -167,12 +168,12 @@ export default function OrdersPage() {
                   {order.items?.filter((it: any) => it.status !== 'cancelled').map((item: any) => (
                     <div key={item.id} className="flex items-center gap-2 text-sm">
                       <span className="flex-1 truncate">{item.menu_name} <span className="text-muted">×{item.quantity}</span></span>
-                      <span className={`text-xs shrink-0 ${item.status === 'pending' ? 'text-yellow' : item.status === 'cooking' ? 'text-accent' : item.status === 'ready' ? 'text-green' : 'text-muted'}`}>
+                      <span className={cn('text-xs shrink-0', item.status === 'pending' ? 'text-yellow' : item.status === 'cooking' ? 'text-accent' : item.status === 'ready' ? 'text-green' : 'text-muted')}>
                         {item.status === 'pending' ? 'รอทำ' : item.status === 'cooking' ? 'กำลังทำ' : item.status === 'ready' ? 'พร้อม' : 'เสิร์ฟแล้ว'}
                       </span>
                       {item.status === 'pending' && (
                         <button onClick={() => cancelItem(item.id)} disabled={busyId[`cancel_${item.id}`]}
-                          data-tooltip="ยกเลิกรายการ" className="w-6 h-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
+                          data-tooltip="ยกเลิกรายการ" className="size-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
                           {busyId[`cancel_${item.id}`] ? <Spinner size={10} /> : <X size={11} />}
                         </button>
                       )}

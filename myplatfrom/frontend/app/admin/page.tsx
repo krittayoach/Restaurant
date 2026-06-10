@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
 import { Spinner } from '@/components/Spinner'
+import { cn } from '@/lib/cn'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010'
 
@@ -251,11 +252,11 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between anim-up relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-yellow/10 flex items-center justify-center">
+            <div className="size-12 rounded-2xl bg-yellow/10 flex items-center justify-center">
               <ShieldCheck size={24} className="text-yellow" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-2xl text-text">Super Admin</h1>
+              <h1 className="font-display font-bold text-2xl text-text text-balance">Super Admin</h1>
               <p className="text-muted text-sm">จัดการแพลตฟอร์มทั้งหมด</p>
             </div>
           </div>
@@ -264,10 +265,10 @@ export default function AdminPage() {
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => { setShowNotif(v => !v); setUnread(0) }}
-                className="relative w-10 h-10 rounded-2xl bg-bg2 border border-border flex items-center justify-center text-muted hover:text-text transition-all">
+                className="relative size-10 rounded-2xl bg-bg2 border border-border flex items-center justify-center text-muted hover:text-text transition-all">
                 <Bell size={16} />
                 {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose text-white text-[10px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 size-4 rounded-full bg-rose text-white text-[10px] font-bold flex items-center justify-center">
                     {unread > 9 ? '9+' : unread}
                   </span>
                 )}
@@ -392,10 +393,10 @@ export default function AdminPage() {
             <div className="space-y-2">
               {filtered.map((r: any) => (
                 <div key={r.id}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-colors ${r.is_active ? 'bg-bg3' : 'bg-rose/5 border border-rose/15'}`}>
+                  className={cn('flex items-center gap-3 p-3 rounded-2xl transition-colors', r.is_active ? 'bg-bg3' : 'bg-rose/5 border border-rose/15')}>
 
                   {/* Avatar */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0 ${r.is_active ? 'bg-accent/10' : 'bg-rose/10'}`}>
+                  <div className={cn('size-9 rounded-xl flex items-center justify-center text-base shrink-0', r.is_active ? 'bg-accent/10' : 'bg-rose/10')}>
                     🍜
                   </div>
 
@@ -438,11 +439,7 @@ export default function AdminPage() {
                       onClick={() => r.is_active ? setSuspendTarget({ id: r.id, name: r.name }) : unsuspend(r.id)}
                       disabled={busyId[`active_${r.id}`]}
                       data-tooltip={r.is_active ? 'ระงับร้าน' : 'เปิดใช้งาน'}
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all disabled:opacity-60 ${
-                        r.is_active
-                          ? 'bg-bg2 border-border text-muted hover:text-rose hover:border-rose/30'
-                          : 'bg-green/10 border-green/20 text-green hover:bg-green/20'
-                      }`}>
+                      className={cn('size-8 rounded-xl flex items-center justify-center border transition-all disabled:opacity-60', r.is_active ? 'bg-bg2 border-border text-muted hover:text-rose hover:border-rose/30' : 'bg-green/10 border-green/20 text-green hover:bg-green/20')}>
                       {busyId[`active_${r.id}`] ? <Spinner size={13} /> : r.is_active ? <PowerOff size={13} /> : <Power size={13} />}
                     </button>
                   </div>
@@ -466,7 +463,7 @@ export default function AdminPage() {
                 <input value={pwForm.phone}
                   onChange={e => { setPwForm(f => ({ ...f, phone: e.target.value })); setPwErrors(er => ({ ...er, phone: '' })) }}
                   placeholder="0812345678"
-                  className={`input ${pwErrors.phone ? 'input-error' : ''}`} />
+                  className={cn('input', pwErrors.phone && 'input-error')} />
                 {pwErrors.phone && <p className="field-error">{pwErrors.phone}</p>}
               </div>
               <div>
@@ -474,7 +471,7 @@ export default function AdminPage() {
                 <input type="password" value={pwForm.newPassword}
                   onChange={e => { setPwForm(f => ({ ...f, newPassword: e.target.value })); setPwErrors(er => ({ ...er, newPassword: '' })) }}
                   placeholder="อย่างน้อย 6 ตัวอักษร"
-                  className={`input ${pwErrors.newPassword ? 'input-error' : ''}`} />
+                  className={cn('input', pwErrors.newPassword && 'input-error')} />
                 {pwErrors.newPassword && <p className="field-error">{pwErrors.newPassword}</p>}
               </div>
               {pwResult && (
@@ -559,7 +556,7 @@ export default function AdminPage() {
 
       {/* Reject modal */}
       {rejectId && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-modal flex items-center justify-center p-4">
           <div className="bg-bg2 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
             <h3 className="font-display font-bold text-lg mb-4">ปฏิเสธคำขอ</h3>
             <textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)}
@@ -581,10 +578,10 @@ export default function AdminPage() {
 
       {/* Suspend confirm modal */}
       {suspendTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="card p-6 w-full max-w-sm anim-pop space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose/10 flex items-center justify-center text-rose shrink-0">
+              <div className="size-10 rounded-2xl bg-rose/10 flex items-center justify-center text-rose shrink-0">
                 <PowerOff size={18} />
               </div>
               <div>
@@ -621,10 +618,10 @@ export default function AdminPage() {
 
       {/* Logout confirm modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="card p-6 w-full max-w-sm anim-pop space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose/10 flex items-center justify-center text-rose shrink-0">
+              <div className="size-10 rounded-2xl bg-rose/10 flex items-center justify-center text-rose shrink-0">
                 <LogOut size={18} />
               </div>
               <div>
@@ -681,7 +678,7 @@ function AuditRow({ log }: { log: any }) {
   })
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bg3 transition-colors text-sm">
-      <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg shrink-0 ${info.color}`}>{info.label}</span>
+      <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-lg shrink-0', info.color)}>{info.label}</span>
       <span className="text-muted truncate flex-1">
         {log.actor_name ? <span className="text-text font-medium">{log.actor_name}</span> : <span className="text-muted italic">—</span>}
         {log.actor_role && <span className="text-muted text-xs ml-1.5">({log.actor_role})</span>}

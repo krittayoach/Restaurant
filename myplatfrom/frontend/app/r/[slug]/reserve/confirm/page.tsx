@@ -56,7 +56,7 @@ export default function ConfirmPage() {
           <div className="absolute right-0 top-0">
             <LangToggle lang={lang} setLang={setLang} />
           </div>
-          <div className="w-16 h-16 rounded-full bg-green/10 flex items-center justify-center mx-auto mb-4">
+          <div className="size-16 rounded-full bg-green/10 flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} className="text-green" />
           </div>
           <h1 className="font-display font-bold text-2xl text-text">{t.bookingConfirmed}</h1>
@@ -78,7 +78,7 @@ export default function ConfirmPage() {
             { icon: Phone,    label: t.labelPhone,  value: res.customer_phone },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
+              <div className="size-8 rounded-lg bg-bg3 flex items-center justify-center shrink-0">
                 <Icon size={15} className="text-muted" />
               </div>
               <div>

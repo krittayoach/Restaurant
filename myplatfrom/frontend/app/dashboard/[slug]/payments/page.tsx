@@ -102,7 +102,7 @@ export default function PaymentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text flex items-center gap-2">
+          <h1 className="font-display font-bold text-2xl text-text text-balance flex items-center gap-2">
             <CreditCard size={22} className="text-accent" />
             ตรวจสอบชำระเงิน
           </h1>
@@ -111,7 +111,7 @@ export default function PaymentsPage() {
           </p>
         </div>
         <button onClick={load} disabled={loading} data-tooltip="รีเฟรช"
-          className="w-9 h-9 rounded-2xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
+          className="size-9 rounded-2xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
@@ -119,8 +119,8 @@ export default function PaymentsPage() {
       {/* Empty state */}
       {!loading && total === 0 && (
         <div className="card p-10 text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mx-auto">
-            <CheckCircle size={28} className="text-green-500" />
+          <div className="size-14 rounded-2xl bg-green/10 flex items-center justify-center mx-auto">
+            <CheckCircle size={28} className="text-green" />
           </div>
           <p className="font-semibold text-text">ทุกรายการได้รับการตรวจสอบแล้ว</p>
           <p className="text-sm text-muted">ไม่มีสลิปรอยืนยัน</p>
@@ -137,7 +137,7 @@ export default function PaymentsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-text">โต๊ะ {order.table.label}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 font-medium">รอยืนยัน</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">รอยืนยัน</span>
                   </div>
                   <p className="text-xs text-muted mt-1 flex items-center gap-1">
                     <Clock size={10} />{formatDateTime(order.created_at)}
@@ -168,12 +168,12 @@ export default function PaymentsPage() {
                 <div className="flex-1" />
                 <button onClick={() => verifyOrder(order.id, false)}
                   disabled={actionLoading === order.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors font-medium disabled:opacity-50">
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose/10 text-rose hover:bg-rose/20 transition-colors font-medium disabled:opacity-50">
                   {actionLoading === order.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
                 </button>
                 <button onClick={() => verifyOrder(order.id, true)}
                   disabled={actionLoading === order.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium disabled:opacity-50">
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green/10 text-green hover:bg-green/20 transition-colors font-medium disabled:opacity-50">
                   {actionLoading === order.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
                 </button>
               </div>
@@ -192,7 +192,7 @@ export default function PaymentsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-text">โต๊ะ {res.table_label}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 font-medium">รอยืนยัน</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">รอยืนยัน</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-muted">
                     <span className="flex items-center gap-1"><CalendarClock size={10} />{formatDateTime(res.reserved_at)}</span>
@@ -230,12 +230,12 @@ export default function PaymentsPage() {
                 <div className="flex-1" />
                 <button onClick={() => verifyPreOrder(res.id, 'reject')}
                   disabled={actionLoading === res.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors font-medium disabled:opacity-50">
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose/10 text-rose hover:bg-rose/20 transition-colors font-medium disabled:opacity-50">
                   {actionLoading === res.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
                 </button>
                 <button onClick={() => verifyPreOrder(res.id, 'approve')}
                   disabled={actionLoading === res.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-colors font-medium disabled:opacity-50">
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green/10 text-green hover:bg-green/20 transition-colors font-medium disabled:opacity-50">
                   {actionLoading === res.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
                 </button>
               </div>
@@ -246,12 +246,12 @@ export default function PaymentsPage() {
 
       {/* Slip viewer modal */}
       {viewSlip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setViewSlip(null)}>
           <div className="relative max-w-sm w-full" onClick={e => e.stopPropagation()}>
             <img src={viewSlip} alt="สลิป" className="w-full rounded-2xl shadow-2xl object-contain max-h-[80vh]" />
-            <button onClick={() => setViewSlip(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white text-lg leading-none">
+            <button onClick={() => setViewSlip(null)} aria-label="ปิด"
+              className="absolute top-3 right-3 size-8 rounded-full bg-black/50 flex items-center justify-center text-white text-lg leading-none">
               ×
             </button>
           </div>
