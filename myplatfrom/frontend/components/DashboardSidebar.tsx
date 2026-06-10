@@ -1,12 +1,16 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import {
   LayoutDashboard, UtensilsCrossed, ClipboardList,
   ChefHat, QrCode, Tag, Users, BarChart3, LogOut, Settings, Monitor, Package, CreditCard,
+  GitBranch, ChevronDown, ChevronLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useConfirm } from './ConfirmModal'
+
+type Branch = { id: string; name: string; slug: string; is_active: boolean }
 
 const NAV = [
   { href: '',            label: 'ภาพรวม',     emoji: '🏠', icon: LayoutDashboard, roles: ['manager'] },
@@ -19,6 +23,7 @@ const NAV = [
   { href: '/employees',  label: 'พนักงาน',     emoji: '👥', icon: Users,           roles: ['manager'] },
   { href: '/inventory',  label: 'คลังวัตถุดิบ', emoji: '📦', icon: Package,         roles: ['manager'] },
   { href: '/reports',    label: 'รายงาน',      emoji: '📊', icon: BarChart3,       roles: ['manager'] },
+  { href: '/branches',   label: 'สาขา',        emoji: '🏪', icon: GitBranch,       roles: ['manager'], hideInBranch: true },
   { href: '/settings',   label: 'ตั้งค่า',     emoji: '⚙️', icon: Settings,        roles: ['manager'] },
 ]
 
@@ -26,15 +31,58 @@ const ROLE_LABEL: Record<string, string> = {
   manager: 'ผู้จัดการ', employee: 'พนักงาน', chef: 'พ่อครัว', super_admin: 'Super Admin',
 }
 
-export default function DashboardSidebar({ slug, restaurantName, role }: { slug: string; restaurantName: string; role: string }) {
+export default function DashboardSidebar({
+  slug, restaurantName, role, branches = [], parentSlug, parentName,
+}: {
+  slug: string
+  restaurantName: string
+  role: string
+  branches?: Branch[]
+  parentSlug?: string | null
+  parentName?: string | null
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const { confirm } = useConfirm()
-  const nav = NAV.filter(n => n.roles.includes(role))
+  const [branchOpen, setBranchOpen] = useState(false)
+  const [switching, setSwitching] = useState(false)
+
+  const isBranch = !!parentSlug
+  const nav = NAV.filter(n => n.roles.includes(role) && (!(n as any).hideInBranch || !isBranch))
 
   const isActive = (href: string) => {
     const full = `/dashboard/${slug}${href}`
     return href === '' ? pathname === full : pathname.startsWith(full)
+  }
+
+  async function switchToBranch(branchSlug: string) {
+    setSwitching(true)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/switch-branch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ branchSlug }),
+      })
+      if (res.ok) {
+        const { restaurantSlug } = await res.json()
+        window.location.href = `/dashboard/${restaurantSlug}`
+      }
+    } finally { setSwitching(false) }
+  }
+
+  async function switchToParent() {
+    setSwitching(true)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/switch-parent`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (res.ok) {
+        const { restaurantSlug } = await res.json()
+        window.location.href = `/dashboard/${restaurantSlug}`
+      }
+    } finally { setSwitching(false) }
   }
 
   async function handleLogout() {
@@ -53,16 +101,57 @@ export default function DashboardSidebar({ slug, restaurantName, role }: { slug:
     <>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 shrink-0 flex-col h-full bg-bg2/80 backdrop-blur border-r border-border">
-        <div className="px-5 py-5 border-b border-border">
+        <div className="px-5 py-4 border-b border-border space-y-3">
+          {isBranch && (
+            <button
+              onClick={switchToParent}
+              disabled={switching}
+              className="flex items-center gap-1 text-xs text-muted hover:text-text transition-colors disabled:opacity-50"
+            >
+              <ChevronLeft size={13} />
+              <span className="truncate">{parentName}</span>
+            </button>
+          )}
           <div className="flex items-center gap-3">
             <div className="size-11 rounded-2xl bg-accent flex items-center justify-center text-xl shadow-lg shadow-accent/30">
               🍜
             </div>
             <div className="min-w-0">
               <p className="font-display font-semibold text-base text-text truncate leading-tight">{restaurantName}</p>
-              <p className="text-xs text-muted">ระบบจัดการร้าน</p>
+              <p className="text-xs text-muted">{isBranch ? 'สาขา' : 'ระบบจัดการร้าน'}</p>
             </div>
           </div>
+          {!isBranch && branches.length > 0 && (
+            <div>
+              <button
+                onClick={() => setBranchOpen(o => !o)}
+                className="flex items-center gap-1.5 w-full text-xs font-medium text-muted hover:text-text transition-colors"
+              >
+                <GitBranch size={12} />
+                <span>{branches.length} สาขา</span>
+                <ChevronDown size={12} className={cn('ml-auto transition-transform duration-200', branchOpen && 'rotate-180')} />
+              </button>
+              {branchOpen && (
+                <div className="mt-2 space-y-1">
+                  {branches.map(b => (
+                    <div key={b.id} className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-bg3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-text truncate">{b.name}</p>
+                        <p className="text-[10px] text-muted font-mono">{b.slug}</p>
+                      </div>
+                      <button
+                        onClick={() => switchToBranch(b.slug)}
+                        disabled={!b.is_active || switching}
+                        className="ml-2 text-[11px] font-medium text-accent hover:underline disabled:text-muted disabled:no-underline shrink-0"
+                      >
+                        {b.is_active ? 'เข้า →' : 'ปิด'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">

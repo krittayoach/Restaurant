@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/restaurants/${params.slug}`, {
     headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
   })
-  const restaurant = res.ok ? await res.json() : { name: params.slug }
+  const restaurant = res.ok ? await res.json() : { name: params.slug, branches: [], parent_slug: null, parent_name: null }
 
   if (restaurant.is_active === false) {
     return (
@@ -49,7 +49,14 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <DashboardSidebar slug={params.slug} restaurantName={restaurant.name} role={role} />
+      <DashboardSidebar
+        slug={params.slug}
+        restaurantName={restaurant.name}
+        role={role}
+        branches={restaurant.branches ?? []}
+        parentSlug={restaurant.parent_slug ?? null}
+        parentName={restaurant.parent_name ?? null}
+      />
       <main className="flex-1 min-w-0 overflow-y-auto pt-14 pb-24 md:pt-0 md:pb-0">
         {children}
       </main>

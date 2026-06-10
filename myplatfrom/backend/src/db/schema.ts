@@ -16,8 +16,9 @@ export const reservationStatusEnum = pgEnum('reservation_status', ['confirmed', 
 
 // ─── restaurants ──────────────────────────────────────────────────────────────
 export const restaurants = pgTable('restaurants', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  slug:       varchar('slug', { length: 60 }).notNull().unique(),
+  id:                   uuid('id').primaryKey().defaultRandom(),
+  parent_restaurant_id: uuid('parent_restaurant_id').references((): any => restaurants.id, { onDelete: 'set null' }),
+  slug:                 varchar('slug', { length: 60 }).notNull().unique(),
   name:       varchar('name', { length: 100 }).notNull(),
   promptpay:  varchar('promptpay', { length: 20 }),
   open_time:  varchar('open_time', { length: 5 }).default('08:00'),
@@ -241,13 +242,15 @@ export const auditLogs = pgTable('audit_logs', {
 })
 
 // ─── Relations ────────────────────────────────────────────────────────────────
-export const restaurantsRelations = relations(restaurants, ({ many }) => ({
+export const restaurantsRelations = relations(restaurants, ({ one, many }) => ({
   users:       many(users),
   categories:  many(categories),
   menus:       many(menus),
   tables:      many(tables),
   orders:      many(orders),
   promotions:  many(promotions),
+  parent:      one(restaurants, { fields: [restaurants.parent_restaurant_id], references: [restaurants.id], relationName: 'branches' }),
+  branches:    many(restaurants, { relationName: 'branches' }),
 }))
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({

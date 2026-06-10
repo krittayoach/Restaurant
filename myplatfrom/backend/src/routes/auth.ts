@@ -134,6 +134,46 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     }),
   })
 
+  // POST /auth/switch-branch — manager switches into a branch context
+  .post('/switch-branch', async ({ body, set, cookie: { session } }) => {
+    const token = session?.value ?? ''
+    let payload: any
+    try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
+    if (payload.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
+
+    const [branch] = await db.select().from(restaurants).where(eq(restaurants.slug, body.branchSlug)).limit(1)
+    if (!branch) { set.status = 404; return { error: 'ไม่พบสาขา' } }
+    if (branch.parent_restaurant_id !== payload.restaurantId) { set.status = 403; return { error: 'Forbidden' } }
+    if (!branch.is_active) { set.status = 403; return { error: 'สาขานี้ถูกปิดการใช้งาน' } }
+
+    const newToken = await signJWT({ userId: payload.userId, restaurantId: branch.id, role: 'manager' })
+    await redis.set(keys.session(newToken), JSON.stringify({ userId: payload.userId, restaurantId: branch.id, role: 'manager' }), 'EX', SESSION_TTL)
+    session.set({ value: newToken, httpOnly: true, sameSite: 'strict', maxAge: SESSION_TTL, path: '/' })
+    return { restaurantSlug: branch.slug }
+  }, {
+    body: t.Object({ branchSlug: t.String() }),
+  })
+
+  // POST /auth/switch-parent — manager returns to parent restaurant context
+  .post('/switch-parent', async ({ set, cookie: { session } }) => {
+    const token = session?.value ?? ''
+    let payload: any
+    try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
+    if (payload.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
+
+    const [current] = await db.select({ parent_restaurant_id: restaurants.parent_restaurant_id })
+      .from(restaurants).where(eq(restaurants.id, payload.restaurantId!)).limit(1)
+    if (!current?.parent_restaurant_id) { set.status = 400; return { error: 'ไม่ได้อยู่ในสาขา' } }
+
+    const [parent] = await db.select({ id: restaurants.id, slug: restaurants.slug })
+      .from(restaurants).where(eq(restaurants.id, current.parent_restaurant_id)).limit(1)
+
+    const newToken = await signJWT({ userId: payload.userId, restaurantId: parent.id, role: 'manager' })
+    await redis.set(keys.session(newToken), JSON.stringify({ userId: payload.userId, restaurantId: parent.id, role: 'manager' }), 'EX', SESSION_TTL)
+    session.set({ value: newToken, httpOnly: true, sameSite: 'strict', maxAge: SESSION_TTL, path: '/' })
+    return { restaurantSlug: parent.slug }
+  })
+
   // POST /auth/logout
   .post('/logout', async ({ cookie: { session } }) => {
     const token = session.value

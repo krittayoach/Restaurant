@@ -4,10 +4,10 @@ import { db } from '../db'
 import { restaurants, tables, menus, users } from '../db/schema'
 import { eq, or, desc, sql, count } from 'drizzle-orm'
 
-export const PLAN_LIMITS: Record<string, { tables: number; menus: number; employees: number; promotions: number; price: number }> = {
-  free:  { tables: 5,        menus: 20,        employees: 3,        promotions: 2,        price: 0   },
-  basic: { tables: 20,       menus: 100,       employees: 15,       promotions: 10,       price: 299  },
-  pro:   { tables: Infinity, menus: Infinity,  employees: Infinity, promotions: Infinity, price: 799 },
+export const PLAN_LIMITS: Record<string, { tables: number; menus: number; employees: number; promotions: number; branches: number; price: number }> = {
+  free:  { tables: 5,        menus: 20,        employees: 3,        promotions: 2,        branches: 0,        price: 0   },
+  basic: { tables: 20,       menus: 100,       employees: 15,       promotions: 10,       branches: 2,        price: 299  },
+  pro:   { tables: Infinity, menus: Infinity,  employees: Infinity, promotions: Infinity, branches: Infinity, price: 799 },
 }
 import { randomBytes } from 'crypto'
 import { verifyJWT } from '../lib/jwt'
@@ -186,12 +186,32 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
         : eq(restaurants.slug, params.slug))
       .limit(1)
     if (!r) { set.status = 404; return { error: 'Not found' } }
+
     const [tableCount] = await db.select({ count: count() }).from(tables).where(eq(tables.restaurant_id, r.id))
     const [menuCount]  = await db.select({ count: count() }).from(menus).where(eq(menus.restaurant_id, r.id))
+
+    let parent_slug: string | null = null
+    let parent_name: string | null = null
+    let branches: { id: string; name: string; slug: string; is_active: boolean }[] = []
+
+    if (r.parent_restaurant_id) {
+      const [parent] = await db.select({ slug: restaurants.slug, name: restaurants.name })
+        .from(restaurants).where(eq(restaurants.id, r.parent_restaurant_id)).limit(1)
+      parent_slug = parent?.slug ?? null
+      parent_name = parent?.name ?? null
+    } else {
+      branches = await db.select({
+        id: restaurants.id, name: restaurants.name, slug: restaurants.slug, is_active: restaurants.is_active,
+      }).from(restaurants).where(eq(restaurants.parent_restaurant_id, r.id))
+    }
+
     return {
       ...r,
       table_count: tableCount?.count ?? 0,
       menu_count:  menuCount?.count ?? 0,
       plan_limits: PLAN_LIMITS[r.plan] ?? PLAN_LIMITS.free,
+      parent_slug,
+      parent_name,
+      branches,
     }
   })
