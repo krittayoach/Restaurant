@@ -28,11 +28,11 @@ myplatfrom/
 │   ├── r/[slug]/reserve/           # Customer: table reservation + pre-order
 │   ├── r/[slug]/me/                # Customer: loyalty portal (แต้มสะสม)
 │   ├── kds/[slug]/                 # Kitchen Display System (fullscreen)
-│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, settings
+│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, branches, settings
 │   ├── admin/                      # Super admin
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
-│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers
+│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers, branches
 │   ├── db/       # schema.ts, drizzle.config.ts, seed-demo.ts
 │   └── lib/      # redis.ts, jwt.ts, storage.ts, loyalty.ts
 └── docker-compose.yml
@@ -116,8 +116,14 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - `z-modal` / `z-toast` แทน `z-50` / `z-[9999]`; `pb-safe` บน fixed bottom bars
 - Color tokens: `accent` (orange), `rose`, `green`, `blue`, `yellow`, `muted`, `bg`/`bg2`/`bg3`, `border`
 
+## Multi-Branch Rules
+- Branch = restaurant ที่มี `parent_restaurant_id` set — มี slug, tables, menus, staff เป็นของตัวเอง
+- ห้าม nested branches (branch ของ branch)
+- Manager switch context ผ่าน `POST /auth/switch-branch` → JWT cookie ใหม่ → `window.location.href`
+- `GET /restaurants/:slug` คืน `parent_slug`, `parent_name`, `branches[]` เสมอ
+- Plan limit: free=0, basic=2, pro=∞ branches
+
 ## Backlog
-- [ ] multi-branch
 ## /update-claude Instructions
 1. List changes: UI/Redesign, Features, Bug fixes, Config/Setup — รอ confirm
 2. CLAUDE.md — อัปเดตเฉพาะ sections ที่เปลี่ยน ห้ามเพิ่ม changelog — ≤120 บรรทัด

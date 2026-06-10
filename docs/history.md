@@ -1,5 +1,16 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.11 (2026-06-10)
+
+- F: Multi-branch — สร้าง/จัดการสาขาได้จาก dashboard; แต่ละสาขามี menus, tables, staff เป็นของตัวเอง
+- F: `GET/POST/DELETE /restaurants/:slug/branches` — CRUD สาขา; plan-limited (free=0, basic=2, pro=∞)
+- F: `POST /auth/switch-branch` + `POST /auth/switch-parent` — re-issue JWT cookie เพื่อสลับ context
+- F: `GET /restaurants/:slug` คืน `parent_slug`, `parent_name`, `branches[]` เพิ่มเติม
+- F: Sidebar branch switcher dropdown + "← กลับร้านหลัก" เมื่ออยู่ใน branch context
+- F: หน้า `/dashboard/[slug]/branches` — จัดการสาขา, สร้าง modal, ปิดสาขา, ปุ่มเข้าสาขา
+- C: `restaurants.parent_restaurant_id` — nullable self-ref FK (Drizzle schema + db:push)
+- C: `PLAN_LIMITS` เพิ่ม field `branches`
+
 ## Changelog — v2.10 (2026-06-10)
 
 - C: เพิ่ม `/update-claude` skill — list changes → confirm → อัปเดต CLAUDE.md + history.md + README.md อัตโนมัติ
