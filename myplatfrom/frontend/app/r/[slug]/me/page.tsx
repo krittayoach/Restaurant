@@ -6,13 +6,13 @@ import { useI18n, LangToggle } from '@/lib/i18n'
 import Link from 'next/link'
 import { Spinner } from '@/components/Spinner'
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010'
 
-const RES_STATUS: Record<string, { label: string; th: string; color: string }> = {
-  confirmed: { label: 'Confirmed',  th: 'ยืนยันแล้ว',  color: 'text-blue-600 bg-blue-50' },
-  seated:    { label: 'Seated',     th: 'เข้านั่งแล้ว', color: 'text-green-600 bg-green-50' },
-  cancelled: { label: 'Cancelled',  th: 'ยกเลิก',       color: 'text-gray-400 bg-gray-50' },
-  no_show:   { label: 'No Show',    th: 'ไม่มา',        color: 'text-rose-500 bg-rose-50' },
+const RES_STATUS: Record<string, { label: string; th: string; cls: string }> = {
+  confirmed: { label: 'Confirmed',  th: 'ยืนยันแล้ว',  cls: 'text-blue bg-blue/10' },
+  seated:    { label: 'Seated',     th: 'เข้านั่งแล้ว', cls: 'text-green bg-green/10' },
+  cancelled: { label: 'Cancelled',  th: 'ยกเลิก',       cls: 'text-muted bg-bg3' },
+  no_show:   { label: 'No Show',    th: 'ไม่มา',        cls: 'text-rose bg-rose/10' },
 }
 
 export default function CustomerPortalPage() {
@@ -78,11 +78,12 @@ export default function CustomerPortalPage() {
               className="input flex-1"
             />
             <button onClick={lookup} disabled={loading}
+              aria-label={lang === 'th' ? 'ค้นหา' : 'Search'}
               className="btn-primary px-5 py-2 shrink-0 flex items-center gap-1.5">
               {loading ? <Spinner size={16} /> : <ChevronRight size={16} />}
             </button>
           </div>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          {error && <p className="text-rose text-sm mt-2">{error}</p>}
         </div>
 
         {/* Not found */}
@@ -104,7 +105,6 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* Found — profile */}
         {data?.found && (
           <>
             {/* Points card */}
@@ -114,30 +114,28 @@ export default function CustomerPortalPage() {
                   <p className="text-xs text-muted font-medium">
                     {lang === 'th' ? 'สวัสดี,' : 'Hello,'} {data.customer.name}
                   </p>
-                  <p className="font-display font-bold text-4xl text-orange-500 mt-1">
+                  <p className="font-display font-bold text-4xl text-accent mt-1">
                     {data.customer.total_points.toLocaleString()}
                   </p>
-                  <p className="text-xs text-orange-400 font-medium mt-0.5">
+                  <p className="text-xs text-accent/70 font-medium mt-0.5">
                     {lang === 'th' ? 'แต้มสะสม' : 'Reward Points'}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="size-14 rounded-2xl bg-accent/10 flex items-center justify-center">
-                    <Star size={28} className="text-accent" />
-                  </div>
+                <div className="size-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+                  <Star size={28} className="text-accent" />
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-orange-100 grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-xs">
                 <div>
-                  <p className="font-bold text-orange-500">{data.meta.pointsPerBaht * 10}</p>
+                  <p className="font-bold text-accent">{data.meta.pointsPerBaht * 10}</p>
                   <p className="text-muted">{lang === 'th' ? 'แต้มต่อ ฿10' : 'pts per ฿10'}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-orange-500">{data.meta.pointsPerReservation}</p>
+                  <p className="font-bold text-accent">{data.meta.pointsPerReservation}</p>
                   <p className="text-muted">{lang === 'th' ? 'แต้มต่อการจอง' : 'pts/booking'}</p>
                 </div>
                 <div>
-                  <p className="font-bold text-orange-500">
+                  <p className="font-bold text-accent">
                     {data.customer.total_points >= data.meta.minRedeem
                       ? `฿${redeemableDiscount}`
                       : `${data.meta.minRedeem - data.customer.total_points} pts`}
@@ -168,7 +166,7 @@ export default function CustomerPortalPage() {
                               <span className="font-semibold text-sm text-text">
                                 {lang === 'th' ? 'โต๊ะ' : 'Table'} {r.table_label}
                               </span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.color}`}>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}`}>
                                 {lang === 'th' ? s.th : s.label}
                               </span>
                             </div>
@@ -179,9 +177,9 @@ export default function CustomerPortalPage() {
                             {r.pre_order_items?.length > 0 && (
                               <div className="mt-1.5">
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  r.pre_order_payment === 'paid' ? 'bg-green-50 text-green-600' :
-                                  r.pre_order_payment === 'rejected' ? 'bg-red-50 text-red-500' :
-                                  'bg-amber-50 text-amber-600'
+                                  r.pre_order_payment === 'paid'     ? 'bg-green/10 text-green' :
+                                  r.pre_order_payment === 'rejected' ? 'bg-rose/10 text-rose' :
+                                  'bg-yellow/10 text-yellow'
                                 }`}>
                                   {lang === 'th' ? 'สั่งล่วงหน้า' : 'Pre-order'} ฿{r.pre_order_total?.toFixed(0)}
                                   {r.pre_order_payment === 'paid' ? ' ✓' : r.pre_order_payment === 'rejected' ? ' ✗' : ' ⏳'}
@@ -190,10 +188,10 @@ export default function CustomerPortalPage() {
                             )}
                           </div>
                           {r.status === 'seated' && (
-                            <CheckCircle size={16} className="text-green-500 shrink-0 mt-0.5" />
+                            <CheckCircle size={16} className="text-green shrink-0 mt-0.5" />
                           )}
                           {(r.status === 'cancelled' || r.status === 'no_show') && (
-                            <XCircle size={16} className="text-gray-300 shrink-0 mt-0.5" />
+                            <XCircle size={16} className="text-muted shrink-0 mt-0.5" />
                           )}
                         </div>
                       </div>
@@ -213,8 +211,8 @@ export default function CustomerPortalPage() {
                   {data.transactions.map((tx: any) => (
                     <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
                       {tx.type === 'earn'
-                        ? <ArrowUpCircle size={18} className="text-green-500 shrink-0" />
-                        : <ArrowDownCircle size={18} className="text-orange-400 shrink-0" />}
+                        ? <ArrowUpCircle size={18} className="text-green shrink-0" />
+                        : <ArrowDownCircle size={18} className="text-accent shrink-0" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-text font-medium truncate">
                           {tx.note ?? (tx.source === 'order'
@@ -225,7 +223,7 @@ export default function CustomerPortalPage() {
                           {new Date(tx.created_at).toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
-                      <span className={`font-bold text-sm shrink-0 ${tx.type === 'earn' ? 'text-green-600' : 'text-orange-400'}`}>
+                      <span className={`font-bold text-sm shrink-0 ${tx.type === 'earn' ? 'text-green' : 'text-accent'}`}>
                         {tx.type === 'earn' ? '+' : ''}{tx.points}
                       </span>
                     </div>

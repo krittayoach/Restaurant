@@ -202,7 +202,7 @@ async function main() {
     roleCounts[u.role] = (roleCounts[u.role] ?? 0) + 1
     const emailBase = u.role === 'manager' ? 'manager' : u.role === 'chef' ? `chef${roleCounts[u.role]}` : `employee${roleCounts[u.role]}`
     const email = `${emailBase}@demo.com`
-    await db.update(users).set({ salary, email }).where(eq(users.id, u.id))
+    await db.update(users).set({ salary, email, email_verified: true }).where(eq(users.id, u.id))
   }
   console.log('📧 Demo emails: manager@demo.com / employee1@demo.com / employee2@demo.com / chef1@demo.com / chef2@demo.com')
 

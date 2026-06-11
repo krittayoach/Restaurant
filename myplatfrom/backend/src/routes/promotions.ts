@@ -30,34 +30,50 @@ export const promotionRoutes = new Elysia({ prefix: '/promotions' })
       set.status = 402
       return { error: 'Plan limit reached', plan: rest?.plan, limit, current: promoCount }
     }
-    const b = body as any
     const [p] = await db.insert(promotions).values({
       restaurant_id: user.restaurantId!,
-      name: b.name,
-      discount_pct: b.discount_pct ?? 0,
-      discount_amt: b.discount_amt ?? 0,
-      min_order: b.min_order ?? 0,
-      starts_at: b.starts_at ? new Date(b.starts_at) : null,
-      ends_at: b.ends_at ? new Date(b.ends_at) : null,
+      name: body.name,
+      discount_pct: body.discount_pct ?? 0,
+      discount_amt: body.discount_amt ?? 0,
+      min_order: body.min_order ?? 0,
+      starts_at: body.starts_at ? new Date(body.starts_at) : null,
+      ends_at: body.ends_at ? new Date(body.ends_at) : null,
       is_active: true,
     }).returning()
     return p
+  }, {
+    body: t.Object({
+      name: t.String(),
+      discount_pct: t.Optional(t.Number()),
+      discount_amt: t.Optional(t.Number()),
+      min_order: t.Optional(t.Number()),
+      starts_at: t.Optional(t.String()),
+      ends_at: t.Optional(t.String()),
+    }),
   })
 
   .put('/:id', async ({ headers, params, body, set }) => {
     const user = await auth(headers, set); if (!user) return { error: 'Unauthorized' }
     if (user.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
-    const b = body as any
     const [updated] = await db.update(promotions).set({
-      name: b.name,
-      discount_pct: b.discount_pct ?? 0,
-      discount_amt: b.discount_amt ?? 0,
-      min_order: b.min_order ?? 0,
-      starts_at: b.starts_at ? new Date(b.starts_at) : null,
-      ends_at: b.ends_at ? new Date(b.ends_at) : null,
+      name: body.name,
+      discount_pct: body.discount_pct ?? 0,
+      discount_amt: body.discount_amt ?? 0,
+      min_order: body.min_order ?? 0,
+      starts_at: body.starts_at ? new Date(body.starts_at) : null,
+      ends_at: body.ends_at ? new Date(body.ends_at) : null,
     }).where(and(eq(promotions.id, params.id), eq(promotions.restaurant_id, user.restaurantId!))).returning()
     if (!updated) { set.status = 404; return { error: 'Not found' } }
     return updated
+  }, {
+    body: t.Object({
+      name: t.String(),
+      discount_pct: t.Optional(t.Number()),
+      discount_amt: t.Optional(t.Number()),
+      min_order: t.Optional(t.Number()),
+      starts_at: t.Optional(t.String()),
+      ends_at: t.Optional(t.String()),
+    }),
   })
 
   .patch('/:id/toggle', async ({ headers, params, set }) => {

@@ -1,16 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Calendar, Clock, Users, User, Phone, FileText, ChevronRight, Plus, Minus, ShoppingCart, ImagePlus, Upload } from 'lucide-react'
+import { Calendar, Clock, Users, User, Phone, FileText, ChevronRight, Plus, Minus, ImagePlus } from 'lucide-react'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import QRCode from 'qrcode'
 import { Spinner } from '@/components/Spinner'
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010'
 
 function toLocalDate(d: Date) { return d.toISOString().slice(0, 10) }
 
-interface MenuItem { id: string; name: string; price: number; category_id?: string; image?: string }
+interface MenuItem { id: string; name: string; price: number; category_id?: string; image?: string; description?: string }
 interface CartItem extends MenuItem { quantity: number; note?: string }
 
 export default function ReservePage() {
@@ -19,7 +19,6 @@ export default function ReservePage() {
   const { t, lang, setLang } = useI18n()
   const today = toLocalDate(new Date())
 
-  // Step 1 — Search
   const [date, setDate]           = useState(today)
   const [time, setTime]           = useState('19:00')
   const [partySize, setPartySize] = useState('2')
@@ -27,7 +26,6 @@ export default function ReservePage() {
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
 
-  // Step 2+3 — Table + Info
   const [step, setStep] = useState<'search' | 'form'>('search')
   const [selectedTable, setSelectedTable] = useState<any>(null)
   const [name, setName]   = useState('')
@@ -35,18 +33,15 @@ export default function ReservePage() {
   const [notes, setNotes] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ table?: string; name?: string; phone?: string }>({})
 
-  // Step 4 — Pre-order
-  const [menus, setMenus]         = useState<MenuItem[]>([])
+  const [menus, setMenus]           = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<any[]>([])
-  const [cart, setCart]           = useState<CartItem[]>([])
+  const [cart, setCart]             = useState<CartItem[]>([])
   const [restaurant, setRestaurant] = useState<any>(null)
   const [promptpayQR, setPromptpayQR] = useState('')
 
-  // Step 5 — Payment
   const [slipPreview, setSlipPreview] = useState('')
   const [payError, setPayError] = useState('')
 
-  // Submit
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError]   = useState('')
 
@@ -66,14 +61,12 @@ export default function ReservePage() {
       setTables(data)
       if (data.length === 0) { setSearchError(t.noTablesError); return }
 
-      // Load menus + restaurant info in parallel
       const [restRes, menuRes, catRes] = await Promise.all([
         fetch(`${API}/restaurants/${slug}`).then(r => r.json()).catch(() => null),
         fetch(`${API}/menus?restaurantId=${data[0]?.restaurant_id ?? ''}`).then(r => r.json()).catch(() => []),
         fetch(`${API}/categories?restaurantId=${data[0]?.restaurant_id ?? ''}`).then(r => r.json()).catch(() => []),
       ])
 
-      // get restaurant_id from tables endpoint if needed
       let rid = data[0]?.restaurant_id
       if (!rid && restRes?.id) rid = restRes.id
       const [menuRes2, catRes2] = rid
@@ -160,11 +153,11 @@ export default function ReservePage() {
         </div>
 
         {/* Cancel warning */}
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-xs text-amber-700 font-medium">
+        <div className="mb-4 bg-yellow/10 border border-yellow/30 rounded-2xl px-4 py-3 text-xs text-yellow font-medium">
           {t.cancelWarning}
         </div>
 
-        {/* Step 1: Search */}
+        {/* Step 1 */}
         <div className="card p-6 mb-4">
           <p className="text-sm font-semibold text-text mb-4">{t.step1}</p>
           <div className="space-y-3">
@@ -182,7 +175,7 @@ export default function ReservePage() {
                 {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{t.persons(n)}</option>)}
               </select>
             </div>
-            {searchError && <p className="text-red-500 text-sm">{searchError}</p>}
+            {searchError && <p className="text-rose text-sm">{searchError}</p>}
             <button onClick={searchTables} disabled={searching}
               className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 disabled:opacity-70">
               {searching ? <><Spinner size={16} />{t.searching}</> : <><span>{t.searchTables}</span><ChevronRight size={16} /></>}
@@ -192,10 +185,10 @@ export default function ReservePage() {
 
         {step === 'form' && tables.length > 0 && (
           <form onSubmit={submit} className="space-y-4">
-            {/* Step 2: Table */}
+            {/* Step 2 */}
             <div className="card p-6">
               <p className="text-sm font-semibold text-text mb-3">{t.step2}</p>
-              <div className={`grid grid-cols-2 gap-2 rounded-xl transition-all ${fieldErrors.table ? 'ring-2 ring-red-400 ring-offset-1' : ''}`}>
+              <div className={`grid grid-cols-2 gap-2 rounded-xl transition-all ${fieldErrors.table ? 'ring-2 ring-rose ring-offset-1' : ''}`}>
                 {tables.map(tb => (
                   <button key={tb.id} type="button"
                     onClick={() => { setSelectedTable(tb); setFieldErrors(fe => ({ ...fe, table: undefined })) }}
@@ -205,10 +198,10 @@ export default function ReservePage() {
                   </button>
                 ))}
               </div>
-              {fieldErrors.table && <p className="text-red-500 text-xs mt-1.5">{fieldErrors.table}</p>}
+              {fieldErrors.table && <p className="text-rose text-xs mt-1.5">{fieldErrors.table}</p>}
             </div>
 
-            {/* Step 3: Booker info */}
+            {/* Step 3 */}
             <div className="card p-6">
               <p className="text-sm font-semibold text-text mb-4">{t.step3}</p>
               <div className="space-y-3">
@@ -216,15 +209,15 @@ export default function ReservePage() {
                   <label className="text-xs text-muted mb-1.5 flex items-center gap-1.5"><User size={12} />{t.fullName} *</label>
                   <input value={name} onChange={e => { setName(e.target.value); setFieldErrors(fe => ({ ...fe, name: undefined })) }}
                     placeholder={t.namePlaceholder}
-                    className={`input w-full ${fieldErrors.name ? 'border-red-400 bg-red-50' : ''}`} />
-                  {fieldErrors.name && <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>}
+                    className={`input w-full ${fieldErrors.name ? 'border-rose bg-rose/5' : ''}`} />
+                  {fieldErrors.name && <p className="text-rose text-xs mt-1">{fieldErrors.name}</p>}
                 </div>
                 <div>
                   <label className="text-xs text-muted mb-1.5 flex items-center gap-1.5"><Phone size={12} />{t.phone} *</label>
                   <input value={phone} onChange={e => { setPhone(e.target.value); setFieldErrors(fe => ({ ...fe, phone: undefined })) }}
                     placeholder={t.phonePlaceholder} type="tel"
-                    className={`input w-full ${fieldErrors.phone ? 'border-red-400 bg-red-50' : ''}`} />
-                  {fieldErrors.phone && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>}
+                    className={`input w-full ${fieldErrors.phone ? 'border-rose bg-rose/5' : ''}`} />
+                  {fieldErrors.phone && <p className="text-rose text-xs mt-1">{fieldErrors.phone}</p>}
                 </div>
                 <div>
                   <label className="text-xs text-muted mb-1.5 flex items-center gap-1.5"><FileText size={12} />{t.notes}</label>
@@ -243,11 +236,10 @@ export default function ReservePage() {
                 <p className="text-xs text-muted text-center py-4">{t.preOrderEmpty}</p>
               ) : (
                 <div className="space-y-4">
-                  {/* Category groups */}
                   {grouped.map((cat: any) => (
                     <div key={cat.id}>
-                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">{cat.name}</p>
-                      <div className="grid grid-cols-4 gap-2">
+                      <p className="text-xs font-bold text-accent uppercase tracking-wider mb-2">{cat.name}</p>
+                      <div className="grid grid-cols-2 gap-2">
                         {cat.items.map((item: MenuItem) => (
                           <MiniMenuCard key={item.id} item={item} qty={getQty(item.id)} onAdd={() => addItem(item)} onRemove={() => removeItem(item.id)} />
                         ))}
@@ -255,26 +247,25 @@ export default function ReservePage() {
                     </div>
                   ))}
                   {uncategorized.length > 0 && (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {uncategorized.map((item: MenuItem) => (
                         <MiniMenuCard key={item.id} item={item} qty={getQty(item.id)} onAdd={() => addItem(item)} onRemove={() => removeItem(item.id)} />
                       ))}
                     </div>
                   )}
 
-                  {/* Cart summary */}
                   {cart.length > 0 && (
-                    <div className="bg-orange-50 rounded-xl p-3 border border-orange-100 space-y-2 mt-2">
+                    <div className="bg-bg3 rounded-xl p-3 border border-border space-y-2 mt-2">
                       {cart.map(i => (
                         <div key={i.id} className="flex items-center gap-2 text-sm">
-                          <span className="flex-1 text-gray-700 font-medium">{i.name}</span>
-                          <span className="text-gray-400">×{i.quantity}</span>
-                          <span className="font-bold text-orange-500">฿{(i.price * i.quantity).toFixed(0)}</span>
+                          <span className="flex-1 text-text font-medium">{i.name}</span>
+                          <span className="text-muted">×{i.quantity}</span>
+                          <span className="font-bold text-accent">฿{(i.price * i.quantity).toFixed(0)}</span>
                         </div>
                       ))}
-                      <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-sm">
-                        <span className="text-gray-600">{t.total}</span>
-                        <span className="text-orange-500">฿{cartTotal.toFixed(0)}</span>
+                      <div className="border-t border-border pt-2 flex justify-between font-bold text-sm">
+                        <span className="text-text">{t.total}</span>
+                        <span className="text-accent">฿{cartTotal.toFixed(0)}</span>
                       </div>
                     </div>
                   )}
@@ -282,7 +273,7 @@ export default function ReservePage() {
               )}
             </div>
 
-            {/* Step 5: Payment (only if cart has items) */}
+            {/* Step 5: Payment */}
             {needPayment && (
               <div className="card p-6">
                 <p className="text-sm font-semibold text-text">{t.paymentStep}</p>
@@ -293,40 +284,40 @@ export default function ReservePage() {
                     <div className="bg-bg3 rounded-2xl p-4 text-center border border-border">
                       {promptpayQR && (
                         <div className="flex justify-center mb-3">
-                          <div className="bg-white rounded-2xl p-2 shadow-md border border-orange-100">
+                          <div className="bg-bg2 rounded-2xl p-2 shadow-md border border-border">
                             <img src={promptpayQR} alt="PromptPay QR" className="w-36 h-36 rounded-lg" />
                           </div>
                         </div>
                       )}
-                      <p className="text-xs text-gray-400 mb-1">PromptPay</p>
-                      <p className="font-mono font-bold text-gray-800 text-lg">{restaurant.promptpay}</p>
+                      <p className="text-xs text-muted mb-1">PromptPay</p>
+                      <p className="font-mono font-bold text-text text-lg">{restaurant.promptpay}</p>
                     </div>
 
                     <div>
-                      <p className="text-xs font-bold text-orange-400 mb-2">{t.attachSlip}</p>
-                      <label className={`flex flex-col items-center gap-2 border-2 border-dashed rounded-2xl p-4 cursor-pointer transition-colors ${slipPreview ? 'border-orange-300 bg-orange-50/50' : payError ? 'border-red-300 bg-red-50/30' : 'border-orange-200 hover:border-orange-300'}`}>
+                      <p className="text-xs font-bold text-accent mb-2">{t.attachSlip}</p>
+                      <label className={`flex flex-col items-center gap-2 border-2 border-dashed rounded-2xl p-4 cursor-pointer transition-colors ${slipPreview ? 'border-accent/50 bg-bg3' : payError ? 'border-rose/50 bg-rose/5' : 'border-border2 hover:border-accent/50'}`}>
                         {slipPreview ? (
                           <img src={slipPreview} alt="slip" className="max-h-40 rounded-xl object-contain" />
                         ) : (
                           <>
-                            <ImagePlus size={24} className={payError ? 'text-red-300' : 'text-orange-300'} />
-                            <span className={`text-sm ${payError ? 'text-red-400' : 'text-gray-400'}`}>{t.tapToSelectSlip}</span>
+                            <ImagePlus size={24} className={payError ? 'text-rose' : 'text-muted'} />
+                            <span className={`text-sm ${payError ? 'text-rose' : 'text-muted'}`}>{t.tapToSelectSlip}</span>
                           </>
                         )}
                         <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
                       </label>
-                      {payError && <p className="text-red-500 text-xs mt-1">{payError}</p>}
+                      {payError && <p className="text-rose text-xs mt-1">{payError}</p>}
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
-                    <p className="text-sm text-amber-700">ร้านยังไม่ได้ตั้งค่า PromptPay — กรุณาติดต่อร้านก่อนจอง</p>
+                  <div className="bg-yellow/10 rounded-xl p-4 text-center border border-yellow/20">
+                    <p className="text-sm text-yellow">ร้านยังไม่ได้ตั้งค่า PromptPay — กรุณาติดต่อร้านก่อนจอง</p>
                   </div>
                 )}
               </div>
             )}
 
-            {formError && <p className="text-red-500 text-sm text-center">{formError}</p>}
+            {formError && <p className="text-rose text-sm text-center">{formError}</p>}
 
             <button type="submit" disabled={submitting || (needPayment && !restaurant?.promptpay)}
               className="btn-primary w-full py-3 text-base disabled:opacity-50 flex items-center justify-center gap-2">
@@ -341,34 +332,38 @@ export default function ReservePage() {
 
 function MiniMenuCard({ item, qty, onAdd, onRemove }: { item: MenuItem; qty: number; onAdd: () => void; onRemove: () => void }) {
   return (
-    <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden flex flex-col">
-      <div className="aspect-square w-full bg-bg3 overflow-hidden relative">
+    <div className="bg-bg2 rounded-xl border border-border shadow-sm overflow-hidden flex flex-col">
+      <div className="aspect-[4/3] w-full bg-bg3 overflow-hidden relative">
         {item.image
           ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
         }
         {qty > 0 && (
-          <div className="absolute top-1 right-1 size-4 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center shadow">
+          <div className="absolute top-1.5 left-1.5 size-5 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center shadow">
             {qty}
           </div>
         )}
       </div>
-      <div className="p-1.5 flex-1">
-        <p className="font-semibold text-xs text-gray-800 line-clamp-2 leading-tight">{item.name}</p>
-        <p className="font-bold text-orange-500 text-xs mt-0.5">฿{item.price}</p>
+      <div className="px-2.5 pt-2 pb-1 flex-1">
+        <p className="font-semibold text-xs text-text line-clamp-2 leading-snug">{item.name}</p>
+        {item.description && <p className="text-xs text-muted mt-0.5 line-clamp-1">{item.description}</p>}
+        <p className="font-bold text-accent text-xs mt-0.5">฿{item.price}</p>
       </div>
-      <div className="flex border-t border-orange-50">
+      <div className="flex border-t border-border">
         {qty > 0 ? (
           <>
-            <button type="button" onClick={onRemove} className="flex-1 py-1 flex items-center justify-center text-orange-400 hover:bg-orange-50">
+            <button type="button" onClick={onRemove} aria-label="ลด"
+              className="flex-1 py-1.5 flex items-center justify-center text-accent hover:bg-bg3 transition-colors">
               <Minus size={11} />
             </button>
-            <button type="button" onClick={onAdd} className="flex-1 py-1 flex items-center justify-center bg-accent text-white">
+            <button type="button" onClick={onAdd} aria-label="เพิ่ม"
+              className="flex-1 py-1.5 flex items-center justify-center bg-accent text-white">
               <Plus size={11} />
             </button>
           </>
         ) : (
-          <button type="button" onClick={onAdd} className="w-full py-1 flex items-center justify-center bg-accent text-white rounded-b-xl">
+          <button type="button" onClick={onAdd} aria-label="เพิ่ม"
+            className="w-full py-1.5 flex items-center justify-center bg-accent text-white rounded-b-xl">
             <Plus size={11} />
           </button>
         )}

@@ -84,15 +84,17 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 
 ## Demo Data
 - slug: `demo-restaurant` · Tables: T1–T10
+- สร้างบัญชี manager ก่อนผ่าน `POST /restaurants/register` (password ตามที่ตั้งตอน register) แล้วค่อยรัน `bun run src/db/seed-demo.ts`
+- `seed-demo.ts` จะตั้ง email + `email_verified: true` ให้ทุก staff อัตโนมัติ
 
 | Role | Email | รหัสผ่าน |
 |---|---|---|
-| manager | `manager@demo.com` | `password123` |
+| manager | `manager@demo.com` | ตามที่ตั้งตอน register |
 | employee | `employee1@demo.com` / `employee2@demo.com` | `password123` |
 | chef | `chef1@demo.com` / `chef2@demo.com` | `password123` |
 
 ## New Libs / Keys
-- `lib/rateLimit.ts` — `rateLimitPlugin()` Elysia plugin; Redis-backed rate limiting
+- `lib/rateLimit.ts` — `checkRateLimit(key, max, windowSecs)` + `rateLimitPlugin()`; Redis-backed; keys: `loginRateLimit`, `registerRateLimit`, `customerAuthRateLimit`, `paymentRateLimit`, `reviewRateLimit`
 - `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget → `audit_logs` table
 - `lib/email.ts` + `cron/billing.ts` — Resend email; billing auto-downgrade hourly
 - Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` · Redis: `billing:reminder:{rid}` TTL 8d
@@ -102,8 +104,9 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 ## Gotchas
 - Staff login ใช้ `email` — phone ใช้สำหรับ walk-in customer loyalty เท่านั้น
 - `email_verified` ต้องเป็น `true` ก่อน login — register ใหม่จะส่ง verify link ทาง email
-- `POST /payment/request` — no-auth (customer), method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
-- `POST /reviews` — no-auth, ใช้ `orderId` เป็น secret แทน auth
+- `POST /payment/request`, `/payment/submit`, `POST /reviews` — no-auth public; rate limited 20/10min และ 10/10min ต่อ IP ป้องกัน spam/brute-force
+- `POST /payment/request` — method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
+- `POST /reviews` — ใช้ `orderId` เป็น secret แทน auth
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
 - Next.js middleware ใช้ Edge runtime → `jose` ไม่ใช้ `jsonwebtoken`
 - Token เก็บใน localStorage (`getToken()`/`saveToken()`) ไม่ใช่ cookie
@@ -120,10 +123,12 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 ## UI Conventions (baseline-ui)
 - `cn()` จาก `@/lib/cn` — ใช้แทน template string class logic ทุกที่
 - `size-{n}` แทน `w-X h-X` สำหรับ square elements
+- ห้ามใช้ raw Tailwind palette (`orange-X`, `gray-X`, `red-X`) — ใช้ design tokens เท่านั้น (dashboard + customer pages ใช้ tokens ครบแล้ว)
 - ห้ามใช้ `bg-gradient-to-*` — ใช้ solid token colors เท่านั้น
-- `text-balance` บน heading ทุกตัว; `aria-label` บน icon-only buttons
+- `text-balance` บน heading ทุกตัว; `aria-label` บน icon-only buttons ทุกตัว
 - `z-modal` / `z-toast` แทน `z-50` / `z-[9999]`; `pb-safe` บน fixed bottom bars
 - Color tokens: `accent` (orange), `rose`, `green`, `blue`, `yellow`, `muted`, `bg`/`bg2`/`bg3`, `border`
+- Customer order page: menu grid 2-col + bottom sheet cart (เปิดจาก fixed bottom bar, รวม notes + ข้อมูลลูกค้า)
 
 ## Multi-Branch Rules
 - Branch = restaurant ที่มี `parent_restaurant_id` set — มี slug, tables, menus, staff เป็นของตัวเอง

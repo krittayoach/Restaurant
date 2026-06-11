@@ -1,5 +1,21 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.13 (2026-06-11)
+
+- B: แก้ fallback API URL `localhost:3001` → `localhost:3010` ใน customer pages (order, payment, reserve, me)
+- B: phone lookup ใน order page เพิ่ม debounce 500ms — หยุดยิง API ทุก keystroke
+- B: ปุ่มเพิ่มเมนูใช้ `t.addItem` ผ่าน i18n แทน hardcode ภาษาไทย
+- C: rate limit public endpoints — `POST /payment/request` + `/submit` (20 req/10min), `POST /reviews` (10 req/10min) ต่อ IP; เพิ่ม Redis keys `paymentRateLimit`/`reviewRateLimit`
+- C: เพิ่ม `t.Object` schema บน `promotions.ts` POST/PUT (เดิม `body as any`) และ `admin.ts` GET /stream query schema
+- U: Customer pages (order, payment, reserve, me) — migrate ทั้งหมดไปใช้ design system tokens ไม่มี raw `orange-`/`gray-`/`red-` เหลือ
+- U: Order page menu grid 4-col → 2-col, aspect ratio 4:3, แสดง `description` ในการ์ดเมนู
+- U: Cart เปลี่ยนเป็น bottom sheet — เปิดจาก fixed bottom bar ที่แสดง item count + ยอดรวมตลอด; รวม notes + ข้อมูลลูกค้าใน sheet เดียว
+- U: Reserve page pre-order menu grid 4-col → 2-col ให้สอดคล้องกับ order page
+- U: เพิ่ม `aria-label` บน icon-only buttons ทุกตัวในหน้า customer
+- C: `docs/roadmap.html` — เพิ่ม 4 security/quality stories เข้า SP1+SP3 (rate limit, validation, frontend security, repo cleanup); total 122→130 pts; add roadmap.html เข้า git
+- B: `seed-demo.ts` — เพิ่ม `email_verified: true` เมื่อตั้ง demo emails; ก่อนหน้านี้ demo accounts login ไม่ได้บน fresh setup
+- C: `docs/history.md` backlog cleanup — ลบ items ที่ implement แล้ว (reservation, loyalty, KDS, inventory, billing dashboard, offline PWA)
+
 ## Changelog — v2.12 (2026-06-11)
 
 - F: Staff Display `/staff/[slug]/` — tablet page สำหรับ employee/manager; แสดง ready-to-serve items + payment pending; SSE realtime via `/serving/stream`; PWA install prompt
@@ -283,12 +299,6 @@ Features & improvements shipped after v1.0:
 
 ## Backlog / Future Considerations
 
-- [ ] Push notifications (Web Push API) for order ready alerts to customers
-- [ ] Multi-language support (EN + TH toggle)
-- [ ] Table reservation system
-- [ ] Loyalty / points system for repeat customers
-- [ ] Kitchen display system (KDS) dedicated hardware view
-- [ ] Inventory / stock management
-- [ ] Super admin billing dashboard (plan upgrades, invoice)
+- [ ] Push notifications (Web Push API) for order ready alerts to customers — roadmap SP7
 - [ ] Export reports to CSV / PDF
-- [ ] Offline-capable PWA for kitchen board
+- [ ] Multi-language support (EN + TH toggle) — i18n TH/EN มีแล้วในหน้า customer; dashboard ยังเป็น TH only

@@ -4,6 +4,7 @@ import { orders, tables, users } from '../db/schema'
 import { eq, and } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys, publisher } from '../lib/redis'
+import { checkRateLimit, getIP } from '../lib/rateLimit'
 import { earnPoints, POINTS_PER_BAHT } from '../lib/loyalty'
 
 async function handleEarnPoints(order: any) {
@@ -33,7 +34,9 @@ async function resetTable(tableId: string, restaurantId: string, orderId: string
 export const paymentRoutes = new Elysia({ prefix: '/payment' })
 
   // POST /payment/request  (customer — no auth, orderId UUID is the secret)
-  .post('/request', async ({ body, set }) => {
+  .post('/request', async ({ body, set, request }) => {
+    const limited = await checkRateLimit(keys.paymentRateLimit(getIP(request)), 20, 600)
+    if (limited) { set.status = 429; set.headers['Retry-After'] = '600'; return { error: 'Too many requests. Please try again later.' } }
     const [updated] = await db.update(orders)
       .set({ payment_method: body.method, payment_status: 'pending_verification' })
       .where(and(eq(orders.id, body.orderId), eq(orders.payment_status, 'unpaid')))
@@ -47,7 +50,9 @@ export const paymentRoutes = new Elysia({ prefix: '/payment' })
   }, { body: t.Object({ orderId: t.String(), method: t.Union([t.Literal('cash'), t.Literal('promptpay')]) }) })
 
   // POST /payment/submit  (legacy — kept for compatibility)
-  .post('/submit', async ({ body, set }) => {
+  .post('/submit', async ({ body, set, request }) => {
+    const limited = await checkRateLimit(keys.paymentRateLimit(getIP(request)), 20, 600)
+    if (limited) { set.status = 429; set.headers['Retry-After'] = '600'; return { error: 'Too many requests. Please try again later.' } }
     const [updated] = await db.update(orders)
       .set({ payment_method: 'transfer', payment_status: 'pending_verification', slip_path: body.slipPath })
       .where(eq(orders.id, body.orderId)).returning()

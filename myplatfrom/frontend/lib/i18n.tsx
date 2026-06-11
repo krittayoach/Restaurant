@@ -20,6 +20,7 @@ type T = {
   namePlaceholder: string
   phonePlaceholder: string
   selectItems: string
+  addItem: string
   noMenu: string
   errorSelectItems: string
   errorNamePhone: string
@@ -122,6 +123,7 @@ const th: T = {
   phone: 'เบอร์โทร',
   namePlaceholder: 'สมชาย ใจดี',
   phonePlaceholder: '0XX-XXX-XXXX',
+  addItem: 'เพิ่ม',
   selectItems: 'เลือกรายการอาหาร',
   noMenu: 'ยังไม่มีเมนู',
   errorSelectItems: 'กรุณาเลือกรายการอาหาร',
@@ -225,6 +227,7 @@ const en: T = {
   phone: 'Phone',
   namePlaceholder: 'John Doe',
   phonePlaceholder: '0XX-XXX-XXXX',
+  addItem: 'Add',
   selectItems: 'Select items',
   noMenu: 'No menu items yet',
   errorSelectItems: 'Please select items',

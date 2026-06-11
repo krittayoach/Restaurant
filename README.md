@@ -46,7 +46,7 @@
 - **Audit Log** — บันทึกการกระทำสำคัญทุกประเภท (login, suspend, billing, password reset ฯลฯ)
 
 ### Security & Infrastructure
-- **Rate Limiting** — Redis-backed: global 300 req/min, login 5/5 min, register 5/hr
+- **Rate Limiting** — Redis-backed: login 5/5min, register 5/hr; public endpoints: payment 20/10min, reviews 10/10min ต่อ IP
 - **Billing Cron** — ตรวจสอบทุก 1 ชั่วโมง, auto-downgrade plan ที่หมดอายุ (30-day cycle)
 - **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
 - **Email Verification** — register ต้องยืนยัน email ก่อน login ได้; staff login ใช้ email (phone สำหรับ walk-in loyalty เท่านั้น)

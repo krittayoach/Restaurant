@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant SaaS — Production Roadmap</title>
+<style>
+  :root{
+    --accent:#ea580c; --accent2:#f97316; --rose:#e11d48; --green:#16a34a;
+    --blue:#2563eb; --yellow:#ca8a04; --bg:#0f0f12; --card:#1a1a20;
+    --card2:#22222b; --border:#2e2e3a; --text:#e7e7ea; --muted:#9a9aa6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Thai",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;padding:32px 20px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{text-align:center;margin-bottom:8px}
+  h1{font-size:2rem;font-weight:800;letter-spacing:-.5px}
+  h1 .sub{color:var(--accent2)}
+  .tagline{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .meta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 28px}
+  .pill{background:var(--card2);border:1px solid var(--border);border-radius:999px;
+    padding:5px 14px;font-size:.82rem;color:var(--muted)}
+  .pill b{color:var(--text)}
+  .legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;font-size:.8rem}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .phase-head{display:flex;align-items:center;gap:10px;margin:34px 0 14px}
+  .phase-head h2{font-size:1.15rem;font-weight:700}
+  .phase-head .tag{font-size:.72rem;padding:3px 10px;border-radius:6px;font-weight:600}
+  .sprint{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    margin-bottom:16px;overflow:hidden;transition:.2s}
+  .sprint:hover{border-color:var(--accent)}
+  .s-head{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none}
+  .s-num{flex-shrink:0;width:46px;height:46px;border-radius:10px;background:var(--card2);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;
+    text-align:center;line-height:1.1;border:1px solid var(--border)}
+  .s-title{flex:1}
+  .s-title h3{font-size:1.02rem;font-weight:700}
+  .s-title p{color:var(--muted);font-size:.84rem;margin-top:2px}
+  .s-pts{flex-shrink:0;font-size:.78rem;color:var(--muted);text-align:right}
+  .s-pts b{display:block;color:var(--accent2);font-size:1.1rem}
+  .chev{flex-shrink:0;color:var(--muted);transition:.2s;font-size:1.1rem}
+  .sprint.open .chev{transform:rotate(90deg)}
+  .s-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border)}
+  .sprint.open .s-body{display:block}
+  .goal{background:var(--card2);border-left:3px solid var(--accent);border-radius:6px;
+    padding:10px 14px;margin:16px 0;font-size:.9rem}
+  .goal b{color:var(--accent2)}
+  table{width:100%;border-collapse:collapse;margin:6px 0;font-size:.86rem}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.5px}
+  td.pts{text-align:center;font-weight:700;color:var(--accent2);white-space:nowrap}
+  .sub-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px}
+  .box{flex:1;min-width:220px;background:var(--card2);border:1px solid var(--border);
+    border-radius:8px;padding:12px 14px}
+  .box h4{font-size:.74rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+  .box ul{list-style:none;font-size:.85rem}
+  .box li{padding:3px 0 3px 16px;position:relative}
+  .box li::before{content:"›";position:absolute;left:0;color:var(--accent2);font-weight:700}
+  .dep{color:var(--blue)} .risk{color:var(--yellow)}
+  footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:36px;
+    padding-top:20px;border-top:1px solid var(--border)}
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+  .stat b{display:block;font-size:1.6rem;color:var(--accent2);font-weight:800}
+  .stat span{font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Restaurant SaaS — <span class="sub">Production Roadmap</span></h1>
+    <p class="tagline">เส้นทางจาก feature-complete สู่ production-ready · จัดลำดับ: Quality → Infra → Payments → Growth</p>
+  </header>
+
+  <div class="meta">
+    <span class="pill">👤 ทีม: <b>Solo</b></span>
+    <span class="pill">🗓 Sprint: <b>2 สัปดาห์</b> (ปรับยืดได้)</span>
+    <span class="pill">⚡ Velocity: <b>~16 pts/sprint</b></span>
+    <span class="pill">📍 ระยะรวม: <b>8 sprints ≈ 16 สัปดาห์</b></span>
+  </div>
+
+  <div class="summary">
+    <div class="stat"><b>8</b><span>Sprints</span></div>
+    <div class="stat"><b>6</b><span>Epics</span></div>
+    <div class="stat"><b>~130</b><span>Story Points</span></div>
+    <div class="stat"><b>4</b><span>เดือน (โดยประมาณ)</span></div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--rose)"></span>Quality &amp; Testing</span>
+    <span><span class="dot" style="background:var(--blue)"></span>CI/CD &amp; Infra</span>
+    <span><span class="dot" style="background:var(--green)"></span>Observability</span>
+    <span><span class="dot" style="background:var(--accent)"></span>Payments</span>
+    <span><span class="dot" style="background:var(--yellow)"></span>Features &amp; Growth</span>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase-head">
+    <h2>เฟส 1 · Quality Foundation</h2>
+    <span class="tag" style="background:#3a1620;color:#fb7185">Sprint 1–2 · P0</span>
+  </div>
+
+  <div class="sprint open">
+    <div class="s-head">
+      <div class="s-num">SP<br>1</div>
+      <div class="s-title"><h3>Testing Foundation</h3><p>วางรากฐาน test ป้องกัน regression บน critical path + ปิดช่องโหว่ด่วน</p></div>
+      <div class="s-pts"><b>21</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> ทุก critical path (auth, multi-tenant isolation, order state machine) มี test ครอบ รัน <code>bun test</code> เขียวพร้อม coverage report + ปิดช่องโหว่ code ที่พบก่อน test</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Setup test infra</td><td>bun test (backend) + Playwright (frontend) + coverage config</td><td class="pts">3</td></tr>
+        <tr><td>Unit test lib</td><td>jwt, loyalty, rateLimit, audit, storage</td><td class="pts">5</td></tr>
+        <tr><td>Multi-tenant + auth tests</td><td>เช็ค restaurant_id leakage ทุก route หลัก + role guard 401/403</td><td class="pts">5</td></tr>
+        <tr><td>State machine test</td><td>order item pending→cooking→ready→served + order status derive</td><td class="pts">3</td></tr>
+        <tr style="background:#1e1a10"><td>⚠️ Rate limit public endpoints</td><td>เพิ่ม rateLimitPlugin() บน POST /payment/request, /payment/submit, /reviews — 3 routes ที่ไม่มี auth และเปิดช่อง spam/brute-force orderId</td><td class="pts">2</td></tr>
+        <tr style="background:#1e1a10"><td>⚠️ Input validation gaps</td><td>เพิ่ม t.Object schema ใน admin.ts + promotions.ts — ทุก route อื่นมีแล้ว ทั้งสองไฟล์นี้รับ body โดยไม่ validate</td><td class="pts">2</td></tr>
+        <tr style="background:#1e1a10"><td>🧹 Repo/docs cleanup</td><td>.gitignore resume + docx ออกจาก repo, เคลียร์ backlog เก่าใน history.md (reservation/loyalty/KDS/inventory ทำเสร็จแล้ว)</td><td class="pts">1</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>bun test เขียวทั้งหมด</li><li>coverage report รันได้</li><li>multi-tenant isolation มี test ทุก route</li><li>public endpoints มี rate limit</li><li>admin + promotions routes มี t.Object validation</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>—  (เริ่มได้ทันที)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>SSE/Redis ทดสอบยาก → mock หรือ testcontainers</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>2</div>
+      <div class="s-title"><h3>E2E Coverage + Auth Gaps</h3><p>ครอบ flow หลักด้วย e2e + ปิดช่องโหว่ auth ที่ค้าง</p></div>
+      <div class="s-pts"><b>16</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> flow หลัก (สั่ง→ครัว→เสิร์ฟ→จ่าย) มี e2e ครบ และปิด gap reset/forgot password ตั้งแต่ v1.7</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>E2E core ordering</td><td>QR order → kitchen accept → ready → serve → payment → verify</td><td class="pts">5</td></tr>
+        <tr><td>E2E onboarding</td><td>register ร้าน → login → branch switch</td><td class="pts">3</td></tr>
+        <tr><td>Reset-password UI</td><td>super admin reset (ปิด gap v1.7 ที่มี API แต่ไม่มี UI)</td><td class="pts">3</td></tr>
+        <tr><td>Forgot-password flow</td><td>email token จริงผ่าน Resend → reset ได้เอง</td><td class="pts">5</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>e2e เขียวบน CI</li><li>reset password ผ่าน UI ได้</li><li>forgot password ส่ง email + reset สำเร็จ</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 1 (test infra)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>email deliverability → ใช้ verified domain</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase-head">
+    <h2>เฟส 2 · CI/CD &amp; Infrastructure</h2>
+    <span class="tag" style="background:#16233a;color:#60a5fa">Sprint 3–4 · P0</span>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>3</div>
+      <div class="s-title"><h3>CI/CD Pipeline</h3><p>ทุก PR ผ่าน automated gate ก่อน merge</p></div>
+      <div class="s-pts"><b>17</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> PR ถูก block อัตโนมัติถ้า lint/type/test ไม่ผ่าน — ไม่มี broken code เข้า main</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>GitHub Actions core</td><td>lint + tsc --noEmit + bun test ทุก PR</td><td class="pts">3</td></tr>
+        <tr><td>E2E ใน CI</td><td>spin docker services (pg/redis/minio) + รัน Playwright</td><td class="pts">5</td></tr>
+        <tr><td>Pre-commit hooks</td><td>husky + lint-staged</td><td class="pts">2</td></tr>
+        <tr><td>Security scanning</td><td>npm audit + gitleaks (secret scan)</td><td class="pts">3</td></tr>
+        <tr><td>Branch protection</td><td>require checks + PR template</td><td class="pts">1</td></tr>
+        <tr style="background:#1e1a10"><td>⚠️ Frontend security hardening</td><td>CSP headers ใน next.config.js + audit localStorage token risk (พิจารณาย้ายไป httpOnly cookie) — ป้องกัน XSS token theft</td><td class="pts">3</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>PR แดง = block merge</li><li>e2e รันใน CI ผ่าน</li><li>CSP header ปรากฏใน response</li><li>npm audit + gitleaks ไม่พบ critical</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 1–2 (มี test ให้รัน)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>CI ช้าจาก docker → cache layers</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>4</div>
+      <div class="s-title"><h3>Production Infra &amp; Deploy</h3><p>deploy ขึ้น staging ได้จริง + migration + backup</p></div>
+      <div class="s-pts"><b>16</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> มี staging environment ใช้งานได้จริง schema เปลี่ยนผ่าน migration (ไม่ใช่ db:push) และมี backup อัตโนมัติ</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Migration workflow</td><td>Drizzle migrate แทน db:push ใน prod</td><td class="pts">3</td></tr>
+        <tr><td>Production Dockerfile</td><td>multi-stage build backend + frontend</td><td class="pts">5</td></tr>
+        <tr><td>Storage + backup</td><td>MinIO → S3/R2 + pg_dump cron backup</td><td class="pts">5</td></tr>
+        <tr><td>Secrets + staging deploy</td><td>secret manager + deploy staging URL</td><td class="pts">3</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>staging URL ใช้งานได้</li><li>schema migrate ผ่าน migration file</li><li>backup รันอัตโนมัติ + ทดสอบ restore</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 3 (CI deploy step)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>db:push → migrate มี drift → baseline ก่อน</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase-head">
+    <h2>เฟส 3 · Observability</h2>
+    <span class="tag" style="background:#143020;color:#4ade80">Sprint 5 · P1</span>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>5</div>
+      <div class="s-title"><h3>Logging, Errors &amp; Monitoring</h3><p>รู้ทันทีเมื่อระบบมีปัญหา</p></div>
+      <div class="s-pts"><b>16</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> error ทุกตัวถูกจับและแจ้งเตือน + เห็น health ของ DB/Redis/SSE แบบ realtime</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Structured logging</td><td>pino ทั้ง backend + request id</td><td class="pts">3</td></tr>
+        <tr><td>Error tracking</td><td>Sentry frontend + backend</td><td class="pts">3</td></tr>
+        <tr><td>Health checks</td><td>/healthz เช็ค DB, Redis, SSE + uptime monitor</td><td class="pts">3</td></tr>
+        <tr><td>Metrics dashboard</td><td>request rate, latency, SSE connections</td><td class="pts">5</td></tr>
+        <tr><td>Alerting</td><td>email/Slack เมื่อ down หรือ error spike</td><td class="pts">2</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>error ปรากฏใน Sentry พร้อม stacktrace</li><li>/healthz ตอบสถานะ dependency</li><li>alert ยิงเมื่อ service down</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 4 (มี prod env ให้ monitor)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>log volume/cost → sampling</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 4 -->
+  <div class="phase-head">
+    <h2>เฟส 4 · Real Payments</h2>
+    <span class="tag" style="background:#3a2410;color:#fb923c">Sprint 6 · P1</span>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>6</div>
+      <div class="s-title"><h3>Payment Gateway Integration</h3><p>รับเงินอัตโนมัติ เลิกพึ่ง manual slip approval</p></div>
+      <div class="s-pts"><b>16</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> ชำระเงินจริงผ่าน gateway (PromptPay + บัตร), ยืนยันอัตโนมัติผ่าน webhook, ไม่ต้องให้ super admin อนุมัติสลิป</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Gateway integration</td><td>Omise / 2C2P / Stripe — PromptPay + card</td><td class="pts">8</td></tr>
+        <tr><td>Webhook reconcile</td><td>verify signature + auto-confirm order/billing payment</td><td class="pts">5</td></tr>
+        <tr><td>Invoice/receipt PDF</td><td>ออกใบเสร็จ/ใบกำกับอัตโนมัติ</td><td class="pts">3</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>ชำระจริงผ่าน gateway สำเร็จ</li><li>webhook ยืนยันอัตโนมัติ ไม่ต้อง approve มือ</li><li>ออก invoice PDF ได้</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 5 (webhook ต้อง observable)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>การอนุมัติบัญชี merchant ใช้เวลา → เริ่มสมัครแต่เนิ่น</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 5 -->
+  <div class="phase-head">
+    <h2>เฟส 5 · Features &amp; Growth</h2>
+    <span class="tag" style="background:#3a3410;color:#facc15">Sprint 7–8 · P2</span>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>7</div>
+      <div class="s-title"><h3>Push Notifications</h3><p>ปิด backlog feature สุดท้ายจาก v1.0</p></div>
+      <div class="s-pts"><b>13</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> ลูกค้าได้รับแจ้งเตือนเมื่ออาหารพร้อม แม้ปิดหน้าเว็บ — ปิดข้อเดียวใน backlog ที่ยังค้าง</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Web Push setup</td><td>Web Push API + service worker subscription (VAPID)</td><td class="pts">5</td></tr>
+        <tr><td>Order notifications</td><td>push "อาหารพร้อม" + "ยืนยันการชำระเงิน"</td><td class="pts">3</td></tr>
+        <tr><td>Subscription mgmt</td><td>permission UX + จัดการ subscription</td><td class="pts">3</td></tr>
+        <tr><td>Notification prefs</td><td>ตั้งค่าการแจ้งเตือนต่อ role</td><td class="pts">2</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>ลูกค้าได้ push เมื่ออาหารพร้อม แม้ปิดแท็บ</li><li>เปิด/ปิดการแจ้งเตือนได้</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>SW มีอยู่แล้ว (KDS PWA) — ต่อยอด</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>iOS Safari push ข้อจำกัด → ต้อง add-to-home-screen</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sprint">
+    <div class="s-head">
+      <div class="s-num">SP<br>8</div>
+      <div class="s-title"><h3>Analytics &amp; Integration</h3><p>วางรากฐานสำหรับการเติบโต</p></div>
+      <div class="s-pts"><b>15</b>points</div>
+      <span class="chev">›</span>
+    </div>
+    <div class="s-body">
+      <div class="goal"><b>Goal:</b> ให้ร้านเห็น insight เชิงลึก และเปิดทางเชื่อมต่อระบบภายนอก (POS/delivery)</div>
+      <table>
+        <tr><th>Story</th><th>รายละเอียด</th><th class="pts">Pts</th></tr>
+        <tr><td>Deep analytics</td><td>cohort, retention, per-branch comparison</td><td class="pts">5</td></tr>
+        <tr><td>Public API + keys</td><td>API key management + rate limit per key</td><td class="pts">5</td></tr>
+        <tr><td>Outbound webhooks</td><td>event webhook สำหรับ POS/delivery integration</td><td class="pts">5</td></tr>
+      </table>
+      <div class="sub-row">
+        <div class="box"><h4>Acceptance</h4><ul><li>dashboard analytics เชิงลึกใช้งานได้</li><li>external system เรียก API ด้วย key ได้</li><li>webhook ยิง event ออกได้</li></ul></div>
+        <div class="box"><h4 class="dep">Dependencies</h4><ul><li>Sprint 3 (rate limit), Sprint 5 (observability)</li></ul></div>
+        <div class="box"><h4 class="risk">Risks</h4><ul><li>API versioning ตั้งแต่แรก → /v1 prefix</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Restaurant SaaS Platform · Production Roadmap · สร้างเมื่อ 2026-06-10 · จัดลำดับ Production-ready ก่อน feature<br>
+    <span style="color:var(--muted)">คลิกแต่ละ sprint เพื่อดูรายละเอียด</span>
+  </footer>
+</div>
+<script>
+  document.querySelectorAll('.s-head').forEach(h=>{
+    h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
+  });
+</script>
+</body>
+</html>

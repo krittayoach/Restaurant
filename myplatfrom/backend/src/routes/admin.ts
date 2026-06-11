@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { subscriber, keys } from '../lib/redis'
 import { requireSuperAdmin } from '../lib/auth'
 
@@ -7,7 +7,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
   // GET /admin/stream  (super_admin only — SSE)
   // EventSource cannot set headers, so token can come from query param or Authorization header
   .get('/stream', async ({ headers, query, set }) => {
-    const token = (query as any).token ?? headers.authorization?.replace('Bearer ', '') ?? ''
+    const token = query.token ?? headers.authorization?.replace('Bearer ', '') ?? ''
     try {
       await requireSuperAdmin(token)
     } catch (e: any) {
@@ -23,7 +23,7 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
     const channel = keys.adminChannel()
     await sub.subscribe(channel)
 
-    return new ReadableStream({
+    return new ReadableStream<Uint8Array>({
       start(controller) {
         sub.on('message', (_, message) => {
           controller.enqueue(new TextEncoder().encode(`data: ${message}\n\n`))
@@ -31,4 +31,6 @@ export const adminRoutes = new Elysia({ prefix: '/admin' })
       },
       cancel() { sub.unsubscribe(channel); sub.disconnect() },
     })
+  }, {
+    query: t.Object({ token: t.Optional(t.String()) }),
   })

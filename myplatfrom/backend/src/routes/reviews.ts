@@ -2,7 +2,9 @@ import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { reviews, orders } from '../db/schema'
 import { eq, desc } from 'drizzle-orm'
+import { keys } from '../lib/redis'
 import { verifyJWT } from '../lib/jwt'
+import { checkRateLimit, getIP } from '../lib/rateLimit'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -17,7 +19,9 @@ async function requireAuth(headers: any, roles: string[], set: any) {
 export const reviewRoutes = new Elysia({ prefix: '/reviews' })
 
   // POST /reviews  (customer — no auth, orderId is the secret)
-  .post('/', async ({ body, set }) => {
+  .post('/', async ({ body, set, request }) => {
+    const limited = await checkRateLimit(keys.reviewRateLimit(getIP(request)), 10, 600)
+    if (limited) { set.status = 429; set.headers['Retry-After'] = '600'; return { error: 'Too many requests. Please try again later.' } }
     const [order] = await db.select({
       id: orders.id,
       restaurant_id: orders.restaurant_id,
