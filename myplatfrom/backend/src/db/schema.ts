@@ -9,7 +9,7 @@ export const roleEnum = pgEnum('role', ['super_admin', 'manager', 'employee', 'c
 export const tableStatusEnum = pgEnum('table_status', ['available', 'occupied', 'reserved', 'cleaning'])
 export const orderStatusEnum = pgEnum('order_status', ['pending', 'cooking', 'ready', 'served', 'cancelled'])
 export const orderItemStatusEnum = pgEnum('order_item_status', ['pending', 'cooking', 'ready', 'served', 'cancelled'])
-export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'transfer'])
+export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'transfer', 'promptpay'])
 export const paymentStatusEnum = pgEnum('payment_status', ['unpaid', 'pending_verification', 'paid', 'refunded'])
 export const planEnum = pgEnum('plan', ['free', 'basic', 'pro'])
 export const reservationStatusEnum = pgEnum('reservation_status', ['confirmed', 'seated', 'cancelled', 'no_show'])
@@ -36,9 +36,11 @@ export const users = pgTable('users', {
   id:            uuid('id').primaryKey().defaultRandom(),
   restaurant_id: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
   name:          varchar('name', { length: 100 }).notNull(),
-  phone:         varchar('phone', { length: 20 }).notNull().unique(),
-  password:      varchar('password', { length: 255 }),
-  role:          roleEnum('role').notNull(),
+  email:          varchar('email', { length: 255 }).unique(),   // staff login identifier
+  email_verified: boolean('email_verified').default(false).notNull(),
+  phone:          varchar('phone', { length: 20 }).unique(),    // walk-in customer identifier only
+  password:       varchar('password', { length: 255 }),
+  role:           roleEnum('role').notNull(),
   salary:        real('salary').default(0),
   is_active:     boolean('is_active').default(true).notNull(),
   created_at:    timestamp('created_at').defaultNow().notNull(),
@@ -238,6 +240,16 @@ export const auditLogs = pgTable('audit_logs', {
   entity_id:     varchar('entity_id', { length: 100 }),
   meta:          jsonb('meta').$type<Record<string, any>>(),
   ip:            varchar('ip', { length: 60 }),
+  created_at:    timestamp('created_at').defaultNow().notNull(),
+})
+
+// ─── reviews ──────────────────────────────────────────────────────────────────
+export const reviews = pgTable('reviews', {
+  id:            uuid('id').primaryKey().defaultRandom(),
+  restaurant_id: uuid('restaurant_id').notNull().references(() => restaurants.id, { onDelete: 'cascade' }),
+  order_id:      uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
+  rating:        integer('rating').notNull(),
+  comment:       text('comment'),
   created_at:    timestamp('created_at').defaultNow().notNull(),
 })
 

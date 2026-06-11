@@ -19,6 +19,7 @@ export const keys = {
   customerAuthRateLimit: (ip: string) => `ratelimit:customer-auth:${ip}`,
   adminChannel: () => 'platform:admin',
   superAdminSession: () => 'super_admin:session',
+  emailVerifyToken: (token: string) => `email:verify:${token}`,
 }
 
 export const SESSION_TTL = 86400        // 24h

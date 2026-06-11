@@ -59,6 +59,24 @@ function infoBox(rows: { label: string; value: string }[]) {
 
 // ─── Templates ────────────────────────────────────────────────────────────────
 
+export function tplEmailVerification(name: string, verifyUrl: string) {
+  return {
+    subject: '✉️ ยืนยัน Email เพื่อเปิดใช้งานร้านของคุณ — Restaurant SaaS',
+    html: base(
+      heading('ยืนยัน Email ของคุณ') +
+      para(`สวัสดีครับ คุณ <strong>${name}</strong>`) +
+      para('กรุณากดปุ่มด้านล่างเพื่อยืนยัน email และเปิดใช้งานบัญชีของคุณ') +
+      `<div style="text-align:center;margin:28px 0;">
+        <a href="${verifyUrl}" style="background:#f97316;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:16px;display:inline-block;">ยืนยัน Email</a>
+      </div>` +
+      para('หรือคัดลอกลิงก์นี้ไปวางในเบราว์เซอร์:') +
+      `<p style="margin:0 0 16px;font-size:12px;color:#78716c;word-break:break-all;">${verifyUrl}</p>` +
+      para('ลิงก์จะหมดอายุใน <strong>24 ชั่วโมง</strong>') +
+      para('<span style="color:#78716c;font-size:13px;">หากคุณไม่ได้สมัครใช้งาน กรุณาเพิกเฉยต่ออีเมลนี้</span>')
+    ),
+  }
+}
+
 export function tplPaymentApproved(restaurantName: string, plan: string, expiresAt: Date) {
   return {
     subject: `✅ อนุมัติการอัปเกรดแพ็กเกจ ${plan.toUpperCase()} — ${restaurantName}`,

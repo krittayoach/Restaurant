@@ -10,6 +10,7 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
+    pathname.startsWith('/verify-email') ||
     pathname.startsWith('/r/') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/')
@@ -36,6 +37,12 @@ export async function middleware(req: NextRequest) {
     // KDS route — chef and manager only
     if (pathname.startsWith('/kds/')) {
       if (!['chef', 'manager'].includes(role)) return NextResponse.redirect(new URL('/login', req.url))
+      return NextResponse.next()
+    }
+
+    // Staff display — employee and manager only
+    if (pathname.startsWith('/staff/')) {
+      if (!['employee', 'manager'].includes(role)) return NextResponse.redirect(new URL('/login', req.url))
       return NextResponse.next()
     }
 
@@ -67,5 +74,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/kds/:path*', '/admin', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/kds/:path*', '/staff/:path*', '/admin', '/login', '/register'],
 }

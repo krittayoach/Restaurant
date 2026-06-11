@@ -2,23 +2,34 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, saveToken } from '@/lib/api'
-import { Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
 import { cn } from '@/lib/cn'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ phone: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
+  const [unverified, setUnverified] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [showPw, setShowPw] = useState(false)
 
+  async function resendVerification() {
+    setResending(true)
+    try {
+      await api.post('/auth/resend-verification', { email: form.email })
+      setResent(true)
+    } catch {} finally { setResending(false) }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
-    if (!form.phone || !form.password || form.password.length < 6) return
-    setError(''); setLoading(true)
+    if (!form.email || !form.password || form.password.length < 6) return
+    setError(''); setUnverified(false); setResent(false); setLoading(true)
     try {
       const data = await api.post('/auth/login', form)
       saveToken(data.token)
@@ -30,7 +41,8 @@ export default function LoginPage() {
       else if (role === 'employee') window.location.href = `${base}/orders`
       else window.location.href = '/'
     } catch (err: any) {
-      setError(err.message)
+      if (err.message === 'email_unverified') { setUnverified(true) }
+      else setError(err.message)
     } finally { setLoading(false) }
   }
 
@@ -67,16 +79,31 @@ export default function LoginPage() {
             <div className="bg-rose/10 border border-rose/20 text-rose rounded-2xl px-4 py-3 text-sm mb-6 anim-pop">{error}</div>
           )}
 
+          {unverified && (
+            <div className="bg-yellow/10 border border-yellow/30 rounded-2xl px-4 py-3 text-sm mb-6 anim-pop space-y-2">
+              <p className="font-semibold text-text">📬 กรุณายืนยัน Email ก่อนเข้าสู่ระบบ</p>
+              <p className="text-muted text-xs">ตรวจสอบกล่องจดหมายที่ <span className="font-medium text-text">{form.email}</span></p>
+              {resent ? (
+                <p className="text-green text-xs font-medium">✓ ส่งลิงก์ยืนยันใหม่แล้ว</p>
+              ) : (
+                <button onClick={resendVerification} disabled={resending}
+                  className="text-accent text-xs font-semibold hover:underline disabled:opacity-60">
+                  {resending ? 'กำลังส่ง...' : 'ส่งลิงก์ยืนยันใหม่อีกครั้ง →'}
+                </button>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-muted mb-1.5 ml-1">เบอร์โทรศัพท์ <span className="text-rose">*</span></label>
+              <label className="block text-xs font-medium text-muted mb-1.5 ml-1">อีเมล <span className="text-rose">*</span></label>
               <div className="relative">
-                <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-                <input type="tel" value={form.phone} placeholder="0XX-XXX-XXXX"
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  className={cn('input pl-11', submitted && !form.phone && 'input-error')} />
+                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                <input type="email" value={form.email} placeholder="you@example.com"
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className={cn('input pl-11', submitted && !form.email && 'input-error')} />
               </div>
-              {submitted && !form.phone && <p className="field-error">กรุณากรอกเบอร์โทรศัพท์</p>}
+              {submitted && !form.email && <p className="field-error">กรุณากรอกอีเมล</p>}
             </div>
             <div>
               <label className="block text-xs font-medium text-muted mb-1.5 ml-1">รหัสผ่าน <span className="text-rose">*</span></label>

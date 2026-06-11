@@ -24,15 +24,17 @@
 ```
 myplatfrom/
 ├── frontend/app/
-│   ├── r/[slug]/table/[qrToken]/   # Customer: order, payment
+│   ├── r/[slug]/table/[qrToken]/   # Customer: order, payment + review
 │   ├── r/[slug]/reserve/           # Customer: table reservation + pre-order
 │   ├── r/[slug]/me/                # Customer: loyalty portal (แต้มสะสม)
 │   ├── kds/[slug]/                 # Kitchen Display System (fullscreen)
+│   ├── staff/[slug]/               # Staff Display tablet (employee+manager)
 │   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, branches, settings
+│   ├── verify-email/               # Email verification landing page (public)
 │   ├── admin/                      # Super admin
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
-│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers, branches
+│   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers, branches, reviews
 │   ├── db/       # schema.ts, drizzle.config.ts, seed-demo.ts
 │   └── lib/      # redis.ts, jwt.ts, storage.ts, loyalty.ts
 └── docker-compose.yml
@@ -59,7 +61,7 @@ myplatfrom/
 | Redis Key | Consumer | Events |
 |---|---|---|
 | `{rid}:kitchen` | Chef, Manager | NEW_ORDER, ITEM_STATUS, ORDER_ACCEPTED |
-| `{rid}:order:update` | Employee | ITEM_READY, ITEM_SERVED, ORDER_SERVED |
+| `{rid}:order:update` | Employee, Staff Display | ITEM_READY, ITEM_SERVED, ORDER_SERVED, PAYMENT_REQUESTED |
 | `{rid}:table:{tableId}` | Customer (public) | ITEM_STATUS, ITEM_SERVED, PAYMENT_VERIFIED |
 
 Hook: `useSSE(path, onMessage)` — auto-reconnect 3s
@@ -77,24 +79,31 @@ bun run db:push                    # push schema · npx tsc --noEmit (type check
 
 **Env:** `DATABASE_URL` · `REDIS_URL` · `JWT_SECRET` · `PORT=3010` · `PLATFORM_PROMPTPAY_ID`  
 MinIO: `MINIO_ENDPOINT/PORT/ACCESS_KEY/SECRET_KEY/BUCKET` · Email: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM`  
+Backend: `APP_URL=http://localhost:3002` (ใช้สร้าง verify link ในอีเมล)  
 Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 
 ## Demo Data
 - slug: `demo-restaurant` · Tables: T1–T10
 
-| Role | เบอร์ | รหัสผ่าน |
+| Role | Email | รหัสผ่าน |
 |---|---|---|
-| manager | `0812345678` | `password123` |
-| employee | `0811111111` / `0822222222` | `password123` |
-| chef | `0833333333` / `0844444444` | `password123` |
+| manager | `manager@demo.com` | `password123` |
+| employee | `employee1@demo.com` / `employee2@demo.com` | `password123` |
+| chef | `chef1@demo.com` / `chef2@demo.com` | `password123` |
 
 ## New Libs / Keys
 - `lib/rateLimit.ts` — `rateLimitPlugin()` Elysia plugin; Redis-backed rate limiting
 - `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget → `audit_logs` table
 - `lib/email.ts` + `cron/billing.ts` — Resend email; billing auto-downgrade hourly
 - Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` · Redis: `billing:reminder:{rid}` TTL 8d
+- Redis: `email:verify:{token}` TTL 24h — email verification token (UUID → userId)
+- `users.email_verified` — false สำหรับ register ใหม่; true สำหรับ employee ที่ manager สร้าง
 
 ## Gotchas
+- Staff login ใช้ `email` — phone ใช้สำหรับ walk-in customer loyalty เท่านั้น
+- `email_verified` ต้องเป็น `true` ก่อน login — register ใหม่จะส่ง verify link ทาง email
+- `POST /payment/request` — no-auth (customer), method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
+- `POST /reviews` — no-auth, ใช้ `orderId` เป็น secret แทน auth
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
 - Next.js middleware ใช้ Edge runtime → `jose` ไม่ใช้ `jsonwebtoken`
 - Token เก็บใน localStorage (`getToken()`/`saveToken()`) ไม่ใช่ cookie

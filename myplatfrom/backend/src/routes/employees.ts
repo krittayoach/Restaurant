@@ -22,7 +22,7 @@ export const employeeRoutes = new Elysia({ prefix: '/employees' })
   .get('/', async ({ headers, set }) => {
     const payload = await requireAuth(headers, ['manager'], set)
     if (!payload) return
-    return db.select({ id: users.id, name: users.name, phone: users.phone, role: users.role, salary: users.salary, is_active: users.is_active, created_at: users.created_at })
+    return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, salary: users.salary, is_active: users.is_active, created_at: users.created_at })
       .from(users).where(and(eq(users.restaurant_id, payload.restaurantId!), inArray(users.role, ['manager', 'employee', 'chef'])))
   })
 
@@ -41,14 +41,15 @@ export const employeeRoutes = new Elysia({ prefix: '/employees' })
     const hashedPw = await bcrypt.hash(body.password, 10)
     const [emp] = await db.insert(users).values({
       restaurant_id: payload.restaurantId!,
-      name: body.name, phone: body.phone,
+      name: body.name, email: body.email.toLowerCase().trim(),
+      email_verified: true,
       password: hashedPw, role: body.role,
       salary: body.salary ?? 0,
-    }).returning({ id: users.id, name: users.name, phone: users.phone, role: users.role })
+    }).returning({ id: users.id, name: users.name, email: users.email, role: users.role })
     return emp
   }, {
     body: t.Object({
-      name: t.String(), phone: t.String(), password: t.String(),
+      name: t.String(), email: t.String(), password: t.String(),
       role: t.Union([t.Literal('manager'), t.Literal('employee'), t.Literal('chef')]),
       salary: t.Optional(t.Number()),
     }),
@@ -58,11 +59,12 @@ export const employeeRoutes = new Elysia({ prefix: '/employees' })
   .put('/:id', async ({ headers, params, body, set }) => {
     const payload = await requireAuth(headers, ['manager'], set)
     if (!payload) return
-    const updates: Record<string, any> = { name: body.name, phone: body.phone }
+    const updates: Record<string, any> = { name: body.name }
+    if (body.email) updates.email = body.email.toLowerCase().trim()
     if (body.password) updates.password = await bcrypt.hash(body.password, 10)
     await db.update(users).set(updates).where(and(eq(users.id, params.id), eq(users.restaurant_id, payload.restaurantId!)))
     return { success: true }
-  }, { body: t.Object({ name: t.Optional(t.String()), phone: t.Optional(t.String()), password: t.Optional(t.String()) }) })
+  }, { body: t.Object({ name: t.Optional(t.String()), email: t.Optional(t.String()), password: t.Optional(t.String()) }) })
 
   // PATCH /employees/:id/toggle
   .patch('/:id/toggle', async ({ headers, params, set }) => {

@@ -7,6 +7,11 @@ import { signJWT, verifyJWT } from '../lib/jwt'
 import { redis, keys, SESSION_TTL, RATE_LIMIT_TTL, RATE_LIMIT_MAX } from '../lib/redis'
 import { checkRateLimit, getIP } from '../lib/rateLimit'
 import { logAudit } from '../lib/audit'
+import { sendEmail, tplEmailVerification } from '../lib/email'
+import { randomBytes } from 'crypto'
+
+const APP_URL = process.env.APP_URL ?? 'http://localhost:3002'
+const EMAIL_VERIFY_TTL = 86400  // 24h
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
 
@@ -20,16 +25,21 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
       return { error: 'Too many login attempts. Try again in 5 minutes.' }
     }
 
-    const [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1)
+    const [user] = await db.select().from(users).where(eq(users.email, body.email.toLowerCase().trim())).limit(1)
     if (!user || !user.password || !user.is_active) {
-      logAudit('AUTH_LOGIN_FAILED', { meta: { phone: body.phone }, ip })
+      logAudit('AUTH_LOGIN_FAILED', { meta: { email: body.email }, ip })
       set.status = 401
       return { error: 'Invalid credentials' }
     }
 
+    if (!user.email_verified) {
+      set.status = 403
+      return { error: 'email_unverified', email: user.email }
+    }
+
     const valid = await bcrypt.compare(body.password, user.password)
     if (!valid) {
-      logAudit('AUTH_LOGIN_FAILED', { actorId: user.id, actorName: user.name, actorRole: user.role, restaurantId: user.restaurant_id, meta: { phone: body.phone }, ip })
+      logAudit('AUTH_LOGIN_FAILED', { actorId: user.id, actorName: user.name, actorRole: user.role, restaurantId: user.restaurant_id, meta: { email: body.email }, ip })
       set.status = 401
       return { error: 'Invalid credentials' }
     }
@@ -58,7 +68,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 
     return { token, user: { id: user.id, name: user.name, role: user.role, restaurantId: user.restaurant_id, restaurantSlug } }
   }, {
-    body: t.Object({ phone: t.String(), password: t.String() }),
+    body: t.Object({ email: t.String(), password: t.String() }),
   })
 
   // POST /auth/customer
@@ -77,6 +87,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         name: body.name,
         phone: body.phone,
         role: 'customer',
+        email: null,
       }).returning()
       customer = created
     } else if (customer.name !== body.name) {
@@ -118,7 +129,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     let payload: any
     try { payload = await verifyJWT(auth.slice(7)) } catch { set.status = 401; return { error: 'Unauthorized' } }
     if (payload.role !== 'super_admin') { set.status = 403; return { error: 'Forbidden' } }
-    const [user] = await db.select().from(users).where(eq(users.phone, body.phone)).limit(1)
+    const [user] = await db.select().from(users).where(eq(users.email, body.email.toLowerCase().trim())).limit(1)
     if (!user) { set.status = 404; return { error: 'ไม่พบผู้ใช้งานนี้' } }
     await db.update(users).set({ password: await bcrypt.hash(body.newPassword, 10) }).where(eq(users.id, user.id))
     logAudit('AUTH_PASSWORD_RESET', {
@@ -129,10 +140,36 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     return { success: true, name: user.name, role: user.role }
   }, {
     body: t.Object({
-      phone: t.String(),
+      email: t.String(),
       newPassword: t.String({ minLength: 6 }),
     }),
   })
+
+  // POST /auth/verify-email  (public)
+  .post('/verify-email', async ({ body, set }) => {
+    const userId = await redis.get(keys.emailVerifyToken(body.token))
+    if (!userId) { set.status = 400; return { error: 'token_invalid' } }
+    await db.update(users).set({ email_verified: true }).where(eq(users.id, userId))
+    await redis.del(keys.emailVerifyToken(body.token))
+    return { success: true }
+  }, { body: t.Object({ token: t.String() }) })
+
+  // POST /auth/resend-verification  (public)
+  .post('/resend-verification', async ({ body, request, set }) => {
+    const ip = getIP(request)
+    const limited = await checkRateLimit(`ratelimit:resend-verify:${ip}`, 3, 600)
+    if (limited) { set.status = 429; return { error: 'Too many requests. Try again in 10 minutes.' } }
+
+    const [user] = await db.select({ id: users.id, name: users.name, email: users.email, email_verified: users.email_verified })
+      .from(users).where(eq(users.email, body.email.toLowerCase().trim())).limit(1)
+    if (!user || user.email_verified) return { success: true }  // silent — don't leak info
+
+    const token = randomBytes(32).toString('hex')
+    await redis.set(keys.emailVerifyToken(token), user.id, 'EX', EMAIL_VERIFY_TTL)
+    const verifyUrl = `${APP_URL}/verify-email?token=${token}`
+    sendEmail({ to: user.email!, ...tplEmailVerification(user.name, verifyUrl) })
+    return { success: true }
+  }, { body: t.Object({ email: t.String() }) })
 
   // POST /auth/switch-branch — manager switches into a branch context
   .post('/switch-branch', async ({ body, set, cookie: { session } }) => {

@@ -15,7 +15,7 @@ const ROLE: Record<string, { label: string; emoji: string; cls: string }> = {
   chef:     { label: 'พ่อครัว',  emoji: '👨‍🍳', cls: 'bg-teal/10 text-teal' },
 }
 
-const EMPTY = { name: '', phone: '', password: '', role: 'employee', salary: '' }
+const EMPTY = { name: '', email: '', password: '', role: 'employee', salary: '' }
 
 export default function EmployeesPage() {
   const params = useParams() as { slug: string }
@@ -47,7 +47,7 @@ export default function EmployeesPage() {
   }
   function openEdit(emp: any) {
     setEditingId(emp.id)
-    setForm({ name: emp.name, phone: emp.phone, password: '', role: emp.role, salary: String(emp.salary ?? '') })
+    setForm({ name: emp.name, email: emp.email ?? '', password: '', role: emp.role, salary: String(emp.salary ?? '') })
     setFormSubmitted(false); setShowPw(false); setShowForm(true)
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -55,14 +55,14 @@ export default function EmployeesPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setFormSubmitted(true)
-    if (!form.name || !form.phone) return
+    if (!form.name || !form.email) return
     if (!editingId && (!form.password || form.password.length < 6)) return
     if (editingId && form.password && form.password.length < 6) return
 
     setSaving(true)
     try {
       if (editingId) {
-        const body: any = { name: form.name, phone: form.phone }
+        const body: any = { name: form.name, email: form.email }
         if (form.password) body.password = form.password
         await api.put(`/employees/${editingId}`, body, token)
         if (form.salary !== '') await api.patch(`/employees/${editingId}/salary`, { salary: parseFloat(form.salary) || 0 }, token)
@@ -115,10 +115,10 @@ export default function EmployeesPage() {
                 {formSubmitted && !form.name && <p className="field-error">กรุณากรอกชื่อ</p>}
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5 ml-1">เบอร์โทร <span className="text-rose">*</span></label>
-                <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="0XX-XXX-XXXX"
-                  className={`input ${formSubmitted && !form.phone ? 'input-error' : ''}`} />
-                {formSubmitted && !form.phone && <p className="field-error">กรุณากรอกเบอร์โทร</p>}
+                <label className="block text-xs text-muted mb-1.5 ml-1">อีเมล <span className="text-rose">*</span></label>
+                <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="staff@example.com"
+                  className={`input ${formSubmitted && !form.email ? 'input-error' : ''}`} />
+                {formSubmitted && !form.email && <p className="field-error">กรุณากรอกอีเมล</p>}
               </div>
               <div>
                 <label className="block text-xs text-muted mb-1.5 ml-1">
@@ -171,7 +171,7 @@ export default function EmployeesPage() {
               <div className="size-11 rounded-2xl bg-bg3 flex items-center justify-center text-xl shrink-0">{r.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{emp.name}</p>
-                <p className="text-xs text-muted font-mono">{emp.phone}</p>
+                <p className="text-xs text-muted font-mono">{emp.email}</p>
               </div>
               <span className={`badge ${r.cls} shrink-0 hidden sm:inline-flex`}>{r.label}</span>
               <p className="font-display font-bold text-green text-sm shrink-0">฿{(emp.salary ?? 0).toLocaleString()}</p>

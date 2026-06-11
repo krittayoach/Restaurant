@@ -190,11 +190,21 @@ async function main() {
   if (!manager) { console.error('❌ ไม่พบ manager'); process.exit(1) }
   console.log(`✅ Staff: manager=${manager.name}, ${emps.length} emp, ${chefs.length} chef`)
 
-  // update salaries
+  // update salaries + set demo emails (phone→email migration for demo)
+  const demoEmails: Record<string, string> = {
+    manager: 'manager@demo.com',
+    employee: 'employee1@demo.com',
+    chef: 'chef1@demo.com',
+  }
+  const roleCounts: Record<string, number> = {}
   for (const u of allUsers) {
     const salary = u.role === 'manager' ? 35000 : u.role === 'chef' ? 22000 : 18000
-    await db.update(users).set({ salary }).where(eq(users.id, u.id))
+    roleCounts[u.role] = (roleCounts[u.role] ?? 0) + 1
+    const emailBase = u.role === 'manager' ? 'manager' : u.role === 'chef' ? `chef${roleCounts[u.role]}` : `employee${roleCounts[u.role]}`
+    const email = `${emailBase}@demo.com`
+    await db.update(users).set({ salary, email }).where(eq(users.id, u.id))
   }
+  console.log('📧 Demo emails: manager@demo.com / employee1@demo.com / employee2@demo.com / chef1@demo.com / chef2@demo.com')
 
   // ── 8. attendance (30 วัน) ─────────────────────────────────────────────────
   console.log('📅 เพิ่ม attendance...')

@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { orders, orderItems, tables } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
-import { publisher, keys } from '../lib/redis'
+import { publisher, keys, subscriber } from '../lib/redis'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -26,6 +26,46 @@ async function syncOrderStatus(orderId: string, restaurantId: string) {
 }
 
 export const servingRoutes = new Elysia({ prefix: '/serving' })
+
+  // GET /serving/queue  — orders that have ready items (for staff display)
+  .get('/queue', async ({ headers, set }) => {
+    const payload = await requireAuth(headers, ['employee', 'manager'], set)
+    if (!payload) return
+    const result = await db.query.orders.findMany({
+      where: and(
+        eq(orders.restaurant_id, payload.restaurantId!),
+        inArray(orders.status, ['pending', 'cooking', 'ready']),
+      ),
+      with: { table: true, items: true },
+      orderBy: (o, { asc }) => [asc(o.created_at)],
+    })
+    return result
+      .map(o => ({ ...o, items: o.items.filter(i => i.status === 'ready') }))
+      .filter(o => o.items.length > 0)
+  })
+
+  // GET /serving/stream  — SSE for staff display
+  .get('/stream', async ({ headers, set }) => {
+    const payload = await requireAuth(headers, ['employee', 'manager'], set)
+    if (!payload) return
+
+    set.headers['content-type'] = 'text/event-stream'
+    set.headers['cache-control'] = 'no-cache'
+    set.headers['connection'] = 'keep-alive'
+
+    const sub = subscriber.duplicate()
+    const channel = keys.orderChannel(payload.restaurantId!)
+    await sub.subscribe(channel)
+
+    return new ReadableStream({
+      start(controller) {
+        sub.on('message', (_, message) => {
+          controller.enqueue(new TextEncoder().encode(`data: ${message}\n\n`))
+        })
+      },
+      cancel() { sub.unsubscribe(channel); sub.disconnect() },
+    })
+  })
 
   // GET /serving/tables
   .get('/tables', async ({ headers, set }) => {

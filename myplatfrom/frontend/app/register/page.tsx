@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Mail } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
 import { cn } from '@/lib/cn'
 
@@ -11,17 +10,17 @@ const FIELDS = [
   { key: 'slug',        label: 'URL ร้าน (อังกฤษ)',      placeholder: 'my-restaurant',   type: 'text' },
   { key: 'promptpay',   label: 'PromptPay',              placeholder: '0XX-XXX-XXXX',    type: 'text', optional: true },
   { key: 'managerName', label: 'ชื่อผู้จัดการ',           placeholder: 'สมชาย ใจดี',      type: 'text' },
-  { key: 'phone',       label: 'เบอร์โทร (ใช้ login)',    placeholder: '0XX-XXX-XXXX',    type: 'tel' },
+  { key: 'email',       label: 'อีเมล (ใช้ login)',        placeholder: 'you@example.com',  type: 'email' },
   { key: 'password',    label: 'รหัสผ่าน (≥6 ตัว)',       placeholder: '••••••••',         type: 'password', span: true },
 ]
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [form, setForm] = useState({ slug: '', name: '', managerName: '', phone: '', password: '', promptpay: '' })
+  const [form, setForm] = useState({ slug: '', name: '', managerName: '', email: '', password: '', promptpay: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [showPw, setShowPw] = useState(false)
+  const [done, setDone] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,9 +31,32 @@ export default function RegisterPage() {
     setError(''); setLoading(true)
     try {
       await api.post('/restaurants/register', form)
-      router.push('/login')
+      setDone(true)
     } catch (err: any) { setError(err.message) } finally { setLoading(false) }
   }
+
+  if (done) return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-sm text-center anim-up space-y-5">
+        <div className="size-20 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto">
+          <Mail size={36} className="text-accent" />
+        </div>
+        <div>
+          <h2 className="font-display font-bold text-2xl text-text mb-2">ยืนยัน Email ของคุณ</h2>
+          <p className="text-muted text-sm leading-relaxed">
+            เราส่งลิงก์ยืนยันไปที่<br />
+            <span className="font-semibold text-text">{form.email}</span><br />
+            กรุณาตรวจสอบกล่องจดหมาย (รวมถึง Spam)
+          </p>
+        </div>
+        <div className="bg-bg2 rounded-2xl border border-border p-4 text-sm text-muted space-y-1.5">
+          <p>📬 ลิงก์จะหมดอายุใน <strong className="text-text">24 ชั่วโมง</strong></p>
+          <p>🔗 คลิกลิงก์ในอีเมลเพื่อเปิดใช้งานบัญชี</p>
+        </div>
+        <a href="/login" className="block text-sm text-accent hover:underline font-semibold">← กลับไปหน้า Login</a>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">

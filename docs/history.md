@@ -1,5 +1,17 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.12 (2026-06-11)
+
+- F: Staff Display `/staff/[slug]/` — tablet page สำหรับ employee/manager; แสดง ready-to-serve items + payment pending; SSE realtime via `/serving/stream`; PWA install prompt
+- F: Payment redesign — QR PromptPay + cash only; ลบ slip upload ออก; `POST /payment/request` (no-auth); `PAYMENT_REQUESTED` event บน SSE
+- F: Review system — `reviews` table; `POST /reviews` (no-auth, orderId as secret); `GET /reviews` (manager); star rating 1-5 + comment; แสดงหลัง payment_status = paid
+- F: Email login แทน phone สำหรับ staff — `users.email` + `users.email_verified`; phone ยังคงไว้สำหรับ walk-in customer loyalty
+- F: Email verification flow — register ส่ง verify link ทาง Resend; login block ถ้า `email_verified = false` + resend button; `POST /auth/verify-email` + `POST /auth/resend-verification`
+- F: `/verify-email` page — รับ `?token=` จาก URL, แสดง loading/success/error states
+- C: Schema: `users.email` (unique), `users.email_verified` (default false), `phone` nullable, `paymentMethodEnum` เพิ่ม `promptpay`, `reviews` table ใหม่
+- C: Backend env `APP_URL=http://localhost:3002` สำหรับสร้าง verify link; Redis key `email:verify:{token}` TTL 24h
+- C: Demo credentials เปลี่ยนเป็น email: manager@demo.com, employee1/2@demo.com, chef1/2@demo.com (password123)
+
 ## Changelog — v2.11 (2026-06-10)
 
 - F: Multi-branch — สร้าง/จัดการสาขาได้จาก dashboard; แต่ละสาขามี menus, tables, staff เป็นของตัวเอง

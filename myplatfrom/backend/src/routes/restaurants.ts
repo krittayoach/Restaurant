@@ -11,10 +11,14 @@ export const PLAN_LIMITS: Record<string, { tables: number; menus: number; employ
 }
 import { randomBytes } from 'crypto'
 import { verifyJWT } from '../lib/jwt'
-import { publisher, keys } from '../lib/redis'
+import { publisher, redis, keys } from '../lib/redis'
 import { requireSuperAdmin } from '../lib/auth'
 import { checkRateLimit, getIP } from '../lib/rateLimit'
 import { logAudit } from '../lib/audit'
+import { sendEmail, tplEmailVerification } from '../lib/email'
+
+const APP_URL = process.env.APP_URL ?? 'http://localhost:3002'
+const EMAIL_VERIFY_TTL = 86400
 
 export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
 
@@ -36,13 +40,19 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
     }).returning()
 
     const hashedPw = await bcrypt.hash(body.password, 10)
+    const managerEmail = body.email.toLowerCase().trim()
     const [manager] = await db.insert(users).values({
       restaurant_id: restaurant.id,
       name: body.managerName,
-      phone: body.phone,
+      email: managerEmail,
+      email_verified: false,
       password: hashedPw,
       role: 'manager',
     }).returning()
+
+    const verifyToken = randomBytes(32).toString('hex')
+    await redis.set(keys.emailVerifyToken(verifyToken), manager.id, 'EX', EMAIL_VERIFY_TTL)
+    sendEmail({ to: managerEmail, ...tplEmailVerification(body.managerName, `${APP_URL}/verify-email?token=${verifyToken}`) })
 
     // Create 5 default tables
     const defaultTables = Array.from({ length: 5 }, (_, i) => ({
@@ -72,7 +82,7 @@ export const restaurantRoutes = new Elysia({ prefix: '/restaurants' })
       slug: t.String({ minLength: 3, maxLength: 60 }),
       name: t.String({ minLength: 1, maxLength: 100 }),
       managerName: t.String(),
-      phone: t.String(),
+      email: t.String(),
       password: t.String({ minLength: 6 }),
       promptpay: t.Optional(t.String()),
     }),

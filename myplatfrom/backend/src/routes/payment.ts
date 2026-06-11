@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { orders, tables, users } from '../db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys, publisher } from '../lib/redis'
 import { earnPoints, POINTS_PER_BAHT } from '../lib/loyalty'
@@ -32,7 +32,21 @@ async function resetTable(tableId: string, restaurantId: string, orderId: string
 
 export const paymentRoutes = new Elysia({ prefix: '/payment' })
 
-  // POST /payment/submit  (customer — no auth needed, orderId UUID is the secret)
+  // POST /payment/request  (customer — no auth, orderId UUID is the secret)
+  .post('/request', async ({ body, set }) => {
+    const [updated] = await db.update(orders)
+      .set({ payment_method: body.method, payment_status: 'pending_verification' })
+      .where(and(eq(orders.id, body.orderId), eq(orders.payment_status, 'unpaid')))
+      .returning()
+    if (!updated) { set.status = 404; return { error: 'Order not found or already submitted' } }
+    await publisher.publish(
+      keys.orderChannel(updated.restaurant_id),
+      JSON.stringify({ type: 'PAYMENT_REQUESTED', data: { orderId: updated.id, method: body.method, tableId: updated.table_id } })
+    )
+    return { success: true }
+  }, { body: t.Object({ orderId: t.String(), method: t.Union([t.Literal('cash'), t.Literal('promptpay')]) }) })
+
+  // POST /payment/submit  (legacy — kept for compatibility)
   .post('/submit', async ({ body, set }) => {
     const [updated] = await db.update(orders)
       .set({ payment_method: 'transfer', payment_status: 'pending_verification', slip_path: body.slipPath })

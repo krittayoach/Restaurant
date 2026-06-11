@@ -20,6 +20,7 @@ import { customerRoutes } from './routes/customers'
 import { adminRoutes } from './routes/admin'
 import { auditLogRoutes } from './routes/auditLogs'
 import { branchRoutes } from './routes/branches'
+import { reviewRoutes } from './routes/reviews'
 import { rateLimitPlugin } from './lib/rateLimit'
 import { startBillingCron } from './cron/billing'
 
@@ -61,6 +62,7 @@ const app = new Elysia()
   .use(adminRoutes)
   .use(auditLogRoutes)
   .use(branchRoutes)
+  .use(reviewRoutes)
   .get('/health', () => ({ status: 'ok', ts: new Date().toISOString() }))
   .listen(process.env.PORT ?? 3001)
 
