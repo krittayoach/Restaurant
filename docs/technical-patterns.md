@@ -11,6 +11,8 @@
 
 ### Authentication
 - JWT signed with `JWT_SECRET`, payload: `{ userId, restaurantId, role }`
+- Staff login uses **email** — `phone` reserved for walk-in customer loyalty only
+- `email_verified` must be `true` before login; register sends verify link via Resend
 - On login: store session in Redis `session:{token}` TTL 24h
 - On logout: `DEL session:{token}`
 - Middleware checks Redis key existence — enables instant token revocation
@@ -35,8 +37,13 @@ await redis.del(`cache:${restaurantId}:menus`)   // on menu CRUD
 // Kitchen queue
 await redis.lpush(`${restaurantId}:queue:kitchen`, orderId)
 
+// Email verification (TTL 24h)
+await redis.set(`email:verify:${token}`, userId, 'EX', 86400)
+await redis.del(`email:verify:${token}`)   // on verify success
+
 // Pub/Sub publish
 await publisher.publish(`${restaurantId}:kitchen`, JSON.stringify({ type: 'NEW_ORDER', data }))
+await publisher.publish(`${restaurantId}:order:update`, JSON.stringify({ type: 'PAYMENT_REQUESTED', data }))
 ```
 
 ### SSE (Server-Sent Events)
@@ -55,7 +62,11 @@ app/
   r/[slug]/table/[qrToken]/        # Customer
     page.tsx                       # SSR — menu
     order/page.tsx                 # CSR — cart
-    payment/page.tsx               # CSR — payment
+    payment/page.tsx               # CSR — payment + review form
+  staff/[slug]/
+    page.tsx                       # SSE — Staff Display (employee/manager tablet)
+  kds/[slug]/
+    page.tsx                       # SSE — Kitchen Display (chef/manager)
   dashboard/[slug]/                # Staff
     kitchen/page.tsx               # SSE
     orders/page.tsx                # SSE
@@ -67,6 +78,7 @@ app/
     page.tsx                       # SSR — overview
   login/page.tsx
   register/page.tsx
+  verify-email/page.tsx            # Public — email verification landing
 middleware.ts
 ```
 
@@ -103,19 +115,20 @@ role:              super_admin | manager | employee | chef | customer
 table_status:      available | occupied | reserved | cleaning
 order_status:      pending | cooking | ready | served | cancelled
 order_item_status: pending | cooking | ready | served | cancelled
-payment_method:    cash | transfer
+payment_method:    cash | transfer | promptpay
 payment_status:    unpaid | pending_verification | paid | refunded
 plan:              free | basic | pro
 ```
 
 ---
 
-## Object Storage (Menu Images & Slips)
+## Object Storage (Menu Images)
 
 - Upload via presigned URL or server-side proxy
-- Store only the path/key in DB (`menus.image`, `orders.slip_path`)
+- Store only the path/key in DB (`menus.image`)
 - Serve via CDN or signed URL at read time
-- Accepted formats: JPEG, PNG, WebP for menu images; JPEG, PNG, PDF for slips
+- Accepted formats: JPEG, PNG, WebP for menu images
+- หมายเหตุ: slip upload ถูกลบออกใน v2.12 — payment ใช้ QR PromptPay / เงินสด แทน
 
 ---
 

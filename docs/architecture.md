@@ -7,6 +7,7 @@ graph TB
     subgraph Client["Client Layer"]
         CUS["📱 Customer<br/>(QR Browser)"]
         STAFF["💻 Staff Dashboard<br/>(Manager / Employee)"]
+        TABLET["📟 Staff Display<br/>(Employee / Manager Tablet)"]
         CHEF["🖥️ KDS<br/>(Chef / Fullscreen PWA)"]
         ADMIN["🔐 Super Admin"]
     end
@@ -18,7 +19,7 @@ graph TB
     end
 
     subgraph Backend["Backend — Elysia + Bun (port 3010)"]
-        API["REST API<br/>16 Route Modules"]
+        API["REST API<br/>17 Route Modules"]
         SSE["SSE Streams<br/>3 Channels per Restaurant"]
         AUTH["JWT Auth<br/>bcrypt + 24h session"]
     end
@@ -31,6 +32,7 @@ graph TB
 
     CUS -->|"scan QR"| MW
     STAFF --> MW
+    TABLET --> MW
     CHEF --> MW
     ADMIN --> MW
     MW --> APP
@@ -121,7 +123,7 @@ sequenceDiagram
 
 ---
 
-## 4. Payment Verification Flow
+## 4. Payment & Review Flow
 
 ```mermaid
 sequenceDiagram
@@ -129,12 +131,14 @@ sequenceDiagram
     participant API as Backend
     participant DB as PostgreSQL
     participant PUB as Redis
-    actor EMP as 💻 Employee
+    actor EMP as 💻 Employee / Staff Display
 
-    C->>API: POST /payment/submit (slip image)
-    API->>DB: UPDATE orders SET payment_status='pending_verification'
+    C->>API: POST /payment/request { method: 'promptpay' | 'cash' }
+    API->>DB: UPDATE orders SET payment_method, payment_status='pending_verification'
+    API->>PUB: PUBLISH {rid}:order:update → PAYMENT_REQUESTED
+    PUB-->>EMP: SSE: PAYMENT_REQUESTED 🔔
 
-    Note over EMP: เห็น badge บนหน้า /payments
+    Note over EMP: เห็น badge บนหน้า /payments และ Staff Display
 
     EMP->>API: PATCH /payment/verify
     API->>DB: UPDATE payment_status='paid'
@@ -143,6 +147,9 @@ sequenceDiagram
     PUB-->>C: SSE: PAYMENT_VERIFIED ✅
 
     Note over API: earnPoints() — บันทึกแต้มสะสมลูกค้า
+
+    C->>API: POST /reviews { orderId, rating, comment }
+    Note over C: รีวิว 1-5 ดาว (ไม่ต้อง auth — orderId เป็น secret)
 ```
 
 ---
@@ -168,7 +175,7 @@ graph LR
 
     subgraph Subscribers["SSE Consumers"]
         KDS["KDS + Manager<br/>/kitchen/stream"]
-        EMP["Employee<br/>/orders/stream"]
+        EMP["Employee + Staff Display<br/>/serving/stream"]
         CUS["Customer<br/>/tables/stream/:tableId"]
     end
 
@@ -178,6 +185,7 @@ graph LR
     SERVING -->|"ITEM_SERVED"| O
     SERVING -->|"ITEM_SERVED"| T
     PAYMENT -->|"PAYMENT_VERIFIED"| T
+    PAYMENT -->|"PAYMENT_REQUESTED"| O
 
     K -->|"subscribe"| KDS
     O -->|"subscribe"| EMP
@@ -203,6 +211,7 @@ erDiagram
     restaurants ||--o{ reservations : "has"
     restaurants ||--o{ customers : "has"
     restaurants ||--o{ ingredients : "has"
+    restaurants ||--o{ reviews : "has"
 
     categories ||--o{ menus : "groups"
     menus ||--o{ menu_ingredients : "uses"
@@ -211,6 +220,7 @@ erDiagram
     tables ||--o{ orders : "has"
     tables ||--o{ reservations : "has"
     orders ||--o{ order_items : "contains"
+    orders ||--o| reviews : "has"
     menus ||--o{ order_items : "referenced_by"
     promotions ||--o{ orders : "applied_to"
 
@@ -224,13 +234,31 @@ erDiagram
         varchar promptpay
     }
 
+    users {
+        uuid id PK
+        uuid restaurant_id FK
+        varchar email UK
+        boolean email_verified
+        varchar phone "nullable — walk-in customers"
+        roleEnum role
+    }
+
     orders {
         uuid id PK
         uuid restaurant_id FK
         uuid table_id FK
         orderStatusEnum status
         paymentStatusEnum payment_status
+        paymentMethodEnum payment_method
         real total
+    }
+
+    reviews {
+        uuid id PK
+        uuid restaurant_id FK
+        uuid order_id FK
+        integer rating
+        text comment
     }
 
     reservations {
@@ -261,6 +289,7 @@ flowchart TD
 
     ROLE -->|"manager"| DASH["Dashboard /dashboard/[slug]/*"]
     ROLE -->|"employee"| DASH
+    ROLE -->|"manager/employee"| SDISP["Staff Display /staff/[slug]"]
     ROLE -->|"chef"| KDS["KDS /kds/[slug]"]
     ROLE -->|"customer"| ORDER["Order /r/[slug]/*"]
     ROLE -->|"super_admin"| ADMIN["Admin /admin"]

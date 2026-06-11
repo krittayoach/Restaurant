@@ -172,7 +172,9 @@ Frontend shows spinner during upload (`uploading` state). On error shows `toast.
 | Page | Strategy | Reason |
 |---|---|---|
 | Customer menu | SSR | Fast initial load, cache-friendly |
-| Kitchen board | SSE + CSR | Live updates required |
+| Customer payment + review | CSR | Form interactions + SSE payment status |
+| Kitchen board (KDS) | SSE + CSR | Live updates required |
+| Staff Display | SSE + CSR | Live updates required |
 | Employee floor | SSE + CSR | Live updates required |
 | Manager overview | SSR | Fresh data on load |
 | Manager reports | SSR | Aggregated data, no realtime |
@@ -183,9 +185,12 @@ Frontend shows spinner during upload (`uploading` state). On error shows `toast.
 ## Navigation & Access Control
 
 ```
-/login                          → all staff
-/register                       → public (creates manager + restaurant)
+/login                          → all staff (email + password)
+/register                       → public (creates manager + restaurant; sends verify email)
+/verify-email                   → public (email verification landing, ?token=)
 /r/{slug}/table/{qrToken}       → customer (public, resolves via QR)
+/staff/{slug}/                  → employee + manager (tablet display)
+/kds/{slug}/                    → chef + manager (fullscreen PWA)
 /dashboard/{slug}/              → manager only
 /dashboard/{slug}/menu          → manager + employee
 /dashboard/{slug}/orders        → manager + employee

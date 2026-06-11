@@ -60,9 +60,10 @@ Single Redis         →   Redis Cluster
 | Transport | HTTPS (production) |
 | CORS | Whitelist origin เท่านั้น |
 | File upload | image/* เท่านั้น, ขนาดจำกัด 5MB |
-| Public endpoints | `/r/*`, `/reservations/public/*` — ไม่ต้อง auth แต่ rate limit |
-| Rate limiting | ยังไม่มี — **Phase 3 backlog** |
-| Audit log | ยังไม่มี — **Phase 3 backlog** |
+| Public endpoints | `/r/*`, `/reservations/public/*`, `/payment/request`, `/reviews` — no-auth แต่ rate limit |
+| Rate limiting | Redis-backed — global 300/min, login 5/5min, register 5/hr (`lib/rateLimit.ts`) |
+| Audit log | `audit_logs` table — 11 action types, `lib/audit.ts` fire-and-forget |
+| Email verification | register ต้องยืนยัน email ก่อน login; token Redis TTL 24h |
 
 ---
 
@@ -113,7 +114,7 @@ Single Redis         →   Redis Cluster
 | Edge runtime | Next.js middleware ใช้ `jose` แทน `jsonwebtoken` (Web Crypto API) |
 | Storage | MinIO self-hosted — ต้องตั้ง `forcePathStyle: true` |
 | Plan limits | Free: 10 โต๊ะ / 30 เมนู, Basic: 20 โต๊ะ / 100 เมนู, Pro: ไม่จำกัด |
-| Multi-tenant | 1 `restaurant_id` ต่อ JWT — ไม่รองรับ multi-branch ใน Phase นี้ |
+| Multi-tenant | 1 `restaurant_id` ต่อ JWT — switch branch ผ่าน `POST /auth/switch-branch` |
 
 ---
 
@@ -121,7 +122,8 @@ Single Redis         →   Redis Cluster
 
 | Requirement | รายละเอียด |
 |---|---|
-| ข้อมูลลูกค้า | เก็บเฉพาะ phone + name (ไม่เก็บ email, address) |
-| ข้อมูล payment | เก็บแค่ slip image URL — ไม่เก็บข้อมูลบัตร |
+| ข้อมูล staff | email + name + password hash — ไม่เก็บข้อมูลบัตร |
+| ข้อมูลลูกค้า walk-in | phone + name (loyalty) — ไม่มี account |
+| ข้อมูล payment | method (cash/promptpay) — ไม่เก็บ slip image, ไม่เก็บข้อมูลบัตร |
 | Data retention | ไม่มี auto-delete policy ใน Phase นี้ |
 | PDPA | แจ้งลูกค้าผ่าน UI ก่อนเก็บข้อมูล — **Phase 3 backlog** |
