@@ -10,7 +10,8 @@
 ### สำหรับลูกค้า
 - **สั่งอาหารผ่าน QR Code** — ไม่ต้องโหลดแอป ไม่ต้องสมัครสมาชิก
 - **ติดตามสถานะออเดอร์ Realtime** — เห็นทุกขั้นตอนตั้งแต่ครัวรับจนเสิร์ฟ
-- **ชำระเงิน** — โอนแนบสลิป หรือจ่ายเงินสด
+- **ชำระเงิน** — สแกน QR PromptPay หรือจ่ายเงินสด
+- **รีวิวหลังชำระเงิน** — ให้คะแนน 1-5 ดาว + คอมเมนต์ (ไม่ต้องสมัครสมาชิก)
 - **จองโต๊ะล่วงหน้า** — พร้อมสั่งอาหารล่วงหน้า (Pre-order)
 - **ระบบสะสมแต้ม** — ทุก ฿10 = 1 แต้ม, จองโต๊ะ = 50 แต้ม, แลกเป็นส่วนลด
 - **ดูแต้มและประวัติ** — ที่ `/r/[slug]/me` กรอกเบอร์โทรดูได้เลย
@@ -23,13 +24,14 @@
 
 ### สำหรับพนักงาน
 - **จัดการ Floor** — ดูสถานะโต๊ะ, เสิร์ฟอาหาร, ปิดออเดอร์
-- **ยืนยันการชำระเงิน** — ตรวจสลิปโอนเงิน, รับเงินสด
+- **Staff Display (Tablet)** — `/staff/[slug]/` หน้าจอแท็บเล็ต Realtime แสดงอาหารพร้อมเสิร์ฟ + รอชำระเงิน
+- **ยืนยันการชำระเงิน** — ยืนยัน QR PromptPay / รับเงินสด
 - **หน้ารวมสลิปรอยืนยัน** — order slips + pre-order reservation slips ในที่เดียว
 
 ### สำหรับ Manager
 - **จัดการเมนู** — CRUD พร้อมอัปโหลดรูป (MinIO)
 - **โปรโมชั่น** — ลด % หรือลดจำนวน, กำหนดขั้นต่ำ
-- **จัดการพนักงาน** — เพิ่ม/ลบ, ดูการเข้างาน, จ่ายเงินเดือน
+- **จัดการพนักงาน** — เพิ่ม/ลบด้วย email, ดูการเข้างาน, จ่ายเงินเดือน
 - **คลังวัตถุดิบ** — ติดตามสต็อก, แจ้งเตือนของใกล้หมด
 - **รายงาน** — รายได้รายวัน/รายเดือน, เมนูขายดี, Export CSV/PDF
 - **การจองโต๊ะ** — ดู/จัดการ, อนุมัติสลิป Pre-order
@@ -47,6 +49,7 @@
 - **Rate Limiting** — Redis-backed: global 300 req/min, login 5/5 min, register 5/hr
 - **Billing Cron** — ตรวจสอบทุก 1 ชั่วโมง, auto-downgrade plan ที่หมดอายุ (30-day cycle)
 - **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
+- **Email Verification** — register ต้องยืนยัน email ก่อน login ได้; staff login ใช้ email (phone สำหรับ walk-in loyalty เท่านั้น)
 
 ---
 
@@ -75,6 +78,8 @@ myplatfrom/
 │       │   ├── reserve/            # ลูกค้า — จองโต๊ะ + Pre-order
 │       │   └── me/                 # ลูกค้า — พอร์ทัลแต้มสะสม
 │       ├── kds/[slug]/             # Kitchen Display System (Fullscreen PWA)
+│       ├── staff/[slug]/           # Staff Display — ready-to-serve + payment (Tablet)
+│       ├── verify-email/           # Email verification landing page
 │       ├── dashboard/[slug]/       # Staff Dashboard
 │       │   ├── (overview)          # ภาพรวม
 │       │   ├── menu/               # จัดการเมนู
@@ -93,7 +98,7 @@ myplatfrom/
 │       ├── routes/                 # auth, restaurants, menus, categories, tables
 │       │                           # orders, kitchen, serving, payment, employees
 │       │                           # reports, promotions, reservations, inventory
-│       │                           # billing, customers
+│       │                           # billing, customers, reviews
 │       ├── db/
 │       │   ├── schema.ts           # Drizzle schema ทั้งหมด
 │       │   ├── index.ts            # DB connection
@@ -142,6 +147,7 @@ MINIO_BUCKET=restaurant-menu
 # Email (optional — ใช้ Resend)
 RESEND_API_KEY=re_xxxxxxxxxxxx
 PLATFORM_EMAIL_FROM=noreply@yourdomain.com
+APP_URL=http://localhost:3002
 ```
 
 **`frontend/.env.local`**
@@ -179,6 +185,7 @@ bun run dev --port 3002
 | Staff Login | http://localhost:3002/login |
 | Dashboard | http://localhost:3002/dashboard/demo-restaurant |
 | KDS ครัว | http://localhost:3002/kds/demo-restaurant |
+| Staff Display (Tablet) | http://localhost:3002/staff/demo-restaurant |
 | Super Admin | http://localhost:3002/admin |
 | สั่งอาหาร (ลูกค้า) | สแกน QR จาก dashboard → QR โต๊ะ |
 | จองโต๊ะ | http://localhost:3002/r/demo-restaurant/reserve |
@@ -194,15 +201,15 @@ bun run dev --port 3002
 |---|---|---|
 | Super Admin | `0800000000` | `password123` |
 
-**ร้าน: demo-restaurant** (เข้าที่ `/login`)
+**ร้าน: demo-restaurant** (เข้าที่ `/login` — ใช้ email)
 
-| Role | เบอร์ | รหัสผ่าน |
+| Role | Email | รหัสผ่าน |
 |---|---|---|
-| Manager | `0812345678` | `password123` |
-| Employee | `0811111111` | `password123` |
-| Employee | `0822222222` | `password123` |
-| Chef | `0833333333` | `password123` |
-| Chef | `0844444444` | `password123` |
+| Manager | `manager@demo.com` | `password123` |
+| Employee | `employee1@demo.com` | `password123` |
+| Employee | `employee2@demo.com` | `password123` |
+| Chef | `chef1@demo.com` | `password123` |
+| Chef | `chef2@demo.com` | `password123` |
 
 ### ลูกค้าทดสอบ (แต้มสะสม)
 
@@ -221,10 +228,11 @@ bun run dev --port 3002
     └─► เลือกเมนู + ใส่ตะกร้า + ยืนยัน
             └─► Backend สร้าง Order
                     ├─► Redis Pub/Sub → SSE → KDS (ครัว)
-                    └─► ครัว: รับงาน → ทำ → เสร็จ → SSE → พนักงาน
+                    └─► ครัว: รับงาน → ทำ → เสร็จ → SSE → พนักงาน / Staff Display
                                                 └─► พนักงาน เสิร์ฟ
-                                                        └─► ลูกค้า ชำระเงิน (สลิป/เงินสด)
+                                                        └─► ลูกค้า ชำระเงิน (QR PromptPay / เงินสด)
                                                                 └─► พนักงาน ยืนยัน → แต้มสะสม
+                                                                        └─► ลูกค้า รีวิว ★★★★★
 ```
 
 ---
@@ -240,7 +248,8 @@ bun run dev --port 3002
 | `/orders` | สั่งอาหาร, เพิ่มรายการ, ยกเลิก |
 | `/kitchen` | คิวครัว, อัปเดตสถานะรายการ |
 | `/serving` | เสิร์ฟอาหาร |
-| `/payment` | submit สลิป, ยืนยัน, เงินสด |
+| `/payment` | request (QR/cash), ยืนยัน |
+| `/reviews` | รีวิวหลังชำระเงิน (no-auth), GET (manager) |
 | `/reservations` | จองโต๊ะ, อนุมัติ pre-order |
 | `/customers` | lookup แต้ม, ประวัติ |
 | `/employees` | จัดการพนักงาน, เงินเดือน |
@@ -258,12 +267,13 @@ Swagger UI: http://localhost:3010/docs
 ## 🗄️ Database Schema (สรุป)
 
 ```
-restaurants ──< users (manager/employee/chef/customer)
+restaurants ──< users (manager/employee/chef) — login ด้วย email
             ──< tables ──< orders ──< order_items
+            │                    └──< reviews
             ──< categories ──< menus ──< menu_ingredients ──< ingredients
             ──< promotions
             ──< reservations
-            ──< customers ──< point_transactions
+            ──< customers ──< point_transactions  (walk-in, ใช้ phone)
             ──< plan_payments
             ──< audit_logs
 ```
