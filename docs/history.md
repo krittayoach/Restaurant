@@ -1,5 +1,14 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.14 (2026-06-20)
+
+- F: Web Push notifications — แจ้งลูกค้าเมื่ออาหารพร้อมเสิร์ฟ ทำงานแม้ปิดแท็บ/หน้าจอ (roadmap SP7)
+- F: `GET /push/vapid-public-key` (public) + `POST /push/subscribe` (no-auth, qrToken เป็น secret, rate limit 20/10min ต่อ IP)
+- F: `lib/push.ts` — web-push + VAPID; `sendPushToTable()` ส่งจาก Redis set พร้อม prune subscription ที่ตาย (404/410)
+- F: kitchen `PATCH /kitchen/items/:id/status` → status `ready` ยิง push ไปโต๊ะลูกค้าเพิ่มจาก SSE เดิม
+- F: `sw.js` เพิ่ม `push` + `notificationclick` handler; payment page มีปุ่ม "เปิดแจ้งเตือนเมื่ออาหารพร้อม" (i18n TH/EN)
+- C: เพิ่ม `web-push` dependency; env `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`; Redis key `push:subs:{rid}:{tableId}` TTL 6h + `pushRateLimit`
+
 ## Changelog — v2.13 (2026-06-11)
 
 - B: แก้ fallback API URL `localhost:3001` → `localhost:3010` ใน customer pages (order, payment, reserve, me)
@@ -299,6 +308,4 @@ Features & improvements shipped after v1.0:
 
 ## Backlog / Future Considerations
 
-- [ ] Push notifications (Web Push API) for order ready alerts to customers — roadmap SP7
-- [ ] Export reports to CSV / PDF
 - [ ] Multi-language support (EN + TH toggle) — i18n TH/EN มีแล้วในหน้า customer; dashboard ยังเป็น TH only

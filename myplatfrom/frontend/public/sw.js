@@ -66,3 +66,35 @@ self.addEventListener('fetch', e => {
 self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
+
+// ─── Push: แจ้งเตือนลูกค้าเมื่ออาหารพร้อม ─────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = { title: 'แจ้งเตือน', body: '', url: '/', tag: undefined }
+  try { if (e.data) data = { ...data, ...e.data.json() } } catch {}
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      tag: data.tag,
+      icon: '/icons/kds.svg',
+      badge: '/icons/kds.svg',
+      vibrate: [120, 60, 120],
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/' },
+    })
+  )
+})
+
+// ─── Notification click: focus/เปิดแท็บที่เกี่ยวข้อง ──────────────────────────
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const target = e.notification.data?.url || '/'
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes(target) && 'focus' in c) return c.focus()
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target)
+    })
+  )
+})

@@ -50,6 +50,10 @@ type T = {
   statusReady: string
   statusServed: string
   statusCancelled: string
+  notifyEnable: string
+  notifyEnabled: string
+  notifyBlocked: string
+  notifyHint: string
   reserveTitle: string
   reserveSubtitle: string
   step1: string
@@ -154,6 +158,10 @@ const th: T = {
   statusReady: 'พร้อมเสิร์ฟ',
   statusServed: 'เสิร์ฟแล้ว',
   statusCancelled: 'ยกเลิก',
+  notifyEnable: 'เปิดแจ้งเตือนเมื่ออาหารพร้อม',
+  notifyEnabled: 'เปิดแจ้งเตือนแล้ว',
+  notifyBlocked: 'การแจ้งเตือนถูกปิด — เปิดได้จากตั้งค่าเบราว์เซอร์',
+  notifyHint: 'รับแจ้งเตือนแม้ปิดหน้านี้',
   reserveTitle: 'จองโต๊ะ',
   reserveSubtitle: 'เลือกวันเวลาและโต๊ะที่ต้องการ',
   step1: '1. เลือกวันและเวลา',
@@ -258,6 +266,10 @@ const en: T = {
   statusReady: 'Ready',
   statusServed: 'Served',
   statusCancelled: 'Cancelled',
+  notifyEnable: 'Notify me when food is ready',
+  notifyEnabled: 'Notifications on',
+  notifyBlocked: 'Notifications blocked — enable in browser settings',
+  notifyHint: 'Get alerted even if you close this page',
   reserveTitle: 'Table Reservation',
   reserveSubtitle: 'Select date, time, and table',
   step1: '1. Select Date & Time',

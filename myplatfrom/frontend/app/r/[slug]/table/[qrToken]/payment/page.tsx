@@ -3,10 +3,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import QRCode from 'qrcode'
-import { CheckCircle2, Clock, Flame, UtensilsCrossed, XCircle, PlusCircle, X, Banknote, QrCode, Star } from 'lucide-react'
+import { CheckCircle2, Clock, Flame, UtensilsCrossed, XCircle, PlusCircle, X, Banknote, QrCode, Star, Bell, BellRing } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useI18n, LangToggle } from '@/lib/i18n'
 import { Spinner } from '@/components/Spinner'
+import { enablePushForTable, notificationPermission } from '@/lib/push'
 
 type PayMethod = 'qr' | 'cash' | null
 
@@ -24,6 +25,9 @@ export default function PaymentPage() {
 
   const [payMethod, setPayMethod]   = useState<PayMethod>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const [notifyState, setNotifyState] = useState<'default' | 'granted' | 'denied' | 'unsupported'>('default')
+  const [notifyBusy, setNotifyBusy]   = useState(false)
 
   const [rating, setRating]               = useState(0)
   const [hoverStar, setHoverStar]         = useState(0)
@@ -67,6 +71,26 @@ export default function PaymentPage() {
     retryTimer = setTimeout(connect, 500)
     return () => { clearTimeout(retryTimer); es?.close() }
   }, [])
+
+  // เช็คสถานะ permission ตอนเปิดหน้า; ถ้าอนุญาตไว้แล้วให้ refresh subscription เงียบๆ
+  useEffect(() => {
+    const perm = notificationPermission()
+    setNotifyState(perm === 'unsupported' ? 'unsupported' : perm)
+    if (perm === 'granted') enablePushForTable(params.qrToken).catch(() => {})
+  }, [params.qrToken])
+
+  async function enableNotify() {
+    if (notifyBusy) return
+    setNotifyBusy(true)
+    try {
+      const ok = await enablePushForTable(params.qrToken)
+      setNotifyState(ok ? 'granted' : (notificationPermission() === 'denied' ? 'denied' : 'default'))
+    } catch {
+      setNotifyState('default')
+    } finally {
+      setNotifyBusy(false)
+    }
+  }
 
   async function cancelItem(itemId: string) {
     if (!order) return
@@ -182,6 +206,30 @@ export default function PaymentPage() {
                 <span className="text-accent text-lg">฿{order.total?.toFixed(0)}</span>
               </div>
             </div>
+
+            {/* Notify-when-ready — แสดงเฉพาะตอนยังมีอาหารกำลังทำ */}
+            {notifyState !== 'unsupported' && order.payment_status !== 'paid' && (
+              notifyState === 'granted' ? (
+                <div className="flex items-center gap-2.5 rounded-2xl border border-green/30 bg-green/10 px-4 py-3 text-green">
+                  <BellRing size={18} aria-hidden="true" />
+                  <span className="text-sm font-semibold">{t.notifyEnabled}</span>
+                </div>
+              ) : notifyState === 'denied' ? (
+                <div className="flex items-center gap-2.5 rounded-2xl border border-border bg-bg2 px-4 py-3 text-muted">
+                  <Bell size={18} aria-hidden="true" />
+                  <span className="text-sm">{t.notifyBlocked}</span>
+                </div>
+              ) : (
+                <button onClick={enableNotify} disabled={notifyBusy}
+                  className="w-full flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-left transition-colors hover:bg-accent/20 disabled:opacity-60">
+                  {notifyBusy ? <Spinner size={18} /> : <Bell size={18} className="text-accent shrink-0" aria-hidden="true" />}
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-accent">{t.notifyEnable}</span>
+                    <span className="block text-xs text-muted mt-0.5">{t.notifyHint}</span>
+                  </span>
+                </button>
+              )
+            )}
 
             {/* Payment section */}
             {order.payment_status === 'unpaid' && (

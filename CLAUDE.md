@@ -94,7 +94,9 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 | chef | `chef1@demo.com` / `chef2@demo.com` | `password123` |
 
 ## New Libs / Keys
-- `lib/rateLimit.ts` — `checkRateLimit(key, max, windowSecs)` + `rateLimitPlugin()`; Redis-backed; keys: `loginRateLimit`, `registerRateLimit`, `customerAuthRateLimit`, `paymentRateLimit`, `reviewRateLimit`
+- `lib/rateLimit.ts` — `checkRateLimit(key, max, windowSecs)` + `rateLimitPlugin()`; Redis-backed; keys: `loginRateLimit`, `registerRateLimit`, `customerAuthRateLimit`, `paymentRateLimit`, `reviewRateLimit`, `pushRateLimit`
+- `lib/push.ts` — Web Push (web-push + VAPID); `sendPushToTable(rid, tableId, payload)` ส่งจาก Redis set + prune subscription ที่ตาย (404/410); ยิงตอน item → `ready`
+- Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` · Redis: `push:subs:{rid}:{tableId}` TTL 6h (set ของ subscription JSON)
 - `lib/audit.ts` — `logAudit(action, opts)` fire-and-forget → `audit_logs` table
 - `lib/email.ts` + `cron/billing.ts` — Resend email; billing auto-downgrade hourly
 - Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` · Redis: `billing:reminder:{rid}` TTL 8d
@@ -107,6 +109,8 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - `POST /payment/request`, `/payment/submit`, `POST /reviews` — no-auth public; rate limited 20/10min และ 10/10min ต่อ IP ป้องกัน spam/brute-force
 - `POST /payment/request` — method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
 - `POST /reviews` — ใช้ `orderId` เป็น secret แทน auth
+- `GET /push/vapid-public-key` + `POST /push/subscribe` — public; subscribe ใช้ `qrToken` เป็น secret resolve โต๊ะ, rate limit 20/10min ต่อ IP
+- Web Push trigger เฉพาะ status `ready` (เพิ่มจาก SSE เดิม) · `sw.js` มี `push` + `notificationclick` handler
 - `postcss.config.js` ต้องมี — ไม่งั้น Tailwind ไม่ทำงาน
 - Next.js middleware ใช้ Edge runtime → `jose` ไม่ใช้ `jsonwebtoken`
 - Token เก็บใน localStorage (`getToken()`/`saveToken()`) ไม่ใช่ cookie

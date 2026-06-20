@@ -4,6 +4,7 @@ import { orders, orderItems, menuIngredients, ingredients } from '../db/schema'
 import { eq, and, inArray, sql } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { publisher, keys, subscriber } from '../lib/redis'
+import { sendPushToTable } from '../lib/push'
 
 async function requireAuth(headers: any, roles: string[], set: any) {
   const auth = headers['authorization']
@@ -79,7 +80,17 @@ export const kitchenRoutes = new Elysia({ prefix: '/kitchen' })
     }
     // Notify customer on table channel
     const [ord] = await db.select({ table_id: orders.table_id }).from(orders).where(eq(orders.id, updated.order_id)).limit(1)
-    if (ord) await publisher.publish(keys.tableChannel(payload.restaurantId!, ord.table_id), JSON.stringify({ type: 'ITEM_STATUS', data: { itemId: params.id, status: body.status, orderId: updated.order_id } }))
+    if (ord) {
+      await publisher.publish(keys.tableChannel(payload.restaurantId!, ord.table_id), JSON.stringify({ type: 'ITEM_STATUS', data: { itemId: params.id, status: body.status, orderId: updated.order_id } }))
+      // Web Push: แจ้งลูกค้าเมื่ออาหารพร้อมเสิร์ฟ (ทำงานแม้ปิดแท็บ)
+      if (body.status === 'ready') {
+        sendPushToTable(payload.restaurantId!, ord.table_id, {
+          title: '🍽️ อาหารพร้อมเสิร์ฟแล้ว!',
+          body: `${updated.menu_name} กำลังจะไปเสิร์ฟที่โต๊ะของคุณ`,
+          tag: `ready-${updated.order_id}`,
+        }).catch(() => {})
+      }
+    }
 
     return updated
   }, { body: t.Object({ status: t.Union([t.Literal('cooking'), t.Literal('ready')]) }) })
