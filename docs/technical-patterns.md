@@ -44,6 +44,10 @@ await redis.del(`email:verify:${token}`)   // on verify success
 // Pub/Sub publish
 await publisher.publish(`${restaurantId}:kitchen`, JSON.stringify({ type: 'NEW_ORDER', data }))
 await publisher.publish(`${restaurantId}:order:update`, JSON.stringify({ type: 'PAYMENT_REQUESTED', data }))
+
+// Web Push subscriptions (per โต๊ะ, TTL 6h)
+await redis.sadd(`push:subs:${restaurantId}:${tableId}`, JSON.stringify(subscription))
+await redis.expire(`push:subs:${restaurantId}:${tableId}`, 21600)
 ```
 
 ### SSE (Server-Sent Events)
@@ -51,6 +55,15 @@ await publisher.publish(`${restaurantId}:order:update`, JSON.stringify({ type: '
 - Return `text/event-stream` response
 - Format: `data: ${JSON.stringify(payload)}\n\n`
 - One SSE connection per staff session; channel scoped to `restaurantId`
+
+### Web Push Notifications (v2.14)
+- VAPID keys ตั้งใน env (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`)
+- `GET /push/vapid-public-key` (public) — frontend ขอ key ไปสร้าง `PushSubscription`
+- `POST /push/subscribe` (no-auth, `qrToken` เป็น secret) — เก็บ subscription ใน Redis set TTL 6h
+- `lib/push.ts` → `sendPushToTable(rid, tableId, payload)` ส่งพร้อม prune subscription 404/410
+- Trigger: `PATCH /kitchen/items/:id` status `ready` → ยิง push เพิ่มจาก SSE ปกติ
+- `sw.js` เพิ่ม `push` event handler (showNotification) + `notificationclick` (focus/open tab)
+- หน้า payment: ปุ่ม "เปิดแจ้งเตือนเมื่ออาหารพร้อม" (3 สถานะ: default / granted / denied)
 
 ---
 

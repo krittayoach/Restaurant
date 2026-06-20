@@ -19,8 +19,9 @@ graph TB
     end
 
     subgraph Backend["Backend — Elysia + Bun (port 3010)"]
-        API["REST API<br/>17 Route Modules"]
+        API["REST API<br/>18 Route Modules"]
         SSE["SSE Streams<br/>3 Channels per Restaurant"]
+        PUSH["Web Push<br/>VAPID + web-push"]
         AUTH["JWT Auth<br/>bcrypt + 24h session"]
     end
 
@@ -37,6 +38,7 @@ graph TB
     ADMIN --> MW
     MW --> APP
     APP <-->|"fetch / SSE"| API
+    PUSH -.->|"Web Push notification"| CUS
     SW -.->|"offline cache"| CHEF
     API <--> AUTH
     API <--> PG
@@ -115,6 +117,8 @@ sequenceDiagram
     KDS->>API: PATCH /kitchen/items/:id (ready)
     API->>PUB: PUBLISH {rid}:order:update → ITEM_READY
     SUB-->>EMP: SSE: ITEM_READY 🔔
+    API->>PUB: sendPushToTable() → Web Push
+    PUB-->>C: 🔔 Push Notification (แม้ปิดแท็บ)
 
     EMP->>API: PATCH /serving/:orderId/serve
     API->>PUB: PUBLISH {rid}:table:{id} → ITEM_SERVED
@@ -154,9 +158,10 @@ sequenceDiagram
 
 ---
 
-## 5. SSE Architecture
+## 5. SSE + Web Push Architecture
 
 > เลือก SSE แทน WebSocket เพราะ traffic เป็น **server→client เท่านั้น** ไม่จำเป็นต้อง bidirectional
+> Web Push เสริม SSE สำหรับ **ลูกค้า** — แจ้งเตือนได้แม้ปิดแท็บ/ล็อกหน้าจอ
 
 ```mermaid
 graph LR
@@ -190,6 +195,15 @@ graph LR
     K -->|"subscribe"| KDS
     O -->|"subscribe"| EMP
     T -->|"subscribe"| CUS
+
+    subgraph WebPush["Web Push (v2.14)"]
+        PS[("Redis<br/>push:subs:{rid}:{tableId}<br/>TTL 6h")]
+        WP["lib/push.ts<br/>sendPushToTable()"]
+    end
+
+    KITCHEN -->|"status=ready → sendPushToTable"| WP
+    WP -->|"SMEMBERS"| PS
+    WP -.->|"Web Push API (VAPID)"| CUS
 
     style K fill:#fff7ed,stroke:#f97316
     style O fill:#eff6ff,stroke:#3b82f6
@@ -309,6 +323,7 @@ flowchart TD
 | การตัดสินใจ | ที่เลือก | ทางเลือกอื่น | เหตุผล |
 |---|---|---|---|
 | Realtime | SSE | WebSocket | Traffic เป็น server→client เท่านั้น, ง่ายกว่า, reconnect built-in |
+| Push (offline) | Web Push + VAPID | Polling / Long-poll | แจ้งเตือนลูกค้าได้แม้ปิดแท็บ; subscription เก็บใน Redis TTL 6h |
 | Multi-tenant | Shared DB + `restaurant_id` | Schema per tenant | Scale เล็ก overhead ต่ำ migration ง่าย |
 | Auth | JWT + Redis session | Session-only / OAuth | Stateless + revoke ได้ทันที (logout ลบ key) |
 | Cache | Redis | In-memory / Memcached | ใช้อยู่แล้วสำหรับ Pub/Sub ลด dependency |

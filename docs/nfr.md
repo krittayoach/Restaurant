@@ -60,10 +60,11 @@ Single Redis         →   Redis Cluster
 | Transport | HTTPS (production) |
 | CORS | Whitelist origin เท่านั้น |
 | File upload | image/* เท่านั้น, ขนาดจำกัด 5MB |
-| Public endpoints | `/r/*`, `/reservations/public/*`, `/payment/request`, `/reviews` — no-auth แต่ rate limit |
-| Rate limiting | Redis-backed — global 300/min, login 5/5min, register 5/hr (`lib/rateLimit.ts`) |
+| Public endpoints | `/r/*`, `/reservations/public/*`, `/payment/request`, `/reviews`, `/push/*` — no-auth แต่ rate limit |
+| Rate limiting | Redis-backed — global 300/min, login 5/5min, register 5/hr, payment 20/10min, reviews 10/10min, push/subscribe 20/10min (`lib/rateLimit.ts`) |
 | Audit log | `audit_logs` table — 11 action types, `lib/audit.ts` fire-and-forget |
 | Email verification | register ต้องยืนยัน email ก่อน login; token Redis TTL 24h |
+| Web Push | VAPID-authenticated; subscription Redis TTL 6h; dead sub (404/410) pruned อัตโนมัติ |
 
 ---
 
