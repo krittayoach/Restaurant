@@ -8,19 +8,15 @@ import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 interface OrderItem { id: string; menu_name: string; quantity: number; note?: string; status: string }
 interface Order { id: string; created_at: string; status: string; items: OrderItem[] }
-
-const ITEM_STATUS: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'รอทำ',       cls: 'bg-yellow/10 text-yellow' },
-  cooking: { label: 'กำลังทำ',    cls: 'bg-accent/10 text-accent' },
-  ready:   { label: 'พร้อมเสิร์ฟ', cls: 'bg-green/10  text-green' },
-}
 const elapsed = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
 
 export default function KitchenPage() {
   const params = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [orders, setOrders] = useState<Order[]>([])
   const [stats, setStats] = useState({ pending: 0, cooking: 0, ready: 0 })
   const toast = useToast()
@@ -58,10 +54,16 @@ export default function KitchenPage() {
     finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
 
+  const ITEM_STATUS: Record<string, { label: string; cls: string }> = {
+    pending: { label: t.kitchen.pending, cls: 'bg-yellow/10 text-yellow' },
+    cooking: { label: t.kitchen.cooking, cls: 'bg-accent/10 text-accent' },
+    ready:   { label: t.kitchen.ready,   cls: 'bg-green/10  text-green' },
+  }
+
   const cards = [
-    { label: 'รอทำ',        count: stats.pending, emoji: '⏳', bg: 'bg-yellow/10', text: 'text-yellow' },
-    { label: 'กำลังทำ',     count: stats.cooking, emoji: '🔥', bg: 'bg-accent/10', text: 'text-accent' },
-    { label: 'พร้อมเสิร์ฟ', count: stats.ready,   emoji: '✅', bg: 'bg-green/10',  text: 'text-green' },
+    { label: t.kitchen.pending, count: stats.pending, emoji: '⏳', bg: 'bg-yellow/10', text: 'text-yellow' },
+    { label: t.kitchen.cooking, count: stats.cooking, emoji: '🔥', bg: 'bg-accent/10', text: 'text-accent' },
+    { label: t.kitchen.ready,   count: stats.ready,   emoji: '✅', bg: 'bg-green/10',  text: 'text-green' },
   ]
 
   if (pageLoading) return <LoadingScreen />
@@ -72,7 +74,7 @@ export default function KitchenPage() {
         <div>
           <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">👨‍🍳 Kitchen Board</h1>
           <p className="text-xs text-muted font-mono mt-0.5 flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-green pulse-ring inline-block" /> realtime
+            <span className="size-2 rounded-full bg-green pulse-ring inline-block" /> {t.kitchen.subtitle}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
@@ -100,7 +102,7 @@ export default function KitchenPage() {
                 </div>
                 <button onClick={() => acceptAll(order.id)} disabled={busyId[`order_${order.id}`]}
                   className="text-xs bg-teal text-white px-3 py-1.5 rounded-xl font-semibold hover:brightness-110 active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5">
-                  {busyId[`order_${order.id}`] ? <Spinner size={12} /> : null}รับทั้งหมด
+                  {busyId[`order_${order.id}`] ? <Spinner size={12} /> : null}{t.kitchen.acceptAll}
                 </button>
               </div>
               <div className="p-3 space-y-2">
@@ -116,13 +118,13 @@ export default function KitchenPage() {
                       {item.status === 'pending' && (
                         <button onClick={() => updateItem(item.id, 'cooking')} disabled={busyId[item.id]}
                           className="text-xs bg-accent text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0 disabled:opacity-60 flex items-center gap-1.5">
-                          {busyId[item.id] ? <Spinner size={12} /> : null}รับทำ
+                          {busyId[item.id] ? <Spinner size={12} /> : null}{t.kitchen.startCooking}
                         </button>
                       )}
                       {item.status === 'cooking' && (
                         <button onClick={() => updateItem(item.id, 'ready')} disabled={busyId[item.id]}
                           className="text-xs bg-green text-white px-3 py-1.5 rounded-xl font-semibold active:scale-95 transition-transform shrink-0 disabled:opacity-60 flex items-center gap-1.5">
-                          {busyId[item.id] ? <Spinner size={12} /> : null}เสร็จ
+                          {busyId[item.id] ? <Spinner size={12} /> : null}{t.kitchen.done}
                         </button>
                       )}
                     </div>
@@ -135,7 +137,7 @@ export default function KitchenPage() {
         {orders.length === 0 && (
           <div className="col-span-full card p-20 text-center">
             <div className="text-6xl mb-3 floaty">🎉</div>
-            <p className="text-muted text-sm">ไม่มีออเดอร์ค้าง พักได้เลย!</p>
+            <p className="text-muted text-sm">{t.kitchen.noOrders}</p>
           </div>
         )}
       </div>

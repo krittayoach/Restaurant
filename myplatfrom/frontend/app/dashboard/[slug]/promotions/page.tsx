@@ -8,11 +8,13 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 const EMPTY = { name: '', discount_pct: '', discount_amt: '', min_order: '', starts_at: '', ends_at: '' }
 
 export default function PromotionsPage() {
   const params = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [promos, setPromos] = useState<any[]>([])
   const [token, setToken] = useState('')
   const [rid, setRid] = useState('')
@@ -83,7 +85,7 @@ export default function PromotionsPage() {
     finally { setBusyId(b => ({ ...b, [id]: false })) }
   }
   async function del(id: string, name: string) {
-    if (!await confirm({ title: `ลบโปรโมชั่น "${name}"?`, danger: true, confirmLabel: 'ลบ' })) return
+    if (!await confirm({ title: `${t.common.delete} "${name}"?`, danger: true, confirmLabel: t.common.delete })) return
     setBusyId(b => ({ ...b, [id]: true }))
     try { await api.delete(`/promotions/${id}`, token); load(token, rid) }
     catch (e: any) { toast.error(e.message ?? 'ลบไม่สำเร็จ') }
@@ -96,56 +98,56 @@ export default function PromotionsPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text text-balance">🎁 โปรโมชั่น</h1>
-          <p className="text-muted text-sm mt-0.5">{promos.length} รายการ</p>
+          <h1 className="font-display font-bold text-2xl text-text text-balance">{t.promotions.title}</h1>
+          <p className="text-muted text-sm mt-0.5">{promos.length} {t.common.items}</p>
         </div>
         <button onClick={openAdd} className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> สร้างโปรโมชั่น
+          <Plus size={16} /> {t.promotions.createPromo}
         </button>
       </div>
 
       {showForm && (
         <div className="card p-5 mb-6 anim-pop">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-text">{editingId ? '✏️ แก้ไขโปรโมชั่น' : 'สร้างโปรโมชั่นใหม่'}</p>
+            <p className="text-sm font-semibold text-text">{editingId ? t.promotions.editPromo : t.promotions.createNew}</p>
             <button onClick={() => { setShowForm(false); setEditingId(null) }} className="text-muted hover:text-text"><X size={18} /></button>
           </div>
           <form onSubmit={submit} className="space-y-3">
             <div>
-              <label className="block text-xs text-muted mb-1.5">ชื่อโปรโมชั่น <span className="text-rose">*</span></label>
+              <label className="block text-xs text-muted mb-1.5">{t.promotions.promoName} <span className="text-rose">*</span></label>
               <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ลด 10% วันสุดท้าย"
                 className={cn('input', formSubmitted && !form.name && 'input-error')} />
               {formSubmitted && !form.name && <p className="field-error">กรุณากรอกชื่อโปรโมชั่น</p>}
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs text-muted mb-1.5">ส่วนลด %</label>
+                <label className="block text-xs text-muted mb-1.5">{t.promotions.discountPct}</label>
                 <input type="number" value={form.discount_pct} onChange={e => setForm(f => ({ ...f, discount_pct: e.target.value }))} placeholder="10" className="input" />
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5">ส่วนลด ฿</label>
+                <label className="block text-xs text-muted mb-1.5">{t.promotions.discountAmt}</label>
                 <input type="number" value={form.discount_amt} onChange={e => setForm(f => ({ ...f, discount_amt: e.target.value }))} placeholder="50" className="input" />
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5">ขั้นต่ำ ฿</label>
+                <label className="block text-xs text-muted mb-1.5">{t.promotions.minOrder}</label>
                 <input type="number" value={form.min_order} onChange={e => setForm(f => ({ ...f, min_order: e.target.value }))} placeholder="300" className="input" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-muted mb-1.5">เริ่ม</label>
+                <label className="block text-xs text-muted mb-1.5">{t.promotions.startsAt}</label>
                 <input type="datetime-local" value={form.starts_at} onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))} className="input" />
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5">สิ้นสุด</label>
+                <label className="block text-xs text-muted mb-1.5">{t.promotions.endsAt}</label>
                 <input type="datetime-local" value={form.ends_at} onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))} className="input" />
               </div>
             </div>
             <div className="flex gap-2 pt-1">
               <button type="submit" disabled={saving} className="btn-primary gap-2 disabled:opacity-70">
-                {saving ? <><Spinner size={14} /> กำลังบันทึก...</> : (editingId ? 'บันทึกการแก้ไข' : 'บันทึก')}
+                {saving ? <><Spinner size={14} /> {t.common.saving}</> : (editingId ? t.promotions.saveChanges : t.common.save)}
               </button>
-              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} disabled={saving} className="btn-secondary">ยกเลิก</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} disabled={saving} className="btn-secondary">{t.common.cancel}</button>
             </div>
           </form>
         </div>
@@ -166,7 +168,7 @@ export default function PromotionsPage() {
               </p>
             </div>
             <span className={`badge shrink-0 ${p.is_active ? 'bg-green/10 text-green' : 'bg-bg3 text-muted'}`}>
-              {p.is_active ? 'ใช้งาน' : 'ปิด'}
+              {p.is_active ? t.promotions.active : t.promotions.inactive}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <button onClick={() => openEdit(p)} className="size-8 rounded-xl bg-blue/10 text-blue flex items-center justify-center hover:bg-blue/20 transition-colors" data-tooltip="แก้ไข">
@@ -184,7 +186,7 @@ export default function PromotionsPage() {
         {promos.length === 0 && (
           <div className="card p-12 text-center">
             <Tag size={28} className="text-muted mx-auto mb-3 opacity-40" />
-            <p className="text-muted text-sm">ยังไม่มีโปรโมชั่น</p>
+            <p className="text-muted text-sm">{t.promotions.noPromos}</p>
           </div>
         )}
       </div>

@@ -8,9 +8,11 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 export default function MenuManagePage() {
   const params = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [menus, setMenus] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [token, setToken] = useState('')
@@ -175,18 +177,18 @@ export default function MenuManagePage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 anim-up gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">จัดการเมนู</h1>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">{t.menu.title}</h1>
           <div className="flex items-center gap-3 mt-1">
-            <span className="text-muted text-sm">{menus.length} รายการ</span>
-            {totalVisible > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-green/10 text-green font-medium">{totalVisible} เปิดขาย</span>}
-            {totalHidden  > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-bg3 text-muted font-medium">{totalHidden} ปิด</span>}
+            <span className="text-muted text-sm">{menus.length} {t.common.items}</span>
+            {totalVisible > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-green/10 text-green font-medium">{totalVisible} {t.menu.openCount}</span>}
+            {totalHidden  > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-bg3 text-muted font-medium">{totalHidden} {t.menu.closedCount}</span>}
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
           <button onClick={() => setShowCats(v => !v)} className="btn-secondary gap-1.5">
-            <Tag size={15} /> หมวดหมู่
+            <Tag size={15} /> {t.menu.manageCategories}
           </button>
-          <button onClick={openAdd} className="btn-primary gap-1.5"><Plus size={16} /> เพิ่มเมนู</button>
+          <button onClick={openAdd} className="btn-primary gap-1.5"><Plus size={16} /> {t.menu.addMenu}</button>
         </div>
       </div>
 
@@ -194,7 +196,7 @@ export default function MenuManagePage() {
       {showCats && (
         <div className="card p-5 mb-6 anim-pop">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-display font-semibold text-base">จัดการหมวดหมู่</p>
+            <p className="font-display font-semibold text-base">{t.menu.editing}</p>
             <button onClick={() => setShowCats(false)} className="text-muted hover:text-text"><X size={18} /></button>
           </div>
           <div className="space-y-2 mb-4">
@@ -228,14 +230,14 @@ export default function MenuManagePage() {
                 )}
               </div>
             ))}
-            {categories.length === 0 && <p className="text-muted text-sm text-center py-2">ยังไม่มีหมวดหมู่</p>}
+            {categories.length === 0 && <p className="text-muted text-sm text-center py-2">{t.menu.noCategories}</p>}
           </div>
           <div className="flex gap-2">
             <input value={catInput} onChange={e => setCatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addCategory()}
-              placeholder="ชื่อหมวดหมู่ใหม่" className="input flex-1" />
+              placeholder={t.menu.catNewName} className="input flex-1" />
             <button onClick={addCategory} disabled={catSaving} className="btn-primary shrink-0 gap-1 disabled:opacity-70">
-              {catSaving ? <Spinner size={14} /> : <Plus size={15} />} เพิ่ม
+              {catSaving ? <Spinner size={14} /> : <Plus size={15} />} {t.menu.addCategory}
             </button>
           </div>
         </div>
@@ -245,32 +247,32 @@ export default function MenuManagePage() {
       {showForm && (
         <div className="card p-5 md:p-6 mb-6 anim-pop">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-display font-semibold text-base">{editingId ? '✏️ แก้ไขเมนู' : 'เพิ่มเมนูใหม่'}</p>
+            <p className="font-display font-semibold text-base">{editingId ? t.menu.editMenu : t.menu.addNewMenu}</p>
             <button onClick={() => { setShowForm(false); setEditingId(null) }} className="text-muted hover:text-text"><X size={18} /></button>
           </div>
           <form onSubmit={submitForm} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-muted mb-1.5 ml-1">ชื่อเมนู <span className="text-rose">*</span></label>
+                <label className="block text-xs text-muted mb-1.5 ml-1">{t.menu.menuName} <span className="text-rose">*</span></label>
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ผัดกระเพรา"
                   className={cn('input', formSubmitted && !form.name && 'input-error')} />
                 {formSubmitted && !form.name && <p className="field-error">กรุณากรอกชื่อเมนู</p>}
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5 ml-1">ราคา (฿) <span className="text-rose">*</span></label>
+                <label className="block text-xs text-muted mb-1.5 ml-1">{t.menu.price} <span className="text-rose">*</span></label>
                 <input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="70"
                   className={cn('input', formSubmitted && !form.price && 'input-error')} />
                 {formSubmitted && !form.price && <p className="field-error">กรุณากรอกราคา</p>}
               </div>
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1.5 ml-1">คำอธิบาย</label>
+              <label className="block text-xs text-muted mb-1.5 ml-1">{t.menu.description}</label>
               <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="อร่อย เผ็ดกำลังดี" className="input" />
             </div>
             <div>
-              <label className="block text-xs text-muted mb-1.5 ml-1">หมวดหมู่</label>
+              <label className="block text-xs text-muted mb-1.5 ml-1">{t.menu.category}</label>
               <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))} className="input">
-                <option value="">— ไม่ระบุ —</option>
+                <option value="">{t.menu.noCategory}</option>
                 {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -289,8 +291,8 @@ export default function MenuManagePage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-muted">{uploading ? 'กำลังอัปโหลด...' : form.image ? 'เปลี่ยนรูปภาพ' : 'เลือกรูปภาพ'}</p>
-                  <p className="text-xs text-muted/60 mt-0.5">JPG, PNG ไม่เกิน 2MB</p>
+                  <p className="text-sm text-muted">{uploading ? t.menu.uploading : form.image ? t.menu.changeImage : t.menu.selectImage}</p>
+                  <p className="text-xs text-muted/60 mt-0.5">{t.menu.imageHint}</p>
                 </div>
                 {form.image && !uploading && (
                   <button type="button" onClick={e => { e.preventDefault(); setForm(f => ({ ...f, image: '' })) }}
@@ -303,9 +305,9 @@ export default function MenuManagePage() {
             </div>
             <div className="flex gap-2 pt-1">
               <button type="submit" disabled={saving} className="btn-primary gap-2 disabled:opacity-70">
-                {saving ? <><Spinner size={14} /> กำลังบันทึก...</> : (editingId ? 'บันทึกการแก้ไข' : 'บันทึก')}
+                {saving ? <><Spinner size={14} /> {t.common.saving}</> : (editingId ? t.menu.saveChanges : t.common.save)}
               </button>
-              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} className="btn-secondary" disabled={saving}>ยกเลิก</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingId(null) }} className="btn-secondary" disabled={saving}>{t.common.cancel}</button>
             </div>
           </form>
         </div>
@@ -318,7 +320,7 @@ export default function MenuManagePage() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="ค้นหาเมนู..."
+            placeholder={t.menu.searchPlaceholder}
             className="input pl-9 w-full"
           />
           {search && (
@@ -328,7 +330,7 @@ export default function MenuManagePage() {
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
-          {[{ id: 'all', name: 'ทั้งหมด' }, ...categories].map(c => (
+          {[{ id: 'all', name: t.common.all }, ...categories].map(c => (
             <button key={c.id} onClick={() => setFilterCat(c.id)}
               className={cn('px-3.5 py-2 rounded-full text-xs font-semibold transition-all whitespace-nowrap', filterCat === c.id ? 'bg-accent text-white shadow-md shadow-accent/30' : 'bg-bg2 text-muted border border-border hover:border-border2')}>
               {(catEmoji[(c as any).name] ?? '') + ' ' + c.name}
@@ -340,7 +342,7 @@ export default function MenuManagePage() {
       {/* ── Grouped sections ── */}
       {grouped.length === 0 ? (
         <div className="card p-12 text-center text-muted text-sm">
-          {search ? `ไม่พบเมนูที่ค้นหา "${search}"` : '🍽️ ยังไม่มีเมนูในหมวดนี้'}
+          {search ? `${t.menu.noResults} "${search}"` : t.menu.noMenuInCat}
         </div>
       ) : (
         <div className="space-y-8">
@@ -387,10 +389,10 @@ export default function MenuManagePage() {
                       </button>
                       <button onClick={() => toggle(menu.id)} disabled={busyId[menu.id]}
                         className={cn('flex-1 py-2 transition-colors flex items-center justify-center disabled:opacity-50', menu.is_available ? 'text-green hover:bg-green/5' : 'text-muted hover:bg-bg3')}
-                        data-tooltip={menu.is_available ? 'เปิดขาย' : 'ปิดขาย'}>
+                        data-tooltip={menu.is_available ? t.menu.closeSell : t.menu.openSell}>
                         {busyId[menu.id] ? <Spinner size={12} /> : menu.is_available ? <Eye size={13} /> : <EyeOff size={13} />}
                       </button>
-                      <button onClick={() => del(menu.id)} disabled={busyId[menu.id]} data-tooltip="ลบเมนู" className="flex-1 py-2 text-rose hover:bg-rose/5 transition-colors flex items-center justify-center disabled:opacity-50">
+                      <button onClick={() => del(menu.id)} disabled={busyId[menu.id]} data-tooltip={t.menu.deleteMenu} className="flex-1 py-2 text-rose hover:bg-rose/5 transition-colors flex items-center justify-center disabled:opacity-50">
                         {busyId[menu.id] ? <Spinner size={12} /> : <Trash2 size={13} />}
                       </button>
                     </div>

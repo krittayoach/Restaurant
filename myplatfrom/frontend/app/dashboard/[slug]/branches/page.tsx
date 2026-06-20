@@ -8,11 +8,13 @@ import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
 import { cn } from '@/lib/cn'
 import { useConfirm } from '@/components/ConfirmModal'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 type Branch = { id: string; name: string; slug: string; is_active: boolean; created_at: string }
 
 export default function BranchesPage() {
   const { slug } = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const toast = useToast()
   const { confirm } = useConfirm()
 
@@ -62,10 +64,10 @@ export default function BranchesPage() {
 
   async function deactivateBranch(branchSlug: string, branchName: string) {
     const ok = await confirm({
-      title: 'ปิดสาขา?',
-      message: `ปิดการใช้งาน "${branchName}" — ข้อมูลยังคงอยู่ แต่ผู้ใช้จะเข้าไม่ได้`,
+      title: t.branches.closeBranchTitle,
+      message: `"${branchName}"`,
       danger: true,
-      confirmLabel: 'ปิดสาขา',
+      confirmLabel: t.branches.closeBranch,
     })
     if (!ok) return
     try {
@@ -102,12 +104,12 @@ export default function BranchesPage() {
       <div className="p-5 md:p-8 max-w-2xl mx-auto">
         <div className="card p-6 text-center space-y-3">
           <GitBranch size={28} className="mx-auto text-muted" />
-          <p className="font-semibold text-text">ร้านนี้เป็นสาขา</p>
-          <p className="text-sm text-muted">การจัดการสาขาทำได้จากร้านหลักเท่านั้น</p>
+          <p className="font-semibold text-text">{t.branches.isBranch}</p>
+          <p className="text-sm text-muted">{t.branches.isBranchSub}</p>
           {parentSlug && (
             <a href={`/dashboard/${parentSlug}/branches`}
               className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
-              ไปที่ร้านหลัก <ExternalLink size={13} />
+              {t.branches.goToParent} <ExternalLink size={13} />
             </a>
           )}
         </div>
@@ -124,7 +126,7 @@ export default function BranchesPage() {
       {/* Header */}
       <div className="anim-up flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text text-balance">สาขา</h1>
+          <h1 className="font-display font-bold text-2xl text-text text-balance">{t.branches.title}</h1>
           <p className="text-muted text-sm mt-0.5">
             {branchLimit === -1 ? `${branches.length} สาขา (ไม่จำกัด)` : `${branches.length} / ${branchLimit} สาขา`}
           </p>
@@ -132,10 +134,10 @@ export default function BranchesPage() {
         <button
           onClick={() => setShowCreate(true)}
           disabled={!canCreate}
-          aria-label="สร้างสาขาใหม่"
+          aria-label={t.branches.createBranch}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-accent text-white text-sm font-medium shadow-lg shadow-accent/30 hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
-          <Plus size={16} /> สร้างสาขา
+          <Plus size={16} /> {t.branches.createBranch}
         </button>
       </div>
 
@@ -144,7 +146,7 @@ export default function BranchesPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-yellow/10 border border-yellow/20 anim-up">
           <AlertCircle size={16} className="text-yellow mt-0.5 shrink-0" />
           <p className="text-sm text-text">
-            ถึงขีดจำกัดสาขาของแพ็กเกจแล้ว — <a href={`/dashboard/${slug}/settings`} className="text-accent font-medium hover:underline">อัปเกรดแพ็กเกจ</a> เพื่อเพิ่มสาขา
+            {t.branches.limitReached} — <a href={`/dashboard/${slug}/settings`} className="text-accent font-medium hover:underline">{t.branches.upgradeLink}</a>
           </p>
         </div>
       )}
@@ -153,11 +155,11 @@ export default function BranchesPage() {
       {branchLimit === 0 && (
         <div className="card p-8 text-center space-y-3 anim-up">
           <GitBranch size={28} className="mx-auto text-muted" />
-          <p className="font-semibold text-text">แพ็กเกจ Free ไม่รองรับสาขา</p>
-          <p className="text-sm text-muted">อัปเกรดเป็น Basic หรือ Pro เพื่อสร้างสาขา</p>
+          <p className="font-semibold text-text">{t.branches.freeNotSupported}</p>
+          <p className="text-sm text-muted">{t.branches.freeUpgradeSub}</p>
           <a href={`/dashboard/${slug}/settings`}
             className="inline-block mt-1 px-4 py-2 rounded-2xl bg-accent text-white text-sm font-medium shadow-lg shadow-accent/30 hover:bg-accent/90 transition-all">
-            อัปเกรดแพ็กเกจ
+            {t.branches.upgrade}
           </a>
         </div>
       )}
@@ -174,7 +176,7 @@ export default function BranchesPage() {
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-text truncate">{b.name}</p>
                   {!b.is_active && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose/10 text-rose shrink-0">ปิด</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-rose/10 text-rose shrink-0">{t.branches.closedBadge}</span>
                   )}
                 </div>
                 <p className="text-xs text-muted font-mono">{b.slug}</p>
@@ -187,13 +189,13 @@ export default function BranchesPage() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-bg3 text-xs font-medium text-text hover:bg-accent/10 hover:text-accent transition-all disabled:opacity-50"
                   >
                     {switching === b.slug ? <Spinner className="size-3" /> : <ExternalLink size={12} />}
-                    เข้า
+                    {t.branches.enterBranch}
                   </button>
                 )}
                 {b.is_active && (
                   <button
                     onClick={() => deactivateBranch(b.slug, b.name)}
-                    aria-label="ปิดสาขา"
+                    aria-label={t.branches.closeBranch}
                     className="size-8 rounded-xl flex items-center justify-center text-muted hover:bg-rose/10 hover:text-rose transition-all"
                   >
                     <X size={14} />
@@ -210,14 +212,14 @@ export default function BranchesPage() {
         <div className="fixed inset-0 z-modal flex items-center justify-center p-4 bg-black/50">
           <div className="card w-full max-w-sm p-6 space-y-5 anim-up">
             <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-lg text-text">สร้างสาขาใหม่</h2>
+              <h2 className="font-display font-bold text-lg text-text">{t.branches.createTitle}</h2>
               <button onClick={() => setShowCreate(false)} aria-label="ปิด" className="size-8 rounded-xl flex items-center justify-center text-muted hover:bg-bg3 transition-all">
                 <X size={16} />
               </button>
             </div>
             <form onSubmit={createBranch} className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted mb-1.5 block">ชื่อสาขา</label>
+                <label className="text-xs font-medium text-muted mb-1.5 block">{t.branches.branchName}</label>
                 <input
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -227,7 +229,7 @@ export default function BranchesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted mb-1.5 block">Slug (URL)</label>
+                <label className="text-xs font-medium text-muted mb-1.5 block">{t.branches.slugLabel}</label>
                 <input
                   value={form.slug}
                   onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))}
@@ -242,12 +244,12 @@ export default function BranchesPage() {
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setShowCreate(false)}
                   className="flex-1 py-2.5 rounded-2xl border border-border text-sm font-medium text-muted hover:bg-bg3 transition-all">
-                  ยกเลิก
+                  {t.common.cancel}
                 </button>
                 <button type="submit" disabled={creating || !form.name || !form.slug}
                   className="flex-1 py-2.5 rounded-2xl bg-accent text-white text-sm font-medium shadow-lg shadow-accent/30 hover:bg-accent/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                   {creating ? <Spinner className="size-4" /> : <Plus size={15} />}
-                  สร้างสาขา
+                  {creating ? t.branches.creating : t.branches.createBranch}
                 </button>
               </div>
             </form>

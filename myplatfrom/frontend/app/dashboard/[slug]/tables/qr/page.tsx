@@ -8,13 +8,7 @@ import { cn } from '@/lib/cn'
 import { useConfirm } from '@/components/ConfirmModal'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
-
-const RES_STATUS: Record<string, { label: string; color: string }> = {
-  confirmed: { label: 'ยืนยันแล้ว', color: 'text-accent bg-accent/10' },
-  seated:    { label: 'เข้านั่งแล้ว', color: 'text-green bg-green/10' },
-  cancelled: { label: 'ยกเลิก',      color: 'text-muted bg-bg3' },
-  no_show:   { label: 'ไม่มา',       color: 'text-rose bg-rose/10' },
-}
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
@@ -29,6 +23,7 @@ const STATUS: Record<string, { emoji: string; text: string }> = {
 
 export default function QRPage() {
   const params = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [tables, setTables] = useState<any[]>([])
   const [qrImages, setQrImages] = useState<Record<string, string>>({})
   const [token, setToken] = useState('')
@@ -112,7 +107,7 @@ export default function QRPage() {
   }
 
   async function deleteTable(id: string, label: string) {
-    if (!await confirm({ title: `ลบโต๊ะ ${label}?`, danger: true, confirmLabel: 'ลบ' })) return
+    if (!await confirm({ title: `${t.tables.deleteTitle} ${label}?`, danger: true, confirmLabel: t.common.delete })) return
     setBusyId(b => ({ ...b, [`del_${id}`]: true }))
     try { await api.delete(`/tables/${id}`, token); load(token) }
     catch (e: any) { toast.error(e.message ?? 'ลบไม่สำเร็จ') }
@@ -126,7 +121,7 @@ export default function QRPage() {
     finally { setBusyId(b => ({ ...b, [`qr_${id}`]: false })) }
   }
   async function resetAll() {
-    if (!await confirm({ title: 'รีเซ็ต QR ทุกโต๊ะ?', message: 'QR เก่าจะใช้ไม่ได้ทันที', confirmLabel: 'รีเซ็ต' })) return
+    if (!await confirm({ title: t.tables.resetQrTitle, message: t.tables.resetQrMsg, confirmLabel: t.tables.resetQr })) return
     setLoading(true)
     try { await api.post('/tables/qr-token/bulk', {}, token); await load(token) }
     catch (e: any) { toast.error(e.message ?? 'เกิดข้อผิดพลาด') }
@@ -141,13 +136,13 @@ export default function QRPage() {
     <div className="p-5 md:p-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">📱 QR Code โต๊ะ</h1>
-          <p className="text-muted text-sm mt-0.5">{tables.length} โต๊ะ · ลูกค้าสแกนเพื่อสั่ง</p>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">{t.tables.title}</h1>
+          <p className="text-muted text-sm mt-0.5">{tables.length} {t.common.table} · {t.tables.subtitle}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => { setShowAdd(v => !v); setAddSubmitted(false) }} className="btn-primary"><Plus size={15} /> เพิ่มโต๊ะ</button>
+          <button onClick={() => { setShowAdd(v => !v); setAddSubmitted(false) }} className="btn-primary"><Plus size={15} /> {t.tables.addTable}</button>
           <button onClick={resetAll} disabled={loading} className="btn-danger">
-            <RotateCcw size={14} className={loading ? 'animate-spin' : ''} /> รีเซ็ต QR
+            <RotateCcw size={14} className={loading ? 'animate-spin' : ''} /> {t.tables.resetQr}
           </button>
         </div>
       </div>
@@ -156,25 +151,25 @@ export default function QRPage() {
       {showAdd && (
         <div className="card p-5 mb-6 anim-pop">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-display font-semibold text-base">เพิ่มโต๊ะใหม่</p>
+            <p className="font-display font-semibold text-base">{t.tables.addNew}</p>
             <button onClick={() => { setShowAdd(false); setAddSubmitted(false) }} className="text-muted hover:text-text"><X size={18} /></button>
           </div>
           <form onSubmit={addTable} className="flex gap-3 flex-wrap items-end">
             <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs text-muted mb-1.5">ชื่อโต๊ะ <span className="text-rose">*</span></label>
+              <label className="block text-xs text-muted mb-1.5">{t.tables.tableLabel} <span className="text-rose">*</span></label>
               <input value={addForm.label} onChange={e => setAddForm(f => ({ ...f, label: e.target.value }))}
                 placeholder="T11" className={cn('input', addSubmitted && !addForm.label && 'input-error')} autoFocus />
             </div>
             <div className="w-28">
-              <label className="block text-xs text-muted mb-1.5">ที่นั่ง</label>
+              <label className="block text-xs text-muted mb-1.5">{t.tables.seats}</label>
               <input type="number" value={addForm.seats} onChange={e => setAddForm(f => ({ ...f, seats: e.target.value }))}
                 placeholder="4" min="1" className="input" />
             </div>
             <div className="flex gap-2 items-end">
               <button type="submit" disabled={addSaving} className="btn-primary gap-2 disabled:opacity-70">
-                {addSaving ? <><Spinner size={14} />กำลังเพิ่ม...</> : 'เพิ่มโต๊ะ'}
+                {addSaving ? <><Spinner size={14} />{t.tables.adding}</> : t.tables.addTable}
               </button>
-              <button type="button" onClick={() => { setShowAdd(false); setAddSubmitted(false) }} disabled={addSaving} className="btn-secondary">ยกเลิก</button>
+              <button type="button" onClick={() => { setShowAdd(false); setAddSubmitted(false) }} disabled={addSaving} className="btn-secondary">{t.common.cancel}</button>
             </div>
           </form>
         </div>
@@ -185,21 +180,26 @@ export default function QRPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CalendarClock size={18} className="text-accent" />
-            <h2 className="font-display font-bold text-lg text-text">การจองโต๊ะ</h2>
+            <h2 className="font-display font-bold text-lg text-text">{t.tables.reservations}</h2>
           </div>
           <div className="flex items-center gap-2">
             <a href={`/r/${params.slug}/reserve`} target="_blank"
-              className="text-xs text-accent hover:underline">ลิงก์จองสำหรับลูกค้า ↗</a>
+              className="text-xs text-accent hover:underline">{t.tables.reserveLink}</a>
             <input type="date" value={resDate}
               onChange={e => { setResDate(e.target.value); loadReservations(token, e.target.value) }}
               className="input py-1.5 text-sm" />
           </div>
         </div>
         {reservations.length === 0 ? (
-          <div className="card p-6 text-center text-muted text-sm">ไม่มีการจองในวันนี้</div>
+          <div className="card p-6 text-center text-muted text-sm">{t.tables.noReservations}</div>
         ) : (
           <div className="space-y-2">
             {reservations.map(r => {
+              const RES_STATUS: Record<string, { label: string; color: string }> = {
+                confirmed: { label: t.tables.confirmed, color: 'bg-blue/10 text-blue' },
+                seated:    { label: t.tables.seated,    color: 'bg-green/10 text-green' },
+                no_show:   { label: t.tables.noShow,    color: 'bg-rose/10 text-rose' },
+              }
               const s = RES_STATUS[r.status] ?? RES_STATUS.confirmed
               return (
                 <div key={r.id} className="card p-4 flex items-center gap-4">
@@ -226,9 +226,9 @@ export default function QRPage() {
                           const busy = resBusyId[`${r.id}_${status}`]
                           const anyBusy = Object.keys(resBusyId).some(k => k.startsWith(r.id) && resBusyId[k])
                           const cfg = {
-                            seated:    { label: 'เข้านั่ง', cls: 'bg-green/10 text-green hover:bg-green/20' },
-                            no_show:   { label: 'ไม่มา',    cls: 'bg-bg3 text-muted hover:bg-border' },
-                            cancelled: { label: 'ยกเลิก',   cls: 'bg-rose/10 text-rose hover:bg-rose/20' },
+                            seated:    { label: t.tables.seated,       cls: 'bg-green/10 text-green hover:bg-green/20' },
+                            no_show:   { label: t.tables.noShow,       cls: 'bg-bg3 text-muted hover:bg-border' },
+                            cancelled: { label: t.common.cancel,       cls: 'bg-rose/10 text-rose hover:bg-rose/20' },
                           }[status]
                           return (
                             <button key={status} onClick={() => updateResStatus(r.id, status)}
@@ -258,10 +258,10 @@ export default function QRPage() {
                       </div>
                     )}
                     {r.pre_order_payment === 'paid' && (
-                      <span className="text-xs text-green font-semibold">✓ ชำระล่วงหน้าแล้ว ฿{r.pre_order_total?.toFixed(0)}</span>
+                      <span className="text-xs text-green font-semibold">{t.tables.paidAdvance} ฿{r.pre_order_total?.toFixed(0)}</span>
                     )}
                     {r.pre_order_payment === 'rejected' && (
-                      <span className="text-xs text-rose font-medium">✗ ไม่ผ่านการชำระ</span>
+                      <span className="text-xs text-rose font-medium">{t.tables.payFailed}</span>
                     )}
                   </div>
                 </div>
@@ -299,7 +299,7 @@ export default function QRPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="font-display font-bold text-2xl">{table.label}</p>
-                    <p className="text-xs text-muted">🪑 {table.seats} ที่นั่ง</p>
+                    <p className="text-xs text-muted">🪑 {table.seats} {t.tables.seats}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-xl">{s.emoji}</span>

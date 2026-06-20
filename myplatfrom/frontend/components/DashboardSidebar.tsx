@@ -9,27 +9,24 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useConfirm } from './ConfirmModal'
+import { useDashboardLang, DashboardLangToggle } from '@/lib/i18n-dashboard'
 
 type Branch = { id: string; name: string; slug: string; is_active: boolean }
 
-const NAV = [
-  { href: '',            label: 'ภาพรวม',     emoji: '🏠', icon: LayoutDashboard, roles: ['manager'] },
-  { href: '/menu',       label: 'เมนู',        emoji: '🍽️', icon: UtensilsCrossed, roles: ['manager', 'employee'] },
-  { href: '/orders',     label: 'หน้าร้าน',    emoji: '🪑', icon: ClipboardList,   roles: ['manager', 'employee'] },
-  { href: '/kitchen',    label: 'ครัว',        emoji: '👨‍🍳', icon: ChefHat,         roles: ['manager', 'chef'] },
-  { href: '/tables/qr',  label: 'QR โต๊ะ',    emoji: '📱', icon: QrCode,          roles: ['manager'] },
-  { href: '/payments',   label: 'ชำระเงิน',   emoji: '💳', icon: CreditCard,      roles: ['manager', 'employee'] },
-  { href: '/promotions', label: 'โปรโมชั่น',   emoji: '🎁', icon: Tag,             roles: ['manager'] },
-  { href: '/employees',  label: 'พนักงาน',     emoji: '👥', icon: Users,           roles: ['manager'] },
-  { href: '/inventory',  label: 'คลังวัตถุดิบ', emoji: '📦', icon: Package,         roles: ['manager'] },
-  { href: '/reports',    label: 'รายงาน',      emoji: '📊', icon: BarChart3,       roles: ['manager'] },
-  { href: '/branches',   label: 'สาขา',        emoji: '🏪', icon: GitBranch,       roles: ['manager'], hideInBranch: true },
-  { href: '/settings',   label: 'ตั้งค่า',     emoji: '⚙️', icon: Settings,        roles: ['manager'] },
-]
-
-const ROLE_LABEL: Record<string, string> = {
-  manager: 'ผู้จัดการ', employee: 'พนักงาน', chef: 'พ่อครัว', super_admin: 'Super Admin',
-}
+const NAV_KEYS = [
+  { href: '',            navKey: 'overview',   emoji: '🏠', roles: ['manager'] },
+  { href: '/menu',       navKey: 'menu',       emoji: '🍽️', roles: ['manager', 'employee'] },
+  { href: '/orders',     navKey: 'floor',      emoji: '🪑', roles: ['manager', 'employee'] },
+  { href: '/kitchen',    navKey: 'kitchen',    emoji: '👨‍🍳', roles: ['manager', 'chef'] },
+  { href: '/tables/qr',  navKey: 'tableQr',   emoji: '📱', roles: ['manager'] },
+  { href: '/payments',   navKey: 'payments',   emoji: '💳', roles: ['manager', 'employee'] },
+  { href: '/promotions', navKey: 'promotions', emoji: '🎁', roles: ['manager'] },
+  { href: '/employees',  navKey: 'employees',  emoji: '👥', roles: ['manager'] },
+  { href: '/inventory',  navKey: 'inventory',  emoji: '📦', roles: ['manager'] },
+  { href: '/reports',    navKey: 'reports',    emoji: '📊', roles: ['manager'] },
+  { href: '/branches',   navKey: 'branches',   emoji: '🏪', roles: ['manager'], hideInBranch: true },
+  { href: '/settings',   navKey: 'settings',   emoji: '⚙️', roles: ['manager'] },
+] as const
 
 export default function DashboardSidebar({
   slug, restaurantName, role, branches = [], parentSlug, parentName,
@@ -44,11 +41,18 @@ export default function DashboardSidebar({
   const pathname = usePathname()
   const router = useRouter()
   const { confirm } = useConfirm()
+  const { t } = useDashboardLang()
   const [branchOpen, setBranchOpen] = useState(false)
   const [switching, setSwitching] = useState(false)
 
   const isBranch = !!parentSlug
-  const nav = NAV.filter(n => n.roles.includes(role) && (!(n as any).hideInBranch || !isBranch))
+  const nav = NAV_KEYS
+    .filter(n => n.roles.includes(role as any) && (!('hideInBranch' in n && n.hideInBranch) || !isBranch))
+    .map(n => ({ ...n, label: t.nav[n.navKey] }))
+
+  const roleLabel: Record<string, string> = {
+    manager: t.sidebar.roleMgr, employee: t.sidebar.roleEmp, chef: t.sidebar.roleChef, super_admin: 'Super Admin',
+  }
 
   const isActive = (href: string) => {
     const full = `/dashboard/${slug}${href}`
@@ -87,10 +91,10 @@ export default function DashboardSidebar({
 
   async function handleLogout() {
     const ok = await confirm({
-      title: 'ออกจากระบบ?',
-      message: 'คุณต้องการออกจากระบบใช่ไหม',
+      title: t.sidebar.logoutTitle,
+      message: t.sidebar.logoutMsg,
       danger: true,
-      confirmLabel: 'ออกจากระบบ',
+      confirmLabel: t.sidebar.logoutConfirm,
     })
     if (!ok) return
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
@@ -118,7 +122,7 @@ export default function DashboardSidebar({
             </div>
             <div className="min-w-0">
               <p className="font-display font-semibold text-base text-text truncate leading-tight">{restaurantName}</p>
-              <p className="text-xs text-muted">{isBranch ? 'สาขา' : 'ระบบจัดการร้าน'}</p>
+              <p className="text-xs text-muted">{isBranch ? t.sidebar.branch : t.sidebar.system}</p>
             </div>
           </div>
           {!isBranch && branches.length > 0 && (
@@ -144,7 +148,7 @@ export default function DashboardSidebar({
                         disabled={!b.is_active || switching}
                         className="ml-2 text-[11px] font-medium text-accent hover:underline disabled:text-muted disabled:no-underline shrink-0"
                       >
-                        {b.is_active ? 'เข้า →' : 'ปิด'}
+                        {b.is_active ? t.sidebar.enterBranch : t.sidebar.closed}
                       </button>
                     </div>
                   ))}
@@ -174,7 +178,7 @@ export default function DashboardSidebar({
             <a href={`/kds/${slug}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-medium text-muted hover:bg-bg3 hover:text-text transition-all">
               <Monitor size={16} className="w-5" />
-              KDS จอครัว ↗
+              {t.nav.kds}
             </a>
           )}
         </nav>
@@ -184,14 +188,15 @@ export default function DashboardSidebar({
             <div className="size-9 rounded-full bg-bg3 flex items-center justify-center text-sm">
               {role === 'chef' ? '👨‍🍳' : role === 'employee' ? '🧑‍💼' : '👔'}
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">{ROLE_LABEL[role] ?? role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-text">{roleLabel[role] ?? role}</p>
               <p className="text-xs text-muted font-mono truncate">{slug.slice(0, 14)}</p>
             </div>
+            <DashboardLangToggle />
           </div>
           <button onClick={handleLogout}
             className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-2xl text-sm font-medium text-muted hover:bg-rose/10 hover:text-rose transition-all">
-            <LogOut size={15} /> ออกจากระบบ
+            <LogOut size={15} /> {t.sidebar.logout}
           </button>
         </div>
       </aside>

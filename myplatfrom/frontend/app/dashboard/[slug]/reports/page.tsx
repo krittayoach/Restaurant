@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn'
 import { api, getToken } from '@/lib/api'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { Spinner } from '@/components/Spinner'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 function toLocalDate(d: Date) {
   return d.toISOString().slice(0, 10)
@@ -83,6 +84,7 @@ function exportPDF(daily: any[], bestseller: any[], summary: any, from: string, 
 }
 
 export default function ReportsPage() {
+  const { t } = useDashboardLang()
   const today = toLocalDate(new Date())
   const d7ago = toLocalDate(new Date(Date.now() - 6 * 86400_000))
 
@@ -115,8 +117,8 @@ export default function ReportsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-text text-balance">รายงาน</h1>
-          <p className="text-muted text-sm mt-0.5">ยอดขายและสถิติร้าน</p>
+          <h1 className="font-display font-bold text-2xl text-text text-balance">{t.reports.title}</h1>
+          <p className="text-muted text-sm mt-0.5">{t.reports.subtitle}</p>
         </div>
         {!loading && data && (
           <div className="flex gap-2">
@@ -142,26 +144,26 @@ export default function ReportsPage() {
       <div className="card p-4 mb-6 flex flex-wrap items-end gap-3">
         <Calendar size={16} className="text-muted mb-2 shrink-0" />
         <div>
-          <label className="block text-xs text-muted mb-1.5">จากวันที่</label>
+          <label className="block text-xs text-muted mb-1.5">{t.reports.from}</label>
           <input type="date" value={from} max={to}
             onChange={e => setFrom(e.target.value)}
             className="input py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-muted mb-1.5">ถึงวันที่</label>
+          <label className="block text-xs text-muted mb-1.5">{t.reports.to}</label>
           <input type="date" value={to} min={from} max={today}
             onChange={e => setTo(e.target.value)}
             className="input py-2 text-sm" />
         </div>
         <button onClick={() => load(from, to)} disabled={loading}
           className="btn-primary py-2 px-5 text-sm gap-2 disabled:opacity-70">
-          {loading ? <><Spinner size={14} />กำลังโหลด...</> : 'ดูรายงาน'}
+          {loading ? <><Spinner size={14} />{t.common.loading}</> : t.reports.viewReport}
         </button>
         <div className="flex gap-2 ml-auto flex-wrap">
           {[
-            { label: '7 วัน',   f: toLocalDate(new Date(Date.now() - 6 * 86400_000)),  t: today },
-            { label: '30 วัน',  f: toLocalDate(new Date(Date.now() - 29 * 86400_000)), t: today },
-            { label: 'เดือนนี้', f: today.slice(0, 8) + '01', t: today },
+            { label: t.reports.last7,     f: toLocalDate(new Date(Date.now() - 6 * 86400_000)),  t: today },
+            { label: t.reports.last30,    f: toLocalDate(new Date(Date.now() - 29 * 86400_000)), t: today },
+            { label: t.reports.thisMonth, f: today.slice(0, 8) + '01', t: today },
           ].map(p => (
             <button key={p.label} onClick={() => { setFrom(p.f); setTo(p.t); load(p.f, p.t) }}
               className={cn('text-xs px-3 py-1.5 rounded-lg font-medium transition-colors', from === p.f && to === p.t ? 'bg-accent text-white' : 'bg-bg3 text-muted hover:bg-border')}>
@@ -176,9 +178,9 @@ export default function ReportsPage() {
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[
-              { label: 'รายได้รวม',   value: `฿${parseFloat(summary.total ?? 0).toLocaleString()}`, icon: TrendingUp, color: 'text-accent',  bg: 'bg-accent/10' },
-              { label: 'จำนวนออเดอร์', value: `${summary.order_count ?? 0} รายการ`,                 icon: Receipt,    color: 'text-green',   bg: 'bg-green/10' },
-              { label: 'เมนูขายดีสุด', value: bestseller[0]?.menu_name ?? '-',                       icon: Star,       color: 'text-violet',  bg: 'bg-violet/10' },
+              { label: t.reports.totalRevenue, value: `฿${parseFloat(summary.total ?? 0).toLocaleString()}`, icon: TrendingUp, color: 'text-accent',  bg: 'bg-accent/10' },
+              { label: t.reports.orderCount,  value: `${summary.order_count ?? 0} ${t.common.items}`,        icon: Receipt,    color: 'text-green',   bg: 'bg-green/10' },
+              { label: t.reports.topMenu,     value: bestseller[0]?.menu_name ?? '-',                        icon: Star,       color: 'text-violet',  bg: 'bg-violet/10' },
             ].map(s => {
               const Icon = s.icon
               return (
@@ -196,10 +198,10 @@ export default function ReportsPage() {
           <div className="grid grid-cols-2 gap-5">
             {/* Daily chart */}
             <div className="card p-5">
-              <p className="text-sm font-semibold text-text mb-5">ยอดขายรายวัน</p>
+              <p className="text-sm font-semibold text-text mb-5">{t.reports.dailySales}</p>
               <div className="space-y-3">
                 {daily.length === 0
-                  ? <p className="text-muted text-sm">ยังไม่มีข้อมูล</p>
+                  ? <p className="text-muted text-sm">{t.reports.noData}</p>
                   : daily.map((d: any) => {
                       const pct = (d.total / maxDaily) * 100
                       return (
@@ -220,10 +222,10 @@ export default function ReportsPage() {
 
             {/* Bestseller */}
             <div className="card p-5">
-              <p className="text-sm font-semibold text-text mb-5">เมนูขายดี Top 10</p>
+              <p className="text-sm font-semibold text-text mb-5">{t.reports.bestseller}</p>
               <div className="space-y-3">
                 {bestseller.length === 0
-                  ? <p className="text-muted text-sm">ยังไม่มีข้อมูล</p>
+                  ? <p className="text-muted text-sm">{t.reports.noData}</p>
                   : bestseller.map((item: any, i: number) => (
                       <div key={item.menu_name} className="flex items-center gap-2.5">
                         <span className={cn('size-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0', i < 3 ? 'bg-accent text-white' : 'bg-bg3 text-muted')}>{i + 1}</span>

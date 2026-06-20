@@ -8,21 +8,11 @@ import { useSSE } from '@/hooks/useSSE'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
-
-const TABLE_STATUS: Record<string, { label: string; emoji: string; ring: string; text: string }> = {
-  available: { label: 'ว่าง',          emoji: '🟢', ring: 'ring-green/30',  text: 'text-green' },
-  occupied:  { label: 'มีลูกค้า',      emoji: '🍽️', ring: 'ring-accent/40', text: 'text-accent' },
-  reserved:  { label: 'จอง',          emoji: '📌', ring: 'ring-violet/30', text: 'text-violet' },
-  cleaning:  { label: 'ทำความสะอาด',  emoji: '🧹', ring: 'ring-yellow/30', text: 'text-yellow' },
-}
-
-const PAYMENT_STATUS: Record<string, { label: string; cls: string }> = {
-  unpaid:               { label: 'รอชำระ',        cls: 'bg-bg3 text-muted' },
-  pending_verification: { label: 'มีสลิป รอยืนยัน', cls: 'bg-yellow/10 text-yellow' },
-}
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 export default function OrdersPage() {
   const params = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [tables, setTables] = useState<any[]>([])
   const [ready, setReady] = useState<any[]>([])
   const [paymentOrders, setPaymentOrders] = useState<any[]>([])
@@ -31,6 +21,17 @@ export default function OrdersPage() {
   const [tab, setTab] = useState<'floor' | 'ready' | 'payment'>('floor')
   const [busyId, setBusyId] = useState<Record<string, boolean>>({})
   const [pageLoading, setPageLoading] = useState(true)
+
+  const TABLE_STATUS: Record<string, { label: string; emoji: string; ring: string; text: string }> = {
+    available: { label: t.orders.available, emoji: '🟢', ring: 'ring-green/30',  text: 'text-green' },
+    occupied:  { label: t.orders.occupied,  emoji: '🍽️', ring: 'ring-accent/40', text: 'text-accent' },
+    reserved:  { label: t.orders.reserved,  emoji: '📌', ring: 'ring-violet/30', text: 'text-violet' },
+    cleaning:  { label: t.orders.cleaning,  emoji: '🧹', ring: 'ring-yellow/30', text: 'text-yellow' },
+  }
+  const PAYMENT_STATUS: Record<string, { label: string; cls: string }> = {
+    unpaid:               { label: t.orders.unpaid,      cls: 'bg-bg3 text-muted' },
+    pending_verification: { label: t.orders.pendingVerif, cls: 'bg-yellow/10 text-yellow' },
+  }
 
   useEffect(() => {
     const t = getToken()
@@ -77,9 +78,9 @@ export default function OrdersPage() {
   }
 
   const tabs = [
-    { key: 'floor',   label: `🪑 ผังโต๊ะ` },
-    { key: 'ready',   label: `🔔 พร้อมเสิร์ฟ${ready.length > 0 ? ` (${ready.length})` : ''}` },
-    { key: 'payment', label: `💳 ชำระเงิน${paymentOrders.length > 0 ? ` (${paymentOrders.length})` : ''}` },
+    { key: 'floor',   label: t.orders.tabFloor },
+    { key: 'ready',   label: `${t.orders.tabReady}${ready.length > 0 ? ` (${ready.length})` : ''}` },
+    { key: 'payment', label: `${t.orders.tabPayment}${paymentOrders.length > 0 ? ` (${paymentOrders.length})` : ''}` },
   ] as const
 
   if (pageLoading) return <LoadingScreen />
@@ -88,8 +89,8 @@ export default function OrdersPage() {
     <div className="p-5 md:p-8">
       <div className="flex items-center justify-between mb-6 anim-up">
         <div>
-          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">🪑 หน้าร้าน</h1>
-          <p className="text-muted text-sm mt-0.5">สถานะโต๊ะแบบเรียลไทม์</p>
+          <h1 className="font-display font-bold text-2xl md:text-3xl text-text text-balance">{t.orders.title}</h1>
+          <p className="text-muted text-sm mt-0.5">{t.orders.subtitle}</p>
         </div>
       </div>
 
@@ -114,11 +115,11 @@ export default function OrdersPage() {
                   <span className="text-lg">{s.emoji}</span>
                 </div>
                 <p className={cn('text-xs font-semibold', s.text)}>{s.label}</p>
-                <p className="text-xs text-muted mt-0.5">🪑 {table.seats} ที่นั่ง</p>
+                <p className="text-xs text-muted mt-0.5">🪑 {table.seats} {t.common.seats}</p>
               </div>
             )
           })}
-          {tables.length === 0 && <div className="col-span-full card p-12 text-center text-muted text-sm">ไม่มีข้อมูลโต๊ะ</div>}
+          {tables.length === 0 && <div className="col-span-full card p-12 text-center text-muted text-sm">{t.orders.noTables}</div>}
         </div>
       )}
 
@@ -134,14 +135,14 @@ export default function OrdersPage() {
               </div>
               <button onClick={() => serveItem(item.id)} disabled={busyId[item.id]}
                 className="inline-flex items-center gap-1.5 bg-green text-white px-4 py-2.5 rounded-2xl text-sm font-semibold hover:brightness-110 active:scale-95 transition-all disabled:opacity-60">
-                {busyId[item.id] ? <Spinner size={14} /> : <CheckCircle2 size={15} />} เสิร์ฟแล้ว
+                {busyId[item.id] ? <Spinner size={14} /> : <CheckCircle2 size={15} />} {t.orders.served}
               </button>
             </div>
           ))}
           {ready.length === 0 && (
             <div className="card p-16 text-center">
               <div className="text-5xl mb-3 floaty">✨</div>
-              <p className="text-muted text-sm">ไม่มีรายการรอเสิร์ฟ</p>
+              <p className="text-muted text-sm">{t.orders.noReady}</p>
             </div>
           )}
         </div>
@@ -169,11 +170,11 @@ export default function OrdersPage() {
                     <div key={item.id} className="flex items-center gap-2 text-sm">
                       <span className="flex-1 truncate">{item.menu_name} <span className="text-muted">×{item.quantity}</span></span>
                       <span className={cn('text-xs shrink-0', item.status === 'pending' ? 'text-yellow' : item.status === 'cooking' ? 'text-accent' : item.status === 'ready' ? 'text-green' : 'text-muted')}>
-                        {item.status === 'pending' ? 'รอทำ' : item.status === 'cooking' ? 'กำลังทำ' : item.status === 'ready' ? 'พร้อม' : 'เสิร์ฟแล้ว'}
+                        {item.status === 'pending' ? t.orders.itemPending : item.status === 'cooking' ? t.orders.itemCooking : item.status === 'ready' ? t.orders.itemReady : t.orders.itemServed}
                       </span>
                       {item.status === 'pending' && (
                         <button onClick={() => cancelItem(item.id)} disabled={busyId[`cancel_${item.id}`]}
-                          data-tooltip="ยกเลิกรายการ" className="size-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
+                          data-tooltip={t.orders.cancelItem} className="size-6 rounded-lg bg-rose/10 text-rose flex items-center justify-center hover:bg-rose/20 transition-colors shrink-0 disabled:opacity-50">
                           {busyId[`cancel_${item.id}`] ? <Spinner size={10} /> : <X size={11} />}
                         </button>
                       )}
@@ -184,7 +185,7 @@ export default function OrdersPage() {
                 {/* Slip preview */}
                 {hasSlip && (
                   <div className="mb-3">
-                    <p className="text-xs text-muted mb-1.5">สลิปที่ลูกค้าส่งมา</p>
+                    <p className="text-xs text-muted mb-1.5">{t.orders.customerSlip}</p>
                     <img src={order.slip_path} alt="slip"
                       className="w-28 h-28 rounded-xl object-cover border border-border cursor-pointer"
                       onClick={() => window.open(order.slip_path, '_blank')} />
@@ -195,12 +196,12 @@ export default function OrdersPage() {
                 <div className="flex gap-2">
                   <button onClick={() => payCash(order.id)} disabled={busyId[`cash_${order.id}`] || busyId[`verify_${order.id}`]}
                     className="btn-secondary flex-1 gap-1.5 text-sm disabled:opacity-60">
-                    {busyId[`cash_${order.id}`] ? <Spinner size={14} /> : <Banknote size={15} />} ชำระสด
+                    {busyId[`cash_${order.id}`] ? <Spinner size={14} /> : <Banknote size={15} />} {t.orders.payCash}
                   </button>
                   {order.payment_status === 'pending_verification' && (
                     <button onClick={() => verifyTransfer(order.id)} disabled={busyId[`verify_${order.id}`] || busyId[`cash_${order.id}`]}
                       className="btn-primary flex-1 gap-1.5 text-sm disabled:opacity-60">
-                      {busyId[`verify_${order.id}`] ? <Spinner size={14} /> : <BadgeCheck size={15} />} ยืนยันโอน
+                      {busyId[`verify_${order.id}`] ? <Spinner size={14} /> : <BadgeCheck size={15} />} {t.orders.verifyTransfer}
                     </button>
                   )}
                 </div>
@@ -210,7 +211,7 @@ export default function OrdersPage() {
           {paymentOrders.length === 0 && (
             <div className="card p-16 text-center">
               <div className="text-5xl mb-3">💳</div>
-              <p className="text-muted text-sm">ไม่มีรายการรอชำระเงิน</p>
+              <p className="text-muted text-sm">{t.orders.noPayment}</p>
             </div>
           )}
         </div>

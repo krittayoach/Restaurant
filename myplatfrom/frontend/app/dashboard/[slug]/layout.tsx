@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { jwtVerify } from 'jose'
 import DashboardSidebar from '@/components/DashboardSidebar'
 import PlanLimitModal from '@/components/PlanLimitModal'
+import { DashboardLangProvider } from '@/lib/i18n-dashboard'
 import { ShieldOff } from 'lucide-react'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
@@ -48,19 +49,21 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <DashboardSidebar
-        slug={params.slug}
-        restaurantName={restaurant.name}
-        role={role}
-        branches={restaurant.branches ?? []}
-        parentSlug={restaurant.parent_slug ?? null}
-        parentName={restaurant.parent_name ?? null}
-      />
-      <main className="flex-1 min-w-0 overflow-y-auto pt-14 pb-24 md:pt-0 md:pb-0">
-        {children}
-      </main>
-      <PlanLimitModal />
-    </div>
+    <DashboardLangProvider>
+      <div className="flex h-screen overflow-hidden">
+        <DashboardSidebar
+          slug={params.slug}
+          restaurantName={restaurant.name}
+          role={role}
+          branches={restaurant.branches ?? []}
+          parentSlug={restaurant.parent_slug ?? null}
+          parentName={restaurant.parent_name ?? null}
+        />
+        <main className="flex-1 min-w-0 overflow-y-auto pt-14 pb-24 md:pt-0 md:pb-0">
+          {children}
+        </main>
+        <PlanLimitModal />
+      </div>
+    </DashboardLangProvider>
   )
 }

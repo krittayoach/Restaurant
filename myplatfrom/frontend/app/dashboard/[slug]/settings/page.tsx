@@ -11,12 +11,9 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 import { useToast } from '@/components/Toast'
 import { Spinner } from '@/components/Spinner'
 import { cn } from '@/lib/cn'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 const PLAN_PRICE: Record<string, number> = { free: 0, basic: 299, pro: 799 }
-const PLAN_FEATURES: Record<string, string[]> = {
-  basic: ['โต๊ะสูงสุด 20 โต๊ะ', 'เมนูสูงสุด 100 รายการ', 'รายงานพื้นฐาน'],
-  pro:   ['โต๊ะไม่จำกัด', 'เมนูไม่จำกัด', 'รายงานขั้นสูง', 'ฟีเจอร์ทั้งหมด'],
-}
 const PLAN_COLOR: Record<string, string> = {
   free:  'bg-bg3 text-muted',
   basic: 'bg-blue/10 text-blue',
@@ -27,6 +24,7 @@ type UpgradeStep = 'plan' | 'method' | 'promptpay' | 'card' | 'done' | 'pending'
 
 export default function SettingsPage() {
   const { slug } = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [token, setToken] = useState('')
   const [pageLoading, setPageLoading] = useState(true)
   const toast = useToast()
@@ -154,19 +152,19 @@ export default function SettingsPage() {
 
       {/* ── Header ── */}
       <div className="anim-up">
-        <h1 className="font-display font-bold text-2xl text-text text-balance">ตั้งค่า</h1>
-        <p className="text-muted text-sm mt-0.5">จัดการข้อมูลร้านและการใช้งาน</p>
+        <h1 className="font-display font-bold text-2xl text-text text-balance">{t.settings.title}</h1>
+        <p className="text-muted text-sm mt-0.5">{t.settings.subtitle}</p>
       </div>
 
       {/* ── แพ็กเกจ ── */}
       {planInfo && (
         <section className="anim-up" style={{ animationDelay: '20ms' }}>
-          <SectionLabel icon={<Zap size={14} />} label="แพ็กเกจ" />
+          <SectionLabel icon={<Zap size={14} />} label={t.settings.planSection} />
           <div className="card overflow-hidden">
             {/* plan badge row */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <p className="text-xs text-muted mb-0.5">แพ็กเกจปัจจุบัน</p>
+                <p className="text-xs text-muted mb-0.5">{t.settings.currentPlan}</p>
                 <p className="font-display font-bold text-lg text-text capitalize">{planInfo.plan}</p>
               </div>
               <span className={`text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide ${PLAN_COLOR[planInfo.plan]}`}>
@@ -177,8 +175,8 @@ export default function SettingsPage() {
             {/* usage bars */}
             <div className="grid grid-cols-2 divide-x divide-border">
               {[
-                { label: 'โต๊ะที่ใช้', used: planInfo.table_count, max: planInfo.limits?.tables },
-                { label: 'เมนูที่ใช้',  used: planInfo.menu_count,  max: planInfo.limits?.menus  },
+                { label: t.settings.tablesUsed, used: planInfo.table_count, max: planInfo.limits?.tables },
+                { label: t.settings.menusUsed,  used: planInfo.menu_count,  max: planInfo.limits?.menus  },
               ].map(item => {
                 const unlimited = item.max == null || !isFinite(item.max)
                 const pct = unlimited ? 0 : Math.min((item.used / item.max) * 100, 100)
@@ -207,11 +205,11 @@ export default function SettingsPage() {
               {canUpgrade ? (
                 <button onClick={openUpgrade}
                   className="btn-primary w-full justify-center gap-2 text-sm">
-                  <ChevronUp size={15} /> อัปเกรดแพ็กเกจ
+                  <ChevronUp size={15} /> {t.settings.upgrade}
                 </button>
               ) : (
                 <div className="flex items-center justify-center gap-2 py-2 text-sm text-accent font-medium">
-                  <Check size={15} /> คุณใช้แพ็กเกจสูงสุดแล้ว
+                  <Check size={15} /> {t.settings.maxPlan}
                 </div>
               )}
             </div>
@@ -221,15 +219,15 @@ export default function SettingsPage() {
 
       {/* ── ข้อมูลร้าน ── */}
       <section className="anim-up" style={{ animationDelay: '60ms' }}>
-        <SectionLabel icon={<Store size={14} />} label="ข้อมูลร้าน" />
+        <SectionLabel icon={<Store size={14} />} label={t.settings.infoSection} />
         <form onSubmit={submit} className="card p-5 space-y-4">
-          <Field label="ชื่อร้าน" required>
+          <Field label={t.settings.restaurantName} required>
             <input value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="ร้านอาหารของฉัน" className="input" />
           </Field>
 
-          <Field label="เลข PromptPay" hint="ใช้รับชำระเงินจากลูกค้าผ่าน QR code">
+          <Field label={t.settings.promptpayNum} hint={t.settings.promptpayHint}>
             <div className="relative">
               <Hash size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <input value={form.promptpay}
@@ -238,7 +236,7 @@ export default function SettingsPage() {
             </div>
           </Field>
 
-          <Field label="อีเมลติดต่อ" hint="รับการแจ้งเตือนจากระบบ เช่น การอัปเกรดแพ็กเกจ, แจ้งเตือนหมดอายุ">
+          <Field label={t.settings.contactEmail} hint={t.settings.contactEmailHint}>
             <div className="relative">
               <Mail size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
               <input type="email" value={form.contact_email}
@@ -247,11 +245,11 @@ export default function SettingsPage() {
             </div>
           </Field>
 
-          <Field label="เวลาทำการ">
+          <Field label={t.settings.businessHours}>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: 'open_time',  label: 'เปิด' },
-                { key: 'close_time', label: 'ปิด'  },
+                { key: 'open_time',  label: t.settings.openTime },
+                { key: 'close_time', label: t.settings.closeTime },
               ].map(({ key, label }) => (
                 <div key={key}>
                   <p className="text-xs text-muted mb-1.5 flex items-center gap-1">
@@ -267,21 +265,21 @@ export default function SettingsPage() {
 
           <button type="submit" disabled={saving || !form.name.trim()}
             className={`btn-primary w-full justify-center gap-2 transition-all ${saved ? '!bg-green' : ''}`}>
-            {saved    ? <><Check size={16} /> บันทึกแล้ว</>
-             : saving ? <><Spinner /> กำลังบันทึก...</>
-             :           <><Save size={16} /> บันทึกข้อมูลร้าน</>}
+            {saved    ? <><Check size={16} /> {t.common.saved}</>
+             : saving ? <><Spinner /> {t.common.saving}</>
+             :           <><Save size={16} /> {t.settings.saveInfo}</>}
           </button>
         </form>
       </section>
 
       {/* ── ความปลอดภัย ── */}
       <section className="anim-up" style={{ animationDelay: '100ms' }}>
-        <SectionLabel icon={<Shield size={14} />} label="ความปลอดภัย" />
+        <SectionLabel icon={<Shield size={14} />} label={t.settings.security} />
         <form onSubmit={changePassword} className="card p-5 space-y-4">
           {([
-            { key: 'current', label: 'รหัสผ่านปัจจุบัน' },
-            { key: 'next',    label: 'รหัสผ่านใหม่',     hint: 'อย่างน้อย 6 ตัวอักษร' },
-            { key: 'confirm', label: 'ยืนยันรหัสผ่านใหม่' },
+            { key: 'current', label: t.settings.currentPw },
+            { key: 'next',    label: t.settings.newPw,    hint: t.settings.newPwHint },
+            { key: 'confirm', label: t.settings.confirmPw },
           ] as { key: string; label: string; hint?: string }[]).map(({ key, label, hint }) => (
             <Field key={key} label={label} hint={hint}>
               <div className="relative">
@@ -291,7 +289,7 @@ export default function SettingsPage() {
                   placeholder="••••••••" className="input pr-11" />
                 <button type="button"
                   onClick={() => setShowPw(v => ({ ...v, [key]: !v[key] }))}
-                  aria-label={showPw[key] ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                  aria-label={showPw[key] ? t.common.hidePw : t.common.showPw}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors">
                   {showPw[key] ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -302,9 +300,9 @@ export default function SettingsPage() {
           <button type="submit"
             disabled={pwSaving || !pwForm.current || !pwForm.next || !pwForm.confirm}
             className={`btn-primary w-full justify-center gap-2 transition-all ${pwSaved ? '!bg-green' : ''}`}>
-            {pwSaved    ? <><Check size={16} /> เปลี่ยนแล้ว</>
-             : pwSaving ? <><Spinner /> กำลังเปลี่ยน...</>
-             :             <><Lock size={16} /> เปลี่ยนรหัสผ่าน</>}
+            {pwSaved    ? <><Check size={16} /> {t.settings.changed}</>
+             : pwSaving ? <><Spinner /> {t.settings.changing}</>
+             :             <><Lock size={16} /> {t.settings.changePw}</>}
           </button>
         </form>
       </section>
@@ -317,7 +315,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2.5">
                 <Zap size={18} className="text-accent" />
-                <span className="font-display font-bold text-lg">อัปเกรดแพ็กเกจ</span>
+                <span className="font-display font-bold text-lg">{t.settings.upgradeTitle}</span>
               </div>
               <button onClick={() => { if (!paying && !uploading) setShowUpgrade(false) }}
                 aria-label="ปิด"
@@ -329,7 +327,7 @@ export default function SettingsPage() {
             <div className="p-5">
               {upgradeStep === 'plan' && (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted">เลือกแพ็กเกจที่ต้องการ</p>
+                  <p className="text-sm text-muted">{t.settings.selectPlan}</p>
                   {upgradablePlans.map(plan => (
                     <button key={plan} onClick={() => setSelectedPlan(plan as any)}
                       className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${
@@ -338,11 +336,11 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between mb-2">
                         <span className={`font-bold uppercase text-sm ${plan === 'pro' ? 'text-accent' : 'text-blue'}`}>{plan}</span>
                         <span className="font-display font-bold text-lg">
-                          ฿{PLAN_PRICE[plan]}<span className="text-xs text-muted font-normal">/เดือน</span>
+                          ฿{PLAN_PRICE[plan]}<span className="text-xs text-muted font-normal">{t.common.perMonth}</span>
                         </span>
                       </div>
                       <ul className="space-y-1">
-                        {PLAN_FEATURES[plan].map(f => (
+                        {(plan === 'pro' ? t.settings.planProFeatures : t.settings.planBasicFeatures).map(f => (
                           <li key={f} className="text-xs text-muted flex items-center gap-1.5">
                             <Check size={11} className="text-green shrink-0" />{f}
                           </li>
@@ -351,7 +349,7 @@ export default function SettingsPage() {
                     </button>
                   ))}
                   <button onClick={() => setUpgradeStep('method')} className="btn-primary w-full justify-center gap-1.5 mt-1">
-                    ถัดไป <ChevronRight size={15} />
+                    {t.common.next} <ChevronRight size={15} />
                   </button>
                 </div>
               )}
@@ -364,9 +362,9 @@ export default function SettingsPage() {
                   </p>
                   {[
                     { key: 'promptpay', icon: <Smartphone size={20} className="text-blue" />, bg: 'bg-blue/10',
-                      title: 'PromptPay', sub: 'โอนแล้วแนบสลิป — อนุมัติภายใน 24 ชม.' },
+                      title: t.settings.promptpay, sub: t.settings.promptpaySub },
                     { key: 'card',      icon: <CreditCard size={20} className="text-accent" />, bg: 'bg-accent/10',
-                      title: 'บัตรเครดิต / เดบิต', sub: 'อัปเกรดทันที — Visa, Mastercard' },
+                      title: t.settings.card, sub: t.settings.cardSub },
                   ].map(m => (
                     <button key={m.key} onClick={() => setUpgradeStep(m.key as any)}
                       className="w-full p-4 rounded-2xl border-2 border-border bg-bg3 hover:border-accent/30 transition-all flex items-center gap-3 text-left">
@@ -377,64 +375,64 @@ export default function SettingsPage() {
                       </div>
                     </button>
                   ))}
-                  <BackBtn onClick={() => setUpgradeStep('plan')} />
+                  <BackBtn onClick={() => setUpgradeStep('plan')} label={t.common.back} />
                 </div>
               )}
 
               {upgradeStep === 'promptpay' && (
                 <div className="space-y-4">
                   <div className="bg-blue/5 border border-blue/20 rounded-2xl p-4 space-y-1.5">
-                    <p className="text-xs text-muted">โอนเงินจำนวน</p>
+                    <p className="text-xs text-muted">{t.settings.transferAmount}</p>
                     <p className="font-display font-bold text-2xl text-blue">฿{PLAN_PRICE[selectedPlan].toLocaleString()}</p>
                     <div className="pt-1 border-t border-blue/10">
-                      <p className="text-xs text-muted">ไปยัง PromptPay</p>
+                      <p className="text-xs text-muted">{t.settings.toPromptpay}</p>
                       <p className="font-mono font-bold text-lg text-text">{platformPromptpay}</p>
-                      <p className="text-xs text-muted mt-1">หมายเหตุ: <span className="text-text font-medium">upgrade-{selectedPlan}</span></p>
+                      <p className="text-xs text-muted mt-1">{t.settings.note}: <span className="text-text font-medium">upgrade-{selectedPlan}</span></p>
                     </div>
                   </div>
-                  <Field label="แนบสลิปการโอน" required>
+                  <Field label={t.settings.attachSlip} required>
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onSlipChange} />
                     {slipPreview ? (
                       <div className="relative">
                         <img src={slipPreview} alt="slip" className="w-full h-48 object-contain rounded-xl border border-border bg-bg3" />
                         <button onClick={() => { setSlipFile(null); setSlipPreview('') }}
-                          aria-label="ลบสลิป" data-tooltip="ลบสลิป" className="absolute top-2 right-2 size-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
+                          aria-label={t.settings.removeSlip} data-tooltip={t.settings.removeSlip} className="absolute top-2 right-2 size-7 bg-rose/90 rounded-lg flex items-center justify-center text-white">
                           <X size={13} />
                         </button>
                       </div>
                     ) : (
                       <button onClick={() => fileRef.current?.click()}
                         className="w-full h-28 rounded-xl border-2 border-dashed border-border bg-bg3 hover:border-accent/50 transition-all flex flex-col items-center justify-center gap-2 text-muted hover:text-text">
-                        <Upload size={20} /><span className="text-xs">แตะเพื่อเลือกรูปสลิป</span>
+                        <Upload size={20} /><span className="text-xs">{t.settings.tapSlip}</span>
                       </button>
                     )}
                   </Field>
                   <button onClick={submitPromptpay} disabled={uploading || !slipFile} className="btn-primary w-full justify-center gap-2">
-                    {uploading ? <><Spinner />กำลังส่ง...</> : 'ส่งสลิปเพื่อตรวจสอบ'}
+                    {uploading ? <><Spinner />{t.settings.sending}</> : t.settings.submitSlip}
                   </button>
-                  <BackBtn onClick={() => setUpgradeStep('method')} disabled={uploading} />
+                  <BackBtn onClick={() => setUpgradeStep('method')} disabled={uploading} label={t.common.back} />
                 </div>
               )}
 
               {upgradeStep === 'card' && (
                 <div className="space-y-4">
                   <div className="bg-bg3 rounded-2xl px-4 py-3 flex items-center justify-between">
-                    <p className="text-sm text-muted">ยอดชำระ</p>
+                    <p className="text-sm text-muted">{t.settings.amountDue}</p>
                     <p className="font-display font-bold text-lg text-accent">฿{PLAN_PRICE[selectedPlan].toLocaleString()}<span className="text-xs text-muted font-normal">/เดือน</span></p>
                   </div>
                   <div className="space-y-3">
-                    <Field label="ชื่อบนบัตร">
+                    <Field label={t.settings.cardName}>
                       <input value={cardForm.name} onChange={e => setCardForm(f => ({ ...f, name: e.target.value }))}
                         placeholder="SOMCHAI JAIDEE" className="input" />
                     </Field>
-                    <Field label="หมายเลขบัตร">
+                    <Field label={t.settings.cardNumber}>
                       <input value={cardForm.number} onChange={e => {
                         const v = e.target.value.replace(/\D/g, '').slice(0, 16)
                         setCardForm(f => ({ ...f, number: v.replace(/(.{4})/g, '$1 ').trim() }))
                       }} placeholder="0000 0000 0000 0000" className="input font-mono tracking-wider" maxLength={19} />
                     </Field>
                     <div className="grid grid-cols-2 gap-3">
-                      <Field label="วันหมดอายุ">
+                      <Field label={t.settings.expiry}>
                         <input value={cardForm.exp} onChange={e => {
                           const v = e.target.value.replace(/\D/g, '').slice(0, 4)
                           setCardForm(f => ({ ...f, exp: v.length > 2 ? `${v.slice(0, 2)}/${v.slice(2)}` : v }))
@@ -447,9 +445,9 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <button onClick={submitCard} disabled={paying} className="btn-primary w-full justify-center gap-2">
-                    {paying ? <><Spinner />กำลังประมวลผล...</> : <><CreditCard size={15} />ชำระ ฿{PLAN_PRICE[selectedPlan].toLocaleString()}</>}
+                    {paying ? <><Spinner />{t.settings.processing}</> : <><CreditCard size={15} />฿{PLAN_PRICE[selectedPlan].toLocaleString()}</>}
                   </button>
-                  <BackBtn onClick={() => setUpgradeStep('method')} disabled={paying} />
+                  <BackBtn onClick={() => setUpgradeStep('method')} disabled={paying} label={t.common.back} />
                 </div>
               )}
 
@@ -459,10 +457,10 @@ export default function SettingsPage() {
                     <Check size={30} className="text-green" />
                   </div>
                   <div>
-                    <p className="font-display font-bold text-xl">อัปเกรดสำเร็จ!</p>
-                    <p className="text-muted text-sm mt-1">แพ็กเกจของคุณเปลี่ยนเป็น <span className="font-bold text-text uppercase">{selectedPlan}</span> แล้ว</p>
+                    <p className="font-display font-bold text-xl">{t.settings.successTitle}</p>
+                    <p className="text-muted text-sm mt-1">{t.settings.successMsg} <span className="font-bold text-text uppercase">{selectedPlan}</span></p>
                   </div>
-                  <button onClick={() => { setShowUpgrade(false); window.location.reload() }} className="btn-primary px-8 justify-center">เสร็จสิ้น</button>
+                  <button onClick={() => { setShowUpgrade(false); window.location.reload() }} className="btn-primary px-8 justify-center">{t.common.done}</button>
                 </div>
               )}
 
@@ -472,10 +470,10 @@ export default function SettingsPage() {
                     <Smartphone size={30} className="text-yellow" />
                   </div>
                   <div>
-                    <p className="font-display font-bold text-xl">รอการตรวจสอบ</p>
-                    <p className="text-muted text-sm mt-1 max-w-xs mx-auto">ทีมงานจะตรวจสอบสลิปและอัปเกรดแพ็กเกจภายใน 24 ชั่วโมง</p>
+                    <p className="font-display font-bold text-xl">{t.settings.pendingTitle}</p>
+                    <p className="text-muted text-sm mt-1 max-w-xs mx-auto">{t.settings.pendingMsg}</p>
                   </div>
-                  <button onClick={() => setShowUpgrade(false)} className="btn-primary px-8 justify-center">รับทราบ</button>
+                  <button onClick={() => setShowUpgrade(false)} className="btn-primary px-8 justify-center">{t.common.acknowledged}</button>
                 </div>
               )}
             </div>
@@ -509,11 +507,11 @@ function Field({ label, hint, required, children }: {
   )
 }
 
-function BackBtn({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+function BackBtn({ onClick, disabled, label }: { onClick: () => void; disabled?: boolean; label: string }) {
   return (
     <button onClick={onClick} disabled={disabled}
       className="w-full text-sm text-muted hover:text-text transition-colors py-1 disabled:opacity-40">
-      ย้อนกลับ
+      {label}
     </button>
   )
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle, XCircle, RefreshCw, ImageIcon, CalendarClock, Users, Phone, Clock, CreditCard } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
+import { useDashboardLang } from '@/lib/i18n-dashboard'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3010'
 
@@ -40,6 +41,7 @@ type PreOrderSlip = {
 
 export default function PaymentsPage() {
   const { slug } = useParams() as { slug: string }
+  const { t } = useDashboardLang()
   const [orderSlips, setOrderSlips] = useState<OrderSlip[]>([])
   const [preOrders, setPreOrders] = useState<PreOrderSlip[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,10 +106,10 @@ export default function PaymentsPage() {
         <div>
           <h1 className="font-display font-bold text-2xl text-text text-balance flex items-center gap-2">
             <CreditCard size={22} className="text-accent" />
-            ตรวจสอบชำระเงิน
+            {t.payments.title}
           </h1>
           <p className="text-sm text-muted mt-0.5">
-            {loading ? 'กำลังโหลด…' : total === 0 ? 'ไม่มีรายการรอตรวจสอบ' : `${total} รายการรอตรวจสอบ`}
+            {loading ? t.payments.loading : total === 0 ? t.payments.noPending : `${total} ${t.payments.pendingVerif}`}
           </p>
         </div>
         <button onClick={load} disabled={loading} data-tooltip="รีเฟรช"
@@ -122,22 +124,22 @@ export default function PaymentsPage() {
           <div className="size-14 rounded-2xl bg-green/10 flex items-center justify-center mx-auto">
             <CheckCircle size={28} className="text-green" />
           </div>
-          <p className="font-semibold text-text">ทุกรายการได้รับการตรวจสอบแล้ว</p>
-          <p className="text-sm text-muted">ไม่มีสลิปรอยืนยัน</p>
+          <p className="font-semibold text-text">{t.payments.allVerified}</p>
+          <p className="text-sm text-muted">{t.payments.noSlipsPending}</p>
         </div>
       )}
 
       {/* Order slips */}
       {orderSlips.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-bold text-text px-1">สลิปโอนเงิน — ออเดอร์ ({orderSlips.length})</h2>
+          <h2 className="text-sm font-bold text-text px-1">{t.payments.orderSlips} ({orderSlips.length})</h2>
           {orderSlips.map(order => (
             <div key={order.id} className="card p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-text">โต๊ะ {order.table.label}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">รอยืนยัน</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">{t.payments.pendingVerif}</span>
                   </div>
                   <p className="text-xs text-muted mt-1 flex items-center gap-1">
                     <Clock size={10} />{formatDateTime(order.created_at)}
@@ -160,21 +162,21 @@ export default function PaymentsPage() {
                 {order.slip_path ? (
                   <button onClick={() => setViewSlip(order.slip_path!)}
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-bg3 text-muted hover:text-text transition-colors">
-                    <ImageIcon size={13} />ดูสลิป
+                    <ImageIcon size={13} />{t.common.viewSlip}
                   </button>
                 ) : (
-                  <span className="text-xs text-muted italic">ไม่มีสลิป</span>
+                  <span className="text-xs text-muted italic">{t.common.noSlip}</span>
                 )}
                 <div className="flex-1" />
                 <button onClick={() => verifyOrder(order.id, false)}
                   disabled={actionLoading === order.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose/10 text-rose hover:bg-rose/20 transition-colors font-medium disabled:opacity-50">
-                  {actionLoading === order.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
+                  {actionLoading === order.id ? <Spinner size={12} /> : <XCircle size={13} />}{t.common.reject}
                 </button>
                 <button onClick={() => verifyOrder(order.id, true)}
                   disabled={actionLoading === order.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green/10 text-green hover:bg-green/20 transition-colors font-medium disabled:opacity-50">
-                  {actionLoading === order.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
+                  {actionLoading === order.id ? <Spinner size={12} /> : <CheckCircle size={13} />}{t.common.approve}
                 </button>
               </div>
             </div>
@@ -185,14 +187,14 @@ export default function PaymentsPage() {
       {/* Pre-order slips */}
       {preOrders.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-bold text-text px-1">สลิป Pre-order — การจอง ({preOrders.length})</h2>
+          <h2 className="text-sm font-bold text-text px-1">{t.payments.preorderSlips} ({preOrders.length})</h2>
           {preOrders.map(res => (
             <div key={res.id} className="card p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-text">โต๊ะ {res.table_label}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">รอยืนยัน</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-yellow/10 text-yellow font-medium">{t.payments.pendingVerif}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-muted">
                     <span className="flex items-center gap-1"><CalendarClock size={10} />{formatDateTime(res.reserved_at)}</span>
@@ -222,21 +224,21 @@ export default function PaymentsPage() {
                 {res.pre_order_slip ? (
                   <button onClick={() => setViewSlip(res.pre_order_slip!)}
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-bg3 text-muted hover:text-text transition-colors">
-                    <ImageIcon size={13} />ดูสลิป
+                    <ImageIcon size={13} />{t.common.viewSlip}
                   </button>
                 ) : (
-                  <span className="text-xs text-muted italic">ไม่มีสลิป</span>
+                  <span className="text-xs text-muted italic">{t.common.noSlip}</span>
                 )}
                 <div className="flex-1" />
                 <button onClick={() => verifyPreOrder(res.id, 'reject')}
                   disabled={actionLoading === res.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose/10 text-rose hover:bg-rose/20 transition-colors font-medium disabled:opacity-50">
-                  {actionLoading === res.id ? <Spinner size={12} /> : <XCircle size={13} />}ปฏิเสธ
+                  {actionLoading === res.id ? <Spinner size={12} /> : <XCircle size={13} />}{t.common.reject}
                 </button>
                 <button onClick={() => verifyPreOrder(res.id, 'approve')}
                   disabled={actionLoading === res.id}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green/10 text-green hover:bg-green/20 transition-colors font-medium disabled:opacity-50">
-                  {actionLoading === res.id ? <Spinner size={12} /> : <CheckCircle size={13} />}อนุมัติ
+                  {actionLoading === res.id ? <Spinner size={12} /> : <CheckCircle size={13} />}{t.common.approve}
                 </button>
               </div>
             </div>
