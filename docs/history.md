@@ -1,5 +1,12 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.15 (2026-06-21)
+
+- F: Dashboard i18n TH/EN toggle — `lib/i18n-dashboard.tsx` (DashboardLangProvider, useDashboardLang, DashboardLangToggle); localStorage key `dashboard-lang`, default `th`
+- U: ทุก 12 dashboard pages ใช้ `useDashboardLang()` — overview, orders, kitchen, payments, menu, employees, inventory, promotions, reports, branches, tables, settings
+- U: `DashboardSidebar` — nav labels, role labels, KDS link, logout confirm ผ่าน i18n; ปุ่ม toggle EN/TH ใน sidebar
+- U: Overview page แยก server `page.tsx` (fetch cookies + data) + client `OverviewContent.tsx` (render + i18n)
+
 ## Changelog — v2.14 (2026-06-20)
 
 - F: Web Push notifications — แจ้งลูกค้าเมื่ออาหารพร้อมเสิร์ฟ ทำงานแม้ปิดแท็บ/หน้าจอ (roadmap SP7)

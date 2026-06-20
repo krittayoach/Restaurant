@@ -124,6 +124,12 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - Super admin routes ทุกตัวต้องใช้ `requireSuperAdmin()` จาก `lib/auth.ts` — เช็คทั้ง JWT + Redis session
 - `data-tooltip="label"` บน element ใดก็ได้ → tooltip CSS-only ผ่าน `::after` pseudo-element ใน globals.css
 
+## Dashboard i18n
+- `lib/i18n-dashboard.tsx` — `DashboardLangProvider` (ใน layout), `useDashboardLang()` → `{ t, lang, setLang }`, `DashboardLangToggle`
+- localStorage key: `dashboard-lang` (`'th'` | `'en'`), default `th`
+- Overview page เป็น server component → แยก client `components/OverviewContent.tsx` รับ data เป็น props
+- `useDashboardLang()` ใช้ได้เฉพาะ client components ภายใต้ `DashboardLangProvider`
+
 ## UI Conventions (baseline-ui)
 - `cn()` จาก `@/lib/cn` — ใช้แทน template string class logic ทุกที่
 - `size-{n}` แทน `w-X h-X` สำหรับ square elements
