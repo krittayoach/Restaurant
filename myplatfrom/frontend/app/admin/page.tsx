@@ -4,7 +4,7 @@ import { api, getToken } from '@/lib/api'
 import {
   ShieldCheck, KeyRound, Check, Store, LogOut, TrendingUp, Zap, X,
   ExternalLink, Users, Power, PowerOff, Search, ChevronDown,
-  BadgeCheck, Bell, UserPlus, CreditCard, History,
+  BadgeCheck, Bell, UserPlus, CreditCard, History, Mail, Eye, EyeOff,
 } from 'lucide-react'
 import { useToast } from '@/components/Toast'
 import { useRouter } from 'next/navigation'
@@ -38,11 +38,12 @@ export default function AdminPage() {
   const [search, setSearch]       = useState('')
   const [planFilter, setPlanFilter] = useState('all')
 
-  const [pwForm, setPwForm]     = useState({ phone: '', newPassword: '' })
-  const [pwErrors, setPwErrors] = useState({ phone: '', newPassword: '' })
+  const [pwForm, setPwForm]     = useState({ email: '', newPassword: '' })
+  const [pwErrors, setPwErrors] = useState({ email: '', newPassword: '' })
   const [pwSaving, setPwSaving] = useState(false)
   const [pwSaved, setPwSaved]   = useState(false)
   const [pwResult, setPwResult] = useState('')
+  const [showPw, setShowPw]     = useState(false)
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [suspendTarget, setSuspendTarget] = useState<{ id: string; name: string } | null>(null)
@@ -220,21 +221,22 @@ export default function AdminPage() {
   async function resetPassword(e: React.FormEvent) {
     e.preventDefault()
     const errs = {
-      phone:       !pwForm.phone ? 'กรุณากรอกเบอร์โทร' : '',
+      email:       !pwForm.email ? 'กรุณากรอก Email' : '',
       newPassword: pwForm.newPassword.length < 6 ? 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' : '',
     }
     setPwErrors(errs)
-    if (errs.phone || errs.newPassword) return
+    if (errs.email || errs.newPassword) return
     setPwSaving(true)
     try {
       const res = await api.patch('/auth/reset-password', pwForm, token)
-      setPwResult(`✅ รีเซ็ตสำเร็จ — ${res.name} (${res.role})`)
+      setPwResult(`รีเซ็ตสำเร็จ — ${res.name} (${res.role})`)
       setPwSaved(true)
-      setPwForm({ phone: '', newPassword: '' })
-      setPwErrors({ phone: '', newPassword: '' })
+      setPwForm({ email: '', newPassword: '' })
+      setPwErrors({ email: '', newPassword: '' })
       setTimeout(() => { setPwSaved(false); setPwResult('') }, 5000)
     } catch (e: any) {
-      setPwErrors(prev => ({ ...prev, phone: e.message ?? 'รีเซ็ตไม่สำเร็จ' }))
+      const msg = e.message === 'ไม่พบผู้ใช้งานนี้' ? 'ไม่พบ Email นี้ในระบบ' : (e.message ?? 'รีเซ็ตไม่สำเร็จ')
+      setPwErrors(prev => ({ ...prev, email: msg }))
     }
     finally { setPwSaving(false) }
   }
@@ -459,30 +461,46 @@ export default function AdminPage() {
             </div>
             <form onSubmit={resetPassword} className="space-y-3">
               <div>
-                <label className="block text-xs text-muted mb-1.5 ml-1">เบอร์โทรของ user</label>
-                <input value={pwForm.phone}
-                  onChange={e => { setPwForm(f => ({ ...f, phone: e.target.value })); setPwErrors(er => ({ ...er, phone: '' })) }}
-                  placeholder="0812345678"
-                  className={cn('input', pwErrors.phone && 'input-error')} />
-                {pwErrors.phone && <p className="field-error">{pwErrors.phone}</p>}
+                <label className="block text-xs text-muted mb-1.5 ml-1">Email ของ user <span className="text-rose">*</span></label>
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                  <input
+                    type="email"
+                    value={pwForm.email}
+                    onChange={e => { setPwForm(f => ({ ...f, email: e.target.value })); setPwErrors(er => ({ ...er, email: '' })) }}
+                    placeholder="user@example.com"
+                    className={cn('input pl-10', pwErrors.email && 'input-error')} />
+                </div>
+                {pwErrors.email && <p className="field-error">{pwErrors.email}</p>}
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1.5 ml-1">รหัสผ่านใหม่</label>
-                <input type="password" value={pwForm.newPassword}
-                  onChange={e => { setPwForm(f => ({ ...f, newPassword: e.target.value })); setPwErrors(er => ({ ...er, newPassword: '' })) }}
-                  placeholder="อย่างน้อย 6 ตัวอักษร"
-                  className={cn('input', pwErrors.newPassword && 'input-error')} />
+                <label className="block text-xs text-muted mb-1.5 ml-1">รหัสผ่านใหม่ <span className="text-rose">*</span></label>
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    value={pwForm.newPassword}
+                    onChange={e => { setPwForm(f => ({ ...f, newPassword: e.target.value })); setPwErrors(er => ({ ...er, newPassword: '' })) }}
+                    placeholder="อย่างน้อย 6 ตัวอักษร"
+                    className={cn('input pr-11', pwErrors.newPassword && 'input-error')} />
+                  <button type="button" onClick={() => setShowPw(v => !v)}
+                    aria-label={showPw ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors p-1">
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
                 {pwErrors.newPassword && <p className="field-error">{pwErrors.newPassword}</p>}
               </div>
               {pwResult && (
-                <p className="text-sm text-green bg-green/10 rounded-xl px-4 py-2.5">{pwResult}</p>
+                <div className="flex items-center gap-2 text-sm text-green bg-green/10 rounded-xl px-4 py-2.5">
+                  <Check size={15} /> {pwResult}
+                </div>
               )}
               <button type="submit" disabled={pwSaving}
-                className={`btn-primary w-full justify-center gap-2 ${pwSaved ? 'bg-green hover:bg-green' : 'bg-yellow hover:bg-yellow/90'}`}
+                className={cn('btn-primary w-full justify-center gap-2', pwSaved ? 'bg-green hover:bg-green' : 'bg-yellow hover:bg-yellow/90')}
                 style={{ boxShadow: '0 6px 16px -6px rgba(217,119,6,.5)' }}>
-                {pwSaved     ? <><Check size={16} /> รีเซ็ตแล้ว</>
-                 : pwSaving  ? <><Spinner size={16} /> กำลังรีเซ็ต…</>
-                 : <><KeyRound size={16} /> รีเซ็ตรหัสผ่าน</>}
+                {pwSaved    ? <><Check size={16} /> รีเซ็ตแล้ว</>
+                : pwSaving  ? <><Spinner size={16} /> กำลังรีเซ็ต…</>
+                : <><KeyRound size={16} /> รีเซ็ตรหัสผ่าน</>}
               </button>
             </form>
           </div>
