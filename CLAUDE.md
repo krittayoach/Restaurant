@@ -31,6 +31,8 @@ myplatfrom/
 │   ├── staff/[slug]/               # Staff Display tablet (employee+manager)
 │   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, branches, settings
 │   ├── verify-email/               # Email verification landing page (public)
+│   ├── forgot-password/            # ขอลิงก์รีเซ็ตรหัสผ่าน (public)
+│   ├── reset-password/             # ตั้งรหัสผ่านใหม่ผ่าน token (public)
 │   ├── admin/                      # Super admin
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
@@ -101,11 +103,14 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - `lib/email.ts` + `cron/billing.ts` — Resend email; billing auto-downgrade hourly
 - Env: `RESEND_API_KEY`, `PLATFORM_EMAIL_FROM` · Redis: `billing:reminder:{rid}` TTL 8d
 - Redis: `email:verify:{token}` TTL 24h — email verification token (UUID → userId)
+- Redis: `password-reset:{token}` TTL 1h — forgot-password token (hex → userId); single-use (ลบทันทีหลัง reset)
 - `users.email_verified` — false สำหรับ register ใหม่; true สำหรับ employee ที่ manager สร้าง
 
 ## Gotchas
 - Staff login ใช้ `email` — phone ใช้สำหรับ walk-in customer loyalty เท่านั้น
 - `email_verified` ต้องเป็น `true` ก่อน login — register ใหม่จะส่ง verify link ทาง email
+- `POST /auth/forgot-password` — public, silent (ไม่บอกว่า email มีในระบบ), rate limit 5/10min ต่อ IP; token TTL 1h, single-use
+- `POST /auth/confirm-reset` — public, รับ token + password ใหม่; `token_invalid` ถ้าหมดอายุหรือถูกใช้แล้ว
 - `POST /payment/request`, `/payment/submit`, `POST /reviews` — no-auth public; rate limited 20/10min และ 10/10min ต่อ IP ป้องกัน spam/brute-force
 - `POST /payment/request` — method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
 - `POST /reviews` — ใช้ `orderId` เป็น secret แทน auth

@@ -1,5 +1,12 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.16 (2026-06-22)
+
+- F: Forgot-password flow — `POST /auth/forgot-password` (public, silent, rate limit 5/10min) ส่ง reset link ทาง email; `POST /auth/confirm-reset` (public) validate token → update password → ลบ token (single-use, TTL 1h)
+- F: `/forgot-password` page — form กรอก email + success state; `/reset-password?token=` page — form ตั้งรหัสผ่านใหม่ + confirm + error state สำหรับ token หมดอายุ
+- C: `tplPasswordReset` email template ใน `lib/email.ts`; Redis key `password-reset:{token}` TTL 1h ใน `lib/redis.ts`
+- U: Login page — เพิ่มลิงก์ "ลืมรหัสผ่าน?" ใต้ช่อง password
+
 ## Changelog — v2.15 (2026-06-21)
 
 - F: Dashboard i18n TH/EN toggle — `lib/i18n-dashboard.tsx` (DashboardLangProvider, useDashboardLang, DashboardLangToggle); localStorage key `dashboard-lang`, default `th`
