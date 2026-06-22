@@ -12,6 +12,7 @@
 - **ติดตามสถานะออเดอร์ Realtime** — เห็นทุกขั้นตอนตั้งแต่ครัวรับจนเสิร์ฟ
 - **แจ้งเตือนเมื่ออาหารพร้อม** — Web Push แจ้งเตือนแม้ปิดแท็บ/ล็อกหน้าจอ
 - **ชำระเงิน** — สแกน QR PromptPay หรือจ่ายเงินสด
+- **โปรโมชั่น** — เลือกส่วนลดตอนสั่ง (% หรือจำนวน, มีขั้นต่ำ)
 - **รีวิวหลังชำระเงิน** — ให้คะแนน 1-5 ดาว + คอมเมนต์ (ไม่ต้องสมัครสมาชิก)
 - **จองโต๊ะล่วงหน้า** — พร้อมสั่งอาหารล่วงหน้า (Pre-order)
 - **ระบบสะสมแต้ม** — ทุก ฿10 = 1 แต้ม, จองโต๊ะ = 50 แต้ม, แลกเป็นส่วนลด
@@ -31,11 +32,11 @@
 
 ### สำหรับ Manager
 - **จัดการเมนู** — CRUD พร้อมอัปโหลดรูป (MinIO)
-- **โปรโมชั่น** — ลด % หรือลดจำนวน, กำหนดขั้นต่ำ
+- **โปรโมชั่น** — สร้างส่วนลด % หรือจำนวน, กำหนดขั้นต่ำและช่วงเวลา
 - **จัดการพนักงาน** — เพิ่ม/ลบด้วย email, ดูการเข้างาน, จ่ายเงินเดือน
 - **คลังวัตถุดิบ** — ติดตามสต็อก, แจ้งเตือนของใกล้หมด
 - **รายงาน** — รายได้รายวัน/รายเดือน, เมนูขายดี, Export CSV/PDF
-- **การจองโต๊ะ** — ดู/จัดการ, อนุมัติสลิป Pre-order
+- **การจองโต๊ะ** — `/dashboard/[slug]/reservations` จัดการจองรายวัน, date navigation, อนุมัติสลิป Pre-order
 - **แผน (Billing)** — ดู plan, อัปเกรด Free → Basic → Pro พร้อม plan limits (tables/menus/employees/promotions)
 
 ### สำหรับ Super Admin (`/admin`)
@@ -48,6 +49,7 @@
 
 ### Security & Infrastructure
 - **Rate Limiting** — Redis-backed: login 5/5min, register 5/hr; public endpoints: payment 20/10min, reviews 10/10min ต่อ IP
+- **Order Session Protection** — client TTL 4h + backend guard (paid/6h) ป้องกันลูกค้าสั่งหลังออกจากร้าน
 - **Billing Cron** — ตรวจสอบทุก 1 ชั่วโมง, auto-downgrade plan ที่หมดอายุ (30-day cycle)
 - **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
 - **Email Verification** — register ต้องยืนยัน email ก่อน login ได้; staff login ใช้ email (phone สำหรับ walk-in loyalty เท่านั้น)
@@ -86,7 +88,8 @@ myplatfrom/
 │       │   ├── menu/               # จัดการเมนู
 │       │   ├── orders/             # ออเดอร์ + ชำระเงิน
 │       │   ├── kitchen/            # มอนิเตอร์ครัว
-│       │   ├── tables/qr/          # QR โต๊ะ + จองโต๊ะ
+│       │   ├── tables/qr/          # QR โต๊ะ
+│       │   ├── reservations/       # จัดการการจองโต๊ะ
 │       │   ├── payments/           # รวมสลิปรอยืนยัน
 │       │   ├── promotions/         # โปรโมชั่น
 │       │   ├── employees/          # พนักงาน
@@ -99,7 +102,7 @@ myplatfrom/
 │       ├── routes/                 # auth, restaurants, menus, categories, tables
 │       │                           # orders, kitchen, serving, payment, employees
 │       │                           # reports, promotions, reservations, inventory
-│       │                           # billing, customers, reviews
+│       │                           # billing, customers, reviews, push
 │       ├── db/
 │       │   ├── schema.ts           # Drizzle schema ทั้งหมด
 │       │   ├── index.ts            # DB connection
@@ -196,11 +199,11 @@ bun run dev --port 3002
 
 ## 🔑 Demo Credentials
 
-**Super Admin** (เข้าที่ `/admin`)
+**Super Admin** (เข้าที่ `/admin` — ใช้ email)
 
-| Role | เบอร์ | รหัสผ่าน |
+| Role | Email | รหัสผ่าน |
 |---|---|---|
-| Super Admin | `0800000000` | `password123` |
+| Super Admin | `admin@platform.com` | `password123` (ต้อง set ใน DB ด้วยมือ) |
 
 **ร้าน: demo-restaurant** (เข้าที่ `/login` — ใช้ email)
 
@@ -226,7 +229,7 @@ bun run dev --port 3002
 
 ```
 ลูกค้า สแกน QR
-    └─► เลือกเมนู + ใส่ตะกร้า + ยืนยัน
+    └─► เลือกเมนู + เลือกโปรโมชั่น + ใส่ตะกร้า + ยืนยัน
             └─► Backend สร้าง Order
                     ├─► Redis Pub/Sub → SSE → KDS (ครัว)
                     └─► ครัว: รับงาน → ทำ → เสร็จ → SSE → พนักงาน / Staff Display
@@ -252,12 +255,13 @@ bun run dev --port 3002
 | `/payment` | request (QR/cash), ยืนยัน |
 | `/reviews` | รีวิวหลังชำระเงิน (no-auth), GET (manager) |
 | `/reservations` | จองโต๊ะ, อนุมัติ pre-order |
+| `/promotions`, `/promotions/public/:slug` | โปรโมชั่น (manager CRUD + public read) |
 | `/customers` | lookup แต้ม, ประวัติ |
 | `/employees` | จัดการพนักงาน, เงินเดือน |
 | `/inventory` | คลังวัตถุดิบ |
 | `/reports` | รายงานรายได้, เมนูขายดี |
-| `/promotions` | โปรโมชั่น |
 | `/billing` | แผนราคา, อัปเกรด plan |
+| `/push` | Web Push VAPID key + subscribe |
 | `/admin/*` | Super admin — จัดการร้าน, MRR, ระงับร้าน |
 | `/audit-logs` | บันทึก audit (super_admin: ทั้งหมด, manager: เฉพาะร้านตัวเอง) |
 
