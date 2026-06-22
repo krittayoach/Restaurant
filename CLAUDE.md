@@ -88,9 +88,11 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - slug: `demo-restaurant` · Tables: T1–T10
 - สร้างบัญชี manager ก่อนผ่าน `POST /restaurants/register` (password ตามที่ตั้งตอน register) แล้วค่อยรัน `bun run src/db/seed-demo.ts`
 - `seed-demo.ts` จะตั้ง email + `email_verified: true` ให้ทุก staff อัตโนมัติ
+- super_admin ไม่มี email ใน schema เดิม → `UPDATE users SET email='admin@platform.com', email_verified=true, password=<bcrypt> WHERE role='super_admin'`
 
 | Role | Email | รหัสผ่าน |
 |---|---|---|
+| super_admin | `admin@platform.com` | `password123` (ต้อง set ใน DB ด้วยมือ — สร้างก่อน email migration) |
 | manager | `manager@demo.com` | ตามที่ตั้งตอน register |
 | employee | `employee1@demo.com` / `employee2@demo.com` | `password123` |
 | chef | `chef1@demo.com` / `chef2@demo.com` | `password123` |

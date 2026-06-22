@@ -1,5 +1,11 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.17 (2026-06-22)
+
+- B: Super admin reset-password form ส่ง `phone` แต่ backend expect `email` → form ใช้งานไม่ได้มาตั้งแต่ email migration (v2.12); แก้เป็น `email` field
+- U: Admin reset-password card — เพิ่ม email icon, show/hide password toggle, error message เฉพาะกรณี email ไม่พบในระบบ
+- C: Super admin account ไม่มี email (สร้างก่อน v2.12) → dev setup ต้อง set `email=admin@platform.com, email_verified=true, password=bcrypt('password123')` ด้วยมือ
+
 ## Changelog — v2.16 (2026-06-22)
 
 - F: Forgot-password flow — `POST /auth/forgot-password` (public, silent, rate limit 5/10min) ส่ง reset link ทาง email; `POST /auth/confirm-reset` (public) validate token → update password → ลบ token (single-use, TTL 1h)
