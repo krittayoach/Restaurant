@@ -1,5 +1,12 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.18 (2026-06-22)
+
+- F: Reservation dashboard — `/dashboard/[slug]/reservations` หน้าใหม่; date navigation (prev/next + picker), stats bar (total/confirmed/seated/cancelled), tabs (การจองทั้งหมด / Pre-order รอยืนยัน พร้อม badge count), action: Seated/No Show/Cancel, approve/reject pre-order slip + modal ดูรูป, expand pre-order items
+- F: Promotions บนหน้า order ลูกค้า — `GET /promotions/public/:slug` (public, filter active + date valid); dropdown เลือก promo ใน cart bottom sheet; คำนวณ discount client-side + warning ถ้ายอดไม่ถึงขั้นต่ำ; ส่ง `promotion_id` ใน POST /orders
+- F: Order session protection — ป้องกันลูกค้าสั่งหลังออกจากร้าน: `currentOrderId` sessionStorage เปลี่ยนเป็น `{ id, ts }` JSON TTL 4h; validate order status on page load (fetch + check unpaid); backend `POST /orders/:id/add-items` reject 409 `order_paid`/`order_expired` ถ้า paid หรือ > 6h; frontend จัดการ error ด้วยการ clear session + reset new-order mode
+- C: i18n-dashboard เพิ่ม nav key `reservations` + section `reservations` ครบทั้ง type/TH/EN; i18n customer เพิ่ม 6 keys สำหรับ promo (TH/EN)
+
 ## Changelog — v2.17 (2026-06-22)
 
 - B: Super admin reset-password form ส่ง `phone` แต่ backend expect `email` → form ใช้งานไม่ได้มาตั้งแต่ email migration (v2.12); แก้เป็น `email` field

@@ -17,8 +17,36 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
+const ORDER_SESSION_KEY = 'currentOrderId'
+const ORDER_TTL_MS = 4 * 60 * 60_000 // 4 hours
+
+function readStoredOrderId(): string | null {
+  try {
+    const raw = sessionStorage.getItem(ORDER_SESSION_KEY)
+    if (!raw) return null
+    const { id, ts } = JSON.parse(raw)
+    if (!id || Date.now() - ts > ORDER_TTL_MS) {
+      sessionStorage.removeItem(ORDER_SESSION_KEY)
+      return null
+    }
+    return id
+  } catch {
+    sessionStorage.removeItem(ORDER_SESSION_KEY)
+    return null
+  }
+}
+
+function writeStoredOrderId(id: string) {
+  sessionStorage.setItem(ORDER_SESSION_KEY, JSON.stringify({ id, ts: Date.now() }))
+}
+
+function clearStoredOrderId() {
+  sessionStorage.removeItem(ORDER_SESSION_KEY)
+}
+
 interface MenuItem { id: string; name: string; price: number; category_id?: string; description?: string; image?: string }
 interface CartItem extends MenuItem { quantity: number }
+interface Promo { id: string; name: string; discount_pct: number; discount_amt: number; min_order: number }
 
 export default function OrderPage() {
   const params = useParams() as { slug: string; qrToken: string }
@@ -38,20 +66,40 @@ export default function OrderPage() {
   const [customerPoints, setCustomerPoints] = useState(0)
   const [usePoints, setUsePoints] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
+  const [promos, setPromos] = useState<Promo[]>([])
+  const [selectedPromoId, setSelectedPromoId] = useState<string>('')
   const MIN_REDEEM = 100
 
   const debouncedPhone = useDebounce(phone, 500)
 
   useEffect(() => {
-    setExistingOrderId(sessionStorage.getItem('currentOrderId'))
     async function load() {
       const table = await api.get(`/tables/resolve/${params.qrToken}?slug=${params.slug}`)
       setTableInfo(table)
-      const [items, cats] = await Promise.all([
+      const [items, cats, promoList] = await Promise.all([
         api.get(`/menus?restaurantId=${table.restaurant_id}`),
         api.get(`/categories?restaurantId=${table.restaurant_id}`),
+        api.get(`/promotions/public/${params.slug}`).catch(() => []),
       ])
-      setMenus(items); setCategories(cats); setPageLoading(false)
+      setMenus(items); setCategories(cats); setPromos(promoList ?? [])
+
+      // Validate stored order — clear if paid or expired
+      const storedId = readStoredOrderId()
+      if (storedId) {
+        try {
+          const tableOrders = await api.get(`/orders/table/${table.id}?restaurantId=${table.restaurant_id}`)
+          const activeOrder = tableOrders?.find((o: any) => o.id === storedId && o.payment_status === 'unpaid')
+          if (activeOrder) {
+            setExistingOrderId(storedId)
+          } else {
+            clearStoredOrderId()
+          }
+        } catch {
+          clearStoredOrderId()
+        }
+      }
+
+      setPageLoading(false)
     }
     load()
   }, [])
@@ -76,8 +124,13 @@ export default function OrderPage() {
   const qty    = (id: string)     => cart.find(c => c.id === id)?.quantity ?? 0
   const totalQty  = cart.reduce((s, i) => s + i.quantity, 0)
   const subtotal  = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const selectedPromo = promos.find(p => p.id === selectedPromoId) ?? null
+  const promoMet = selectedPromo ? subtotal >= (selectedPromo.min_order ?? 0) : false
+  const promoDiscount = (selectedPromo && promoMet)
+    ? (selectedPromo.discount_pct ? subtotal * (selectedPromo.discount_pct / 100) : (selectedPromo.discount_amt ?? 0))
+    : 0
   const pointsDiscount = usePoints ? customerPoints : 0
-  const total  = Math.max(0, subtotal - pointsDiscount)
+  const total  = Math.max(0, subtotal - promoDiscount - pointsDiscount)
 
   const cartItems = cart.map(i => ({
     menu_id: i.id, menu_name: i.name, quantity: i.quantity, unit_price: i.price,
@@ -89,7 +142,18 @@ export default function OrderPage() {
     setLoading(true); setError('')
     try {
       if (existingOrderId) {
-        await api.post(`/orders/${existingOrderId}/add-items`, { items: cartItems })
+        try {
+          await api.post(`/orders/${existingOrderId}/add-items`, { items: cartItems })
+        } catch (addErr: any) {
+          if (addErr.message === 'order_paid' || addErr.message === 'order_expired') {
+            clearStoredOrderId()
+            setExistingOrderId(null)
+            setError(lang === 'th' ? 'ออเดอร์เดิมปิดแล้ว กรุณากรอกชื่อและเบอร์โทรเพื่อสั่งใหม่' : 'Previous order closed. Please enter your info to start a new order.')
+            setLoading(false)
+            return
+          }
+          throw addErr
+        }
       } else {
         if (!name || !phone) { setError(t.errorNamePhone); setLoading(false); return }
         const { token } = await api.post('/auth/customer', { name, phone })
@@ -97,9 +161,10 @@ export default function OrderPage() {
           restaurantId:  tableInfo.restaurant_id,
           tableId:       tableInfo.id,
           items:         cartItems,
+          ...(selectedPromo && promoMet ? { promotion_id: selectedPromo.id } : {}),
           ...(usePoints && customerPoints >= MIN_REDEEM ? { redeemPoints: customerPoints } : {}),
         }, token)
-        sessionStorage.setItem('currentOrderId', orderId)
+        writeStoredOrderId(orderId)
       }
       router.push(`/r/${params.slug}/table/${params.qrToken}/payment`)
     } catch (err: any) {
@@ -270,6 +335,40 @@ export default function OrderPage() {
                 ))}
               </div>
 
+              {/* Promotion selector — only for new orders */}
+              {!existingOrderId && promos.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-xs text-muted mb-1.5 font-medium">{t.promoLabel}</label>
+                  <select
+                    value={selectedPromoId}
+                    onChange={e => setSelectedPromoId(e.target.value)}
+                    className="input w-full text-sm"
+                  >
+                    <option value="">{t.promoNone}</option>
+                    {promos.map(p => {
+                      const discLabel = p.discount_pct ? `${p.discount_pct}%` : `฿${p.discount_amt}`
+                      const minLabel = p.min_order > 0 ? ` · ${t.promoMinOrder(p.min_order.toFixed(0))}` : ''
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.name} — ลด {discLabel}{minLabel}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {selectedPromo && !promoMet && (
+                    <p className="text-xs text-rose mt-1">
+                      {t.promoNotMet(selectedPromo.min_order.toFixed(0))}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {promoDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green font-medium mb-1">
+                  <span>{t.promoDiscount} ({selectedPromo?.name})</span>
+                  <span>-฿{promoDiscount.toFixed(0)}</span>
+                </div>
+              )}
               {pointsDiscount > 0 && (
                 <div className="flex justify-between text-sm text-accent font-medium mb-1">
                   <span>{lang === 'th' ? 'ส่วนลดแต้ม' : 'Points Discount'}</span>

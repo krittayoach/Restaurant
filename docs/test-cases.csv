@@ -1,0 +1,119 @@
+ID,Module,Sub-feature,Test Case Name,Precondition,Steps,Expected Result,Priority,Type
+TC-A01,Auth,Login,Login สำเร็จ (manager),มีบัญชี manager + email_verified=true,"1. ไปที่ /dashboard/login
+2. กรอก email + password ถูกต้อง
+3. กด Login",Redirect ไป /dashboard/[slug]/overview; มี JWT cookie; session ใน Redis,High,Positive
+TC-A02,Auth,Login,Login ด้วย password ผิด,มีบัญชี manager,"1. กรอก email ถูกต้อง
+2. กรอก password ผิด
+3. กด Login",แสดง error 401 invalid credentials; ไม่มี session ถูกสร้าง,High,Negative
+TC-A03,Auth,Login,Login ด้วย email ที่ยังไม่ verify,register ใหม่ยังไม่กด verify email,"1. กรอก email + password ถูกต้อง
+2. กด Login",แสดง error email_not_verified; ไม่ได้รับ JWT,High,Negative
+TC-A04,Auth,Login,Login ด้วย email ที่ไม่มีในระบบ,-,"1. กรอก email ที่ไม่มีในระบบ
+2. กด Login",แสดง error 401; ไม่ leak ว่า email ไม่มีหรือมี,Medium,Negative
+TC-A05,Auth,Login,Rate limit login (6+ ครั้ง/IP),IP เดิม,"1. Login ผิด 5 ครั้งติดกัน
+2. Login ครั้งที่ 6",Response 429 Too Many Requests,High,Negative
+TC-A06,Auth,Register,Register restaurant สำเร็จ,-,"1. POST /restaurants/register
+2. ส่ง name/email/password ครบ",สร้าง restaurant + manager; ส่ง verify email; email_verified=false,High,Positive
+TC-A07,Auth,Register,Register ด้วย email ซ้ำ,มี email นั้นอยู่แล้ว,"1. POST /restaurants/register ด้วย email ที่มีอยู่แล้ว",Response 409 email already exists,High,Negative
+TC-A08,Auth,Email Verify,Verify email สำเร็จ,มี token ใน Redis (TTL 24h),"1. คลิก link ใน email
+2. GET /verify-email?token=xxx",email_verified=true; ลบ token จาก Redis; redirect หน้า success,High,Positive
+TC-A09,Auth,Email Verify,Verify email ด้วย token หมดอายุ,token TTL หมด,"1. GET /verify-email?token=expired_token",แสดง error token_invalid; email ยังเป็น unverified,High,Negative
+TC-A10,Auth,Email Verify,Verify email ด้วย token ปลอม,-,"1. GET /verify-email?token=faketoken",แสดง error token_invalid,Medium,Negative
+TC-A11,Auth,Forgot Password,ขอ reset link ด้วย email ที่มีในระบบ,มีบัญชีและ email_verified=true,"1. ไปที่ /forgot-password
+2. กรอก email ที่มีในระบบ
+3. กด Submit",Response 200 (silent); ส่ง email พร้อม reset link; token เก็บใน Redis TTL 1h,High,Positive
+TC-A12,Auth,Forgot Password,ขอ reset link ด้วย email ที่ไม่มีในระบบ,-,"1. กรอก email ที่ไม่มีในระบบ
+2. กด Submit",Response 200 (silent) เหมือนกัน — ไม่ leak ข้อมูล,High,Security
+TC-A13,Auth,Forgot Password,Rate limit forgot-password (6+ ครั้ง/IP),IP เดิม,"1. ส่ง forgot-password 5 ครั้งติดกัน
+2. ครั้งที่ 6",Response 429 Too Many Requests,High,Negative
+TC-A14,Auth,Reset Password,Reset password สำเร็จ,มี token valid ใน Redis,"1. ไปที่ /reset-password?token=xxx
+2. กรอก password ใหม่
+3. กด Submit",password เปลี่ยน; token ถูกลบจาก Redis (single-use); redirect login,High,Positive
+TC-A15,Auth,Reset Password,Reset ด้วย token ที่ใช้ไปแล้ว,token ถูก consume แล้ว,"1. ใช้ token เดิมอีกครั้ง",Response error token_invalid,High,Negative
+TC-A16,Auth,Reset Password,Reset ด้วย token หมดอายุ,token TTL 1h หมด,"1. ใช้ token ที่หมดอายุ",Response error token_invalid,High,Negative
+TC-A17,Auth,Reset Password,Reset ด้วย password ที่สั้นเกินไป,มี token valid,"1. กรอก password สั้นกว่า min length",Validation error; token ยังคงอยู่ใน Redis,Medium,Negative
+TC-A18,Auth,Logout,Logout สำเร็จ,มี session active,"1. เรียก POST /auth/logout",ลบ session จาก Redis; clear cookie; redirect login,High,Positive
+TC-A19,Auth,Session,เข้าหน้า dashboard โดยไม่มี session,-,"1. ไปที่ /dashboard/[slug]/overview โดยไม่ login",Middleware redirect ไป /dashboard/login,High,Security
+TC-A20,Auth,Role,Employee พยายามเข้า manager-only route,login เป็น employee,"1. GET /employees (manager only endpoint)",Response 403 Forbidden,High,Security
+TC-O01,Order Flow,QR Scan,สแกน QR เข้าโต๊ะสำเร็จ,qrToken valid + slug ถูกต้อง,"1. สแกน QR ของโต๊ะ T1
+2. เปิด /r/[slug]/table/[qrToken]",แสดงเมนูของร้าน; สถานะโต๊ะ T1,High,Positive
+TC-O02,Order Flow,QR Scan,สแกน QR ของร้านอื่น,qrToken ไม่ตรงกับ slug,"1. เปิด URL ที่ slug ไม่ตรงกับ qrToken",Response error; ป้องกัน cross-restaurant reuse,High,Security
+TC-O03,Order Flow,QR Scan,สแกน QR ที่ไม่มีในระบบ,-,"1. เปิด URL ด้วย qrToken ปลอม",Response 404 table not found,Medium,Negative
+TC-O04,Order Flow,Menu,แสดงเมนูถูกต้อง,มีเมนูและ category ใน DB,"1. เปิดหน้า order ของโต๊ะ",เมนูแสดงครบตาม category; ราคา/ชื่อ/รูปถูกต้อง,High,Positive
+TC-O05,Order Flow,Menu,เมนูที่ถูก disable ไม่แสดง,มีเมนูที่ is_available=false,"1. เปิดหน้าสั่งอาหาร",เมนูที่ disable ไม่ปรากฏในหน้า customer,High,Positive
+TC-O06,Order Flow,Cart,เพิ่มสินค้าลงตะกร้า,-,"1. คลิกเมนูรายการหนึ่ง
+2. กด Add to cart",สินค้าปรากฏใน cart; จำนวนและราคารวมถูกต้อง,High,Positive
+TC-O07,Order Flow,Cart,เปลี่ยนจำนวนสินค้าใน cart,-,"1. เพิ่มสินค้า 2 รายการ
+2. เพิ่ม/ลดจำนวน",ราคารวมอัปเดตถูกต้องทุกครั้ง,High,Positive
+TC-O08,Order Flow,Order,สั่งอาหารสำเร็จ,มีสินค้าใน cart,"1. กด Place Order
+2. กรอก customer name (optional)
+3. ยืนยัน",Order ถูกสร้างใน DB; item status = pending; ครัวได้รับ SSE NEW_ORDER,High,Positive
+TC-O09,Order Flow,Order,สั่งอาหารพร้อม note,มีสินค้าใน cart,"1. กรอก note ในแต่ละ item
+2. Place Order",note ถูกบันทึกและส่งไปครัว,Medium,Positive
+TC-O10,Order Flow,Order,สั่งอาหารซ้ำ (additional order),มี order อยู่แล้ว,"1. สั่งอาหารเพิ่มในโต๊ะเดิม",สร้าง order ใหม่; รวม item ใหม่เข้า order group ของโต๊ะ,High,Positive
+TC-O11,Order Flow,Payment,ขอชำระเงินด้วยเงินสด,มี order ready,"1. กด Request Payment
+2. เลือก method = cash",Payment request สร้าง; พนักงานได้รับ SSE notification,High,Positive
+TC-O12,Order Flow,Payment,ขอชำระเงินด้วย PromptPay,มี order ready,"1. กด Request Payment
+2. เลือก method = promptpay",แสดง QR PromptPay พร้อมยอดถูกต้อง,High,Positive
+TC-O13,Order Flow,Payment,ชำระเงินด้วย method ที่ไม่รองรับ,-,"1. POST /payment/request ด้วย method = slip",Response validation error; ไม่สร้าง request,High,Negative
+TC-O14,Order Flow,Payment,Rate limit payment request,IP เดิม,"1. ส่ง payment request 20+ ครั้งใน 10 นาที",Response 429,High,Negative
+TC-O15,Order Flow,Payment,ยืนยันชำระเงินสำเร็จ (พนักงาน),มี payment request pending,"1. พนักงานกด Confirm Payment
+2. POST /payment/submit",Order status = paid; ลูกค้าได้รับ SSE PAYMENT_VERIFIED,High,Positive
+TC-O16,Order Flow,Review,ส่ง review สำเร็จ,มี orderId valid,"1. กรอก rating + comment
+2. POST /reviews พร้อม orderId",Review บันทึกใน DB; response 201,High,Positive
+TC-O17,Order Flow,Review,ส่ง review ด้วย orderId ปลอม,-,"1. POST /reviews ด้วย orderId ที่ไม่มี",Response 404/403,High,Security
+TC-O18,Order Flow,Review,Rate limit reviews,IP เดิม,"1. ส่ง review 10+ ครั้งใน 10 นาที",Response 429,Medium,Negative
+TC-K01,Kitchen,Item Status,Chef เห็น order ใหม่ผ่าน SSE,chef login + SSE connected,"1. ลูกค้าสั่งอาหาร",KDS แสดง order ใหม่ทันทีผ่าน SSE NEW_ORDER event,High,Positive
+TC-K02,Kitchen,Item Status,Chef เปลี่ยน status pending → cooking,มี item status=pending,"1. Chef กด Start Cooking ที่ item",item status = cooking; ลูกค้าได้รับ SSE ITEM_STATUS,High,Positive
+TC-K03,Kitchen,Item Status,Chef เปลี่ยน status cooking → ready,มี item status=cooking,"1. Chef กด Ready ที่ item",item status = ready; พนักงานได้รับ SSE ITEM_READY; Web Push ส่งไปโต๊ะลูกค้า,High,Positive
+TC-K04,Kitchen,Item Status,พยายาม cancel item ที่ cooking แล้ว,item status=cooking,"1. พยายาม cancel item ที่ cooking",Response error; cancel ได้เฉพาะ pending เท่านั้น,High,Negative
+TC-K05,Kitchen,Item Status,Cancel item pending สำเร็จ,มี item status=pending,"1. Cancel item ที่ pending",item status = cancelled; order status อัปเดตตาม,High,Positive
+TC-K06,Kitchen,Order Status,Order status derive อัตโนมัติ,มี order ที่มีหลาย items,"1. เปลี่ยน item ทุกตัวเป็น ready",order status อัปเดตเป็น ready อัตโนมัติ,High,Positive
+TC-K07,Kitchen,Serving,พนักงาน mark item served,มี item status=ready,"1. พนักงานกด Served ที่ item",item status = served; SSE ITEM_SERVED ส่งไปลูกค้าและ staff display,High,Positive
+TC-K08,Kitchen,Serving,พนักงาน mark order served,items ทุกตัว served,"1. พนักงาน confirm order served",order status = served; SSE ORDER_SERVED,High,Positive
+TC-K09,Kitchen,SSE,SSE reconnect หลัง disconnect,connection หลุด,"1. ปิด network ชั่วคราว
+2. เปิดใหม่",useSSE auto-reconnect ภายใน 3 วินาที; ได้รับ event ต่อเนื่อง,Medium,Positive
+TC-K10,Kitchen,Push,Web Push แจ้งเตือน item ready,browser รองรับ push + subscribe แล้ว,"1. Chef เปลี่ยน item เป็น ready",โต๊ะลูกค้าได้รับ push notification,Medium,Positive
+TC-K11,Kitchen,Role,Employee พยายามเปลี่ยน item status ผ่าน chef route,login เป็น employee,"1. เรียก endpoint ที่ต้องการ chef role",Response 403 Forbidden,High,Security
+TC-D01,Dashboard,Menu,สร้างเมนูใหม่สำเร็จ,login เป็น manager,"1. ไปที่ Menu management
+2. กด Add Item
+3. กรอกข้อมูลครบ + อัปโหลดรูป
+4. Save",เมนูใหม่ปรากฏในรายการ; cache invalidate; ลูกค้าเห็นเมนูใหม่ภายใน 5 นาที,High,Positive
+TC-D02,Dashboard,Menu,แก้ไขเมนูสำเร็จ,มีเมนูอยู่แล้ว,"1. คลิก Edit ที่เมนู
+2. แก้ไขชื่อ/ราคา
+3. Save",ข้อมูลอัปเดต; menu cache invalidate,High,Positive
+TC-D03,Dashboard,Menu,ลบเมนูสำเร็จ,มีเมนูอยู่แล้ว,"1. คลิก Delete ที่เมนู
+2. Confirm",เมนูหายจาก list; ลูกค้าไม่เห็นเมนูนั้น,High,Positive
+TC-D04,Dashboard,Menu,Disable/Enable เมนู,มีเมนูอยู่แล้ว,"1. Toggle is_available ของเมนู",เมนู disabled ไม่แสดงในหน้าลูกค้า; ยังอยู่ใน dashboard,High,Positive
+TC-D05,Dashboard,Category,สร้าง category ใหม่,login เป็น manager,"1. เพิ่ม category ใหม่
+2. Save",Category ปรากฏในรายการ; สามารถเพิ่มเมนูเข้าได้,High,Positive
+TC-D06,Dashboard,Category,ลบ category ที่มีเมนูอยู่,category มีเมนูอยู่,"1. ลบ category ที่มีเมนู",แสดง warning; ยืนยันก่อนลบ หรือย้ายเมนูก่อน,Medium,Negative
+TC-D07,Dashboard,Tables,สร้างโต๊ะใหม่,login เป็น manager,"1. ไปที่ Tables
+2. เพิ่มโต๊ะ T11
+3. Save",สร้างโต๊ะ + qrToken ใหม่; สามารถ download QR ได้,High,Positive
+TC-D08,Dashboard,Tables,ดู QR ของโต๊ะ,มีโต๊ะอยู่แล้ว,"1. คลิก View QR ของโต๊ะ T1",แสดง QR code; URL ถูกต้องตาม slug + qrToken,High,Positive
+TC-D09,Dashboard,Employees,เพิ่ม employee ใหม่,login เป็น manager,"1. ไปที่ Employees
+2. กด Add Employee
+3. กรอก name/email/role=employee/password
+4. Save",สร้าง user ใหม่ role=employee; email_verified=true อัตโนมัติ; ไม่ส่ง verify email,High,Positive
+TC-D10,Dashboard,Employees,เพิ่ม employee ด้วย email ซ้ำ,email นั้นมีในระบบแล้ว,"1. เพิ่ม employee ด้วย email ที่มีอยู่",Response error email already exists,High,Negative
+TC-D11,Dashboard,Employees,แก้ไข role ของ employee,มี employee อยู่,"1. เปลี่ยน role จาก employee → chef",role อัปเดต; permission เปลี่ยนตาม role ใหม่,Medium,Positive
+TC-D12,Dashboard,Employees,ลบ employee,มี employee อยู่,"1. ลบ employee",account ถูกลบ; session ที่ active ของ employee ถูก revoke,High,Positive
+TC-D13,Dashboard,Promotions,สร้าง promotion ใหม่,login เป็น manager,"1. ไปที่ Promotions
+2. กรอกรายละเอียด discount/code
+3. Save",Promotion สร้างสำเร็จ; ลูกค้าสามารถใช้ code ได้,Medium,Positive
+TC-D14,Dashboard,Reports,ดูรายงานยอดขายรายวัน,มีข้อมูล orders,"1. ไปที่ Reports
+2. เลือก date range",แสดง revenue/order count ถูกต้อง; กรองตาม restaurant_id,High,Positive
+TC-D15,Dashboard,Multi-tenant,Manager ของร้าน A เข้าถึงข้อมูลร้าน B ไม่ได้,login เป็น manager ร้าน A,"1. เรียก API ด้วย restaurantId ของร้าน B",Response 403; ทุก query ผูกกับ restaurant_id จาก JWT,High,Security
+TC-D16,Dashboard,Branches,สร้าง branch ใหม่ (plan = pro),restaurant มี plan=pro,"1. ไปที่ Branches
+2. กด Add Branch
+3. กรอกข้อมูล",สร้าง restaurant ใหม่ที่มี parent_restaurant_id; มี slug/tables เป็นของตัวเอง,High,Positive
+TC-D17,Dashboard,Branches,สร้าง branch เกิน limit (plan = free),restaurant มี plan=free,"1. พยายามสร้าง branch",Response error plan limit exceeded; free=0 branches,High,Negative
+TC-D18,Dashboard,Branches,Switch branch context,manager มีหลาย branches,"1. เลือก branch จาก dropdown
+2. POST /auth/switch-branch",JWT ใหม่ที่ผูกกับ branch; window.location.href reload,High,Positive
+TC-D19,Dashboard,Settings,แก้ไขข้อมูลร้านค้า,login เป็น manager,"1. ไปที่ Settings
+2. แก้ไข restaurant name/address
+3. Save",ข้อมูลอัปเดตใน DB; แสดงข้อมูลใหม่ทันที,Medium,Positive
+TC-D20,Dashboard,Super Admin,Super admin ดู restaurant ทั้งหมด,login เป็น super_admin,"1. ไปที่ /admin/restaurants",แสดง list ร้านทั้งหมดในระบบ; ต้องผ่าน requireSuperAdmin(),High,Positive
+TC-D21,Dashboard,Super Admin,Non-admin พยายามเข้า /admin,login เป็น manager,"1. ไปที่ /admin",Middleware redirect; 403 Forbidden,High,Security
+TC-D22,Dashboard,i18n,เปลี่ยนภาษา TH → EN,อยู่ในหน้า dashboard,"1. คลิก DashboardLangToggle
+2. เลือก EN",ข้อความใน dashboard เปลี่ยนเป็นภาษาอังกฤษ; บันทึกใน localStorage,Low,Positive

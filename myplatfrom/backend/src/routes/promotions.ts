@@ -1,10 +1,11 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { promotions, restaurants } from '../db/schema'
-import { eq, and, count } from 'drizzle-orm'
+import { eq, and, count, or, isNull, lte, gte } from 'drizzle-orm'
 import { verifyJWT } from '../lib/jwt'
 import { redis, keys } from '../lib/redis'
 import { PLAN_LIMITS } from './restaurants'
+import { sql } from 'drizzle-orm'
 
 async function auth(headers: any, set: any) {
   const token = headers.authorization?.replace('Bearer ', '') ?? ''
@@ -12,6 +13,25 @@ async function auth(headers: any, set: any) {
 }
 
 export const promotionRoutes = new Elysia({ prefix: '/promotions' })
+
+  // Public: active promotions for a restaurant slug
+  .get('/public/:slug', async ({ params, set }) => {
+    const [restaurant] = await db.select({ id: restaurants.id })
+      .from(restaurants).where(eq(restaurants.slug, params.slug)).limit(1)
+    if (!restaurant) { set.status = 404; return { error: 'Not found' } }
+
+    const now = new Date()
+    return db.select({
+      id: promotions.id, name: promotions.name,
+      discount_pct: promotions.discount_pct, discount_amt: promotions.discount_amt,
+      min_order: promotions.min_order,
+    }).from(promotions).where(and(
+      eq(promotions.restaurant_id, restaurant.id),
+      eq(promotions.is_active, true),
+      or(isNull(promotions.starts_at), lte(promotions.starts_at, now)),
+      or(isNull(promotions.ends_at),   gte(promotions.ends_at,   now)),
+    ))
+  }, { params: t.Object({ slug: t.String() }) })
 
   .get('/', async ({ headers, query, set }) => {
     const user = await auth(headers, set); if (!user) return { error: 'Unauthorized' }

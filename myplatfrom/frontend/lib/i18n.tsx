@@ -109,6 +109,12 @@ type T = {
   scanAgain: string
   backHome: string
   dateLocale: string
+  promoLabel: string
+  promoPlaceholder: string
+  promoNone: string
+  promoDiscount: string
+  promoMinOrder: (min: string) => string
+  promoNotMet: (min: string) => string
 }
 
 const th: T = {
@@ -217,6 +223,12 @@ const th: T = {
   scanAgain: 'กรุณาสแกน QR Code ใหม่จากโต๊ะของคุณ',
   backHome: 'กลับหน้าแรก',
   dateLocale: 'th-TH',
+  promoLabel: 'โปรโมชั่น',
+  promoPlaceholder: 'เลือกโปรโมชั่น',
+  promoNone: '— ไม่ใช้โปรโมชั่น —',
+  promoDiscount: 'ส่วนลดโปรโมชั่น',
+  promoMinOrder: (min) => `ขั้นต่ำ ฿${min}`,
+  promoNotMet: (min) => `ต้องสั่งขั้นต่ำ ฿${min}`,
 }
 
 const en: T = {
@@ -325,6 +337,12 @@ const en: T = {
   scanAgain: 'Please scan a new QR Code from your table',
   backHome: 'Back to Home',
   dateLocale: 'en-GB',
+  promoLabel: 'Promotion',
+  promoPlaceholder: 'Select promotion',
+  promoNone: '— No promotion —',
+  promoDiscount: 'Promo Discount',
+  promoMinOrder: (min) => `Min. order ฿${min}`,
+  promoNotMet: (min) => `Min. order ฿${min} required`,
 }
 
 const translations: Record<Lang, T> = { th, en }

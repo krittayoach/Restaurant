@@ -29,7 +29,7 @@ myplatfrom/
 │   ├── r/[slug]/me/                # Customer: loyalty portal (แต้มสะสม)
 │   ├── kds/[slug]/                 # Kitchen Display System (fullscreen)
 │   ├── staff/[slug]/               # Staff Display tablet (employee+manager)
-│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, payments, employees, promotions, reports, branches, settings
+│   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, reservations, payments, employees, promotions, reports, branches, settings
 │   ├── verify-email/               # Email verification landing page (public)
 │   ├── forgot-password/            # ขอลิงก์รีเซ็ตรหัสผ่าน (public)
 │   ├── reset-password/             # ตั้งรหัสผ่านใหม่ผ่าน token (public)
@@ -115,6 +115,8 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - `POST /auth/confirm-reset` — public, รับ token + password ใหม่; `token_invalid` ถ้าหมดอายุหรือถูกใช้แล้ว
 - `POST /payment/request`, `/payment/submit`, `POST /reviews` — no-auth public; rate limited 20/10min และ 10/10min ต่อ IP ป้องกัน spam/brute-force
 - `POST /payment/request` — method: `cash` | `promptpay` เท่านั้น (slip upload ถูกลบออก)
+- `GET /promotions/public/:slug` — public, คืนเฉพาะ active + ช่วงวันที่ valid; ลูกค้าส่ง `promotion_id` ใน `POST /orders`
+- `POST /orders/:id/add-items` — reject 409 (`order_paid` / `order_expired`) ถ้า payment_status=paid หรือ created_at > 6h; `currentOrderId` sessionStorage เป็น `{ id, ts }` JSON TTL 4h
 - `POST /reviews` — ใช้ `orderId` เป็น secret แทน auth
 - `GET /push/vapid-public-key` + `POST /push/subscribe` — public; subscribe ใช้ `qrToken` เป็น secret resolve โต๊ะ, rate limit 20/10min ต่อ IP
 - Web Push trigger เฉพาะ status `ready` (เพิ่มจาก SSE เดิม) · `sw.js` มี `push` + `notificationclick` handler

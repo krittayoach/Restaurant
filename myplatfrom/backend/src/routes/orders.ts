@@ -117,6 +117,9 @@ export const orderRoutes = new Elysia({ prefix: '/orders' })
     const [order] = await db.select().from(orders).where(eq(orders.id, params.id)).limit(1)
     if (!order) { set.status = 404; return { error: 'Order not found' } }
     if (['served', 'cancelled'].includes(order.status)) { set.status = 400; return { error: 'Order already closed' } }
+    if (order.payment_status === 'paid') { set.status = 409; return { error: 'order_paid' } }
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60_000)
+    if (order.created_at < sixHoursAgo) { set.status = 409; return { error: 'order_expired' } }
 
     await db.insert(orderItems).values(
       body.items.map((i: any) => ({ order_id: params.id, menu_id: i.menu_id, menu_name: i.menu_name, quantity: i.quantity, unit_price: i.unit_price, note: i.note }))

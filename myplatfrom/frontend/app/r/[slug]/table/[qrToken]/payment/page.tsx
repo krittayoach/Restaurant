@@ -46,6 +46,7 @@ export default function PaymentPage() {
     if (orderList.length > 0) {
       setOrder(orderList[0])
       if (orderList[0].payment_status === 'paid') sessionStorage.removeItem('currentOrderId')
+
     }
     setRestaurant(rest)
     if (rest?.promptpay) {

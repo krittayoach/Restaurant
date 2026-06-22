@@ -19,6 +19,7 @@ export type DashboardT = {
     overview: string; menu: string; floor: string; kitchen: string; tableQr: string
     payments: string; promotions: string; employees: string; inventory: string
     reports: string; branches: string; settings: string; kds: string
+    reservations: string
   }
   sidebar: {
     system: string; branch: string; enterBranch: string; closed: string
@@ -130,6 +131,16 @@ export type DashboardT = {
     paidAdvance: string; payFailed: string
     confirmed: string
   }
+  reservations: {
+    title: string; subtitle: string; reserveLink: string
+    tabAll: string; tabPending: string
+    noReservations: string; noPendingPreorders: string
+    statsTotal: string; statsConfirmed: string; statsSeated: string; statsCancelled: string
+    preOrderItems: string; preOrderPending: string; preOrderPaid: string; preOrderRejected: string
+    seated: string; noShow: string; confirmed: string
+    paidAdvance: string; payFailed: string
+    viewSlip: string
+  }
 }
 
 // ─── Thai ─────────────────────────────────────────────────────────────────────
@@ -150,6 +161,7 @@ const th: DashboardT = {
     tableQr: 'QR โต๊ะ', payments: 'ชำระเงิน', promotions: 'โปรโมชั่น',
     employees: 'พนักงาน', inventory: 'คลังวัตถุดิบ', reports: 'รายงาน',
     branches: 'สาขา', settings: 'ตั้งค่า', kds: 'KDS จอครัว ↗',
+    reservations: 'การจอง',
   },
   sidebar: {
     system: 'ระบบจัดการร้าน', branch: 'สาขา', enterBranch: 'เข้า →', closed: 'ปิด',
@@ -285,6 +297,19 @@ const th: DashboardT = {
     paidAdvance: '✓ ชำระล่วงหน้าแล้ว', payFailed: '✗ ไม่ผ่านการชำระ',
     confirmed: 'ยืนยันแล้ว',
   },
+  reservations: {
+    title: '📅 การจองโต๊ะ', subtitle: 'จัดการการจองและ pre-order',
+    reserveLink: 'ลิงก์จองสำหรับลูกค้า ↗',
+    tabAll: 'การจองทั้งหมด', tabPending: 'Pre-order รอยืนยัน',
+    noReservations: 'ไม่มีการจองในวันที่เลือก', noPendingPreorders: 'ไม่มี Pre-order ที่รอยืนยัน',
+    statsTotal: 'ทั้งหมด', statsConfirmed: 'ยืนยันแล้ว',
+    statsSeated: 'เข้านั่งแล้ว', statsCancelled: 'ยกเลิก/ไม่มา',
+    preOrderItems: 'Pre-order', preOrderPending: 'รอยืนยันชำระ',
+    preOrderPaid: 'ชำระแล้ว', preOrderRejected: 'ไม่ผ่าน',
+    seated: 'เข้านั่ง', noShow: 'ไม่มา', confirmed: 'ยืนยันแล้ว',
+    paidAdvance: '✓ ชำระล่วงหน้าแล้ว', payFailed: '✗ ไม่ผ่านการชำระ',
+    viewSlip: 'ดูสลิป',
+  },
 }
 
 // ─── English ───────────────────────────────────────────────────────────────────
@@ -305,6 +330,7 @@ const en: DashboardT = {
     tableQr: 'Table QR', payments: 'Payments', promotions: 'Promotions',
     employees: 'Staff', inventory: 'Inventory', reports: 'Reports',
     branches: 'Branches', settings: 'Settings', kds: 'KDS Kitchen ↗',
+    reservations: 'Reservations',
   },
   sidebar: {
     system: 'Restaurant System', branch: 'Branch', enterBranch: 'Enter →', closed: 'Closed',
@@ -439,6 +465,19 @@ const en: DashboardT = {
     reserveLink: 'Reservation link for customers ↗', seated: 'Seated', noShow: 'No Show',
     paidAdvance: '✓ Paid in advance', payFailed: '✗ Payment failed',
     confirmed: 'Confirmed',
+  },
+  reservations: {
+    title: '📅 Table Reservations', subtitle: 'Manage reservations & pre-orders',
+    reserveLink: 'Reservation link for customers ↗',
+    tabAll: 'All Reservations', tabPending: 'Pending Pre-orders',
+    noReservations: 'No reservations on this date', noPendingPreorders: 'No pending pre-orders',
+    statsTotal: 'Total', statsConfirmed: 'Confirmed',
+    statsSeated: 'Seated', statsCancelled: 'Cancelled/No-show',
+    preOrderItems: 'Pre-order', preOrderPending: 'Payment pending',
+    preOrderPaid: 'Paid', preOrderRejected: 'Rejected',
+    seated: 'Seated', noShow: 'No Show', confirmed: 'Confirmed',
+    paidAdvance: '✓ Paid in advance', payFailed: '✗ Payment failed',
+    viewSlip: 'View Slip',
   },
 }
 
