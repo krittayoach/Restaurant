@@ -7,11 +7,12 @@ import { signJWT, verifyJWT } from '../lib/jwt'
 import { redis, keys, SESSION_TTL, RATE_LIMIT_TTL, RATE_LIMIT_MAX } from '../lib/redis'
 import { checkRateLimit, getIP } from '../lib/rateLimit'
 import { logAudit } from '../lib/audit'
-import { sendEmail, tplEmailVerification } from '../lib/email'
+import { sendEmail, tplEmailVerification, tplPasswordReset } from '../lib/email'
 import { randomBytes } from 'crypto'
 
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3002'
 const EMAIL_VERIFY_TTL = 86400  // 24h
+const PASSWORD_RESET_TTL = 3600  // 1h
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
 
@@ -170,6 +171,40 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
     sendEmail({ to: user.email!, ...tplEmailVerification(user.name, verifyUrl) })
     return { success: true }
   }, { body: t.Object({ email: t.String() }) })
+
+  // POST /auth/forgot-password  (public — ส่ง reset link ทาง email)
+  .post('/forgot-password', async ({ body, request, set }) => {
+    const ip = getIP(request)
+    const limited = await checkRateLimit(`ratelimit:forgot-password:${ip}`, 5, 600)
+    if (limited) {
+      set.status = 429
+      set.headers['Retry-After'] = '600'
+      return { error: 'Too many requests. Try again in 10 minutes.' }
+    }
+
+    const [user] = await db.select({ id: users.id, name: users.name, email: users.email, is_active: users.is_active })
+      .from(users).where(eq(users.email, body.email.toLowerCase().trim())).limit(1)
+
+    // silent — ไม่เปิดเผยว่า email มีในระบบหรือไม่
+    if (!user || !user.is_active || !user.email) return { success: true }
+
+    const token = randomBytes(32).toString('hex')
+    await redis.set(keys.passwordResetToken(token), user.id, 'EX', PASSWORD_RESET_TTL)
+    const resetUrl = `${APP_URL}/reset-password?token=${token}`
+    sendEmail({ to: user.email, ...tplPasswordReset(user.name, resetUrl) })
+    return { success: true }
+  }, { body: t.Object({ email: t.String() }) })
+
+  // POST /auth/confirm-reset  (public — ยืนยัน token + ตั้งรหัสผ่านใหม่)
+  .post('/confirm-reset', async ({ body, set }) => {
+    const userId = await redis.get(keys.passwordResetToken(body.token))
+    if (!userId) { set.status = 400; return { error: 'token_invalid' } }
+    await db.update(users).set({ password: await bcrypt.hash(body.password, 10) }).where(eq(users.id, userId))
+    await redis.del(keys.passwordResetToken(body.token))
+    return { success: true }
+  }, {
+    body: t.Object({ token: t.String(), password: t.String({ minLength: 6 }) }),
+  })
 
   // POST /auth/switch-branch — manager switches into a branch context
   .post('/switch-branch', async ({ body, set, cookie: { session } }) => {

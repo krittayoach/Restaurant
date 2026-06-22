@@ -116,6 +116,24 @@ export function tplPlanExpiringSoon(restaurantName: string, plan: string, expire
   }
 }
 
+export function tplPasswordReset(name: string, resetUrl: string) {
+  return {
+    subject: '🔑 รีเซ็ตรหัสผ่าน — Restaurant SaaS',
+    html: base(
+      heading('รีเซ็ตรหัสผ่านของคุณ') +
+      para(`สวัสดีครับ คุณ <strong>${name}</strong>`) +
+      para('กดปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่') +
+      `<div style="text-align:center;margin:28px 0;">
+        <a href="${resetUrl}" style="background:#f97316;color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:16px;display:inline-block;">ตั้งรหัสผ่านใหม่</a>
+      </div>` +
+      para('หรือคัดลอกลิงก์นี้ไปวางในเบราว์เซอร์:') +
+      `<p style="margin:0 0 16px;font-size:12px;color:#78716c;word-break:break-all;">${resetUrl}</p>` +
+      para('ลิงก์จะหมดอายุใน <strong>1 ชั่วโมง</strong>') +
+      para('<span style="color:#78716c;font-size:13px;">หากคุณไม่ได้ขอรีเซ็ตรหัสผ่าน กรุณาเพิกเฉยต่ออีเมลนี้</span>')
+    ),
+  }
+}
+
 export function tplPlanDowngraded(restaurantName: string, previousPlan: string) {
   return {
     subject: `ℹ️ แพ็กเกจถูกปรับลงเป็น Free — ${restaurantName}`,

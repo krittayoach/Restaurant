@@ -121,7 +121,13 @@ export default function LoginPage() {
               {submitted && !form.password && <p className="field-error">กรุณากรอกรหัสผ่าน</p>}
               {submitted && form.password && form.password.length < 6 && <p className="field-error">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</p>}
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-base mt-2 gap-2 disabled:opacity-70">
+            <div className="flex justify-end">
+              <a href="/forgot-password" className="text-xs text-muted hover:text-accent transition-colors">
+                ลืมรหัสผ่าน?
+              </a>
+            </div>
+
+            <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-base gap-2 disabled:opacity-70">
               {loading ? <><Spinner size={18} /> กำลังเข้าสู่ระบบ...</> : <>เข้าสู่ระบบ <ArrowRight size={18} /></>}
             </button>
           </form>

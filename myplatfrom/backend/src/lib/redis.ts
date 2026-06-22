@@ -24,6 +24,7 @@ export const keys = {
   adminChannel: () => 'platform:admin',
   superAdminSession: () => 'super_admin:session',
   emailVerifyToken: (token: string) => `email:verify:${token}`,
+  passwordResetToken: (token: string) => `password-reset:${token}`,
 }
 
 export const SESSION_TTL = 86400        // 24h
