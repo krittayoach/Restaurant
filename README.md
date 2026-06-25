@@ -54,6 +54,7 @@
 - **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
 - **Email Verification** — register ต้องยืนยัน email ก่อน login ได้; staff login ใช้ email (phone สำหรับ walk-in loyalty เท่านั้น)
 - **Observability** — pino structured logging (JSON prod / pretty dev), optional Sentry error tracking (`SENTRY_DSN`), `GET /health` (DB + Redis), Prometheus metrics `GET /metrics`
+- **Invoice PDF** — `/invoice/[orderId]` ใบเสร็จรับเงิน, พิมพ์หรือบันทึก PDF ผ่าน browser print dialog (รองรับภาษาไทย); ดาวน์โหลดจาก tab "ประวัติ" ใน Payments
 - **CI/CD** — GitHub Actions: backend unit tests (6 suites) + typecheck, frontend typecheck, E2E Playwright (auth + ordering); pre-commit hook รัน tests + typecheck ก่อน commit
 
 ---
@@ -275,6 +276,8 @@ bun run dev --port 3002
 | `/audit-logs` | บันทึก audit (super_admin: ทั้งหมด, manager: เฉพาะร้านตัวเอง) |
 | `GET /health` | Health check — DB + Redis status (`ok` / `degraded`) |
 | `GET /metrics` | Prometheus metrics — request counts, avg duration |
+| `GET /payment/history` | ประวัติการชำระเงิน (paid/refunded, latest 50) |
+| `GET /payment/invoice/:orderId` | ข้อมูลใบเสร็จ — ร้าน, รายการ, ยอด, promotion |
 
 Swagger UI: http://localhost:3010/docs
 

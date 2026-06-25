@@ -115,6 +115,9 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - Env: `SENTRY_DSN` (optional), `SENTRY_TRACES_SAMPLE_RATE=0.1`, `LOG_LEVEL=info`
 - `GET /health` → `{ status: 'ok'|'degraded', checks: { db, redis }, uptime_s, ts }` — ใช้เป็น Docker healthcheck target
 - `GET /metrics` → Prometheus text format — `http_requests_total`, `http_request_duration_ms_avg`, `process_uptime_seconds`
+- `GET /payment/invoice/:orderId` (employee/manager) → invoice data: ร้าน, ออเดอร์, รายการ, promotion; multi-tenant safe
+- `GET /payment/history` (employee/manager) → paid/refunded orders ล่าสุด 50 รายการ (join tables)
+- `/invoice/[orderId]` — Next.js server page, auth via session cookie, render ใบเสร็จ + `window.print()` → browser save as PDF (รองรับภาษาไทย)
 
 ## Gotchas
 - Staff login ใช้ `email` — phone ใช้สำหรับ walk-in customer loyalty เท่านั้น
@@ -143,6 +146,7 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - `next.config.mjs` มี `output: 'standalone'` — ต้องการสำหรับ Docker multi-stage; ไม่กระทบ dev
 - `bun run db:migrate` ใช้แทน `db:push` ใน production — idempotent, ใช้ SQL files ใน `drizzle/`; Dockerfile รัน migrate ก่อน start
 - `GET /health` + `GET /metrics` — ยกเว้นจาก request logging เพื่อลด noise
+- `PATCH /payment/refund` — ตรวจ `restaurant_id` จาก JWT (เดิมขาด multi-tenant check); payments page มี tab "ประวัติ" แสดง paid/refunded + ปุ่ม invoice + refund
 
 ## Dashboard i18n
 - `lib/i18n-dashboard.tsx` — `DashboardLangProvider` (ใน layout), `useDashboardLang()` → `{ t, lang, setLang }`, `DashboardLangToggle`

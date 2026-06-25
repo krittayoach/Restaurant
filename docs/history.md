@@ -1,5 +1,14 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.20 (2026-06-25)
+
+- F: `GET /payment/invoice/:orderId` (employee/manager) — คืน invoice data: ร้าน, ออเดอร์, รายการ, promotion; ตรวจ restaurant_id จาก JWT (multi-tenant safe)
+- F: `GET /payment/history` (employee/manager) — paid/refunded orders ล่าสุด 50 รายการ; join กับ tables
+- F: `/invoice/[orderId]` — Next.js server page (auth via session cookie); render ใบเสร็จรับเงิน (ร้าน, เลขที่, วันที่, โต๊ะ, รายการ, ส่วนลด, ยอดสุทธิ, วิธีชำระ, สถานะ); ปุ่ม "พิมพ์ / บันทึก PDF" → `window.print()` + `@media print` CSS ซ่อนปุ่ม
+- F: `PrintButton.tsx` — client component สำหรับ `window.print()` ในหน้า invoice
+- U: Payments dashboard — แยก tabs "รอตรวจสอบ" (เดิม) / "ประวัติ"; tab ประวัติแสดง paid/refunded orders + ปุ่ม "ใบเสร็จ" (link → `/invoice/` new tab) + ปุ่ม "คืนเงิน" (paid เท่านั้น, confirm dialog); i18n 7 keys ใหม่
+- B: `PATCH /payment/refund` — เพิ่ม `restaurant_id` check จาก JWT (เดิมขาด multi-tenant isolation)
+
 ## Changelog — v2.19 (2026-06-25)
 
 - C: Production Docker — `backend/Dockerfile` (multi-stage Bun), `frontend/Dockerfile` (Next.js standalone → node:20-alpine, non-root user); `.dockerignore` ทั้งคู่; `next.config.mjs` เพิ่ม `output: 'standalone'`
