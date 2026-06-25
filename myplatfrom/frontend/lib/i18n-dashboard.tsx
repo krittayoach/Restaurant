@@ -49,7 +49,8 @@ export type DashboardT = {
   payments: {
     title: string; loading: string; noPending: string; allVerified: string
     noSlipsPending: string; orderSlips: string; preorderSlips: string
-    pendingVerif: string
+    pendingVerif: string; pendingTab: string; historyTab: string
+    invoice: string; refund: string; noHistory: string; paid: string; refunded: string
   }
   menu: {
     title: string; addMenu: string; addCategory: string; manageCategories: string
@@ -197,7 +198,9 @@ const th: DashboardT = {
     title: 'ตรวจสอบชำระเงิน', loading: 'กำลังโหลด…', noPending: 'ไม่มีรายการรอตรวจสอบ',
     allVerified: 'ทุกรายการได้รับการตรวจสอบแล้ว', noSlipsPending: 'ไม่มีสลิปรอยืนยัน',
     orderSlips: 'สลิปโอนเงิน — ออเดอร์', preorderSlips: 'สลิป Pre-order — การจอง',
-    pendingVerif: 'รอยืนยัน',
+    pendingVerif: 'รอยืนยัน', pendingTab: 'รอตรวจสอบ', historyTab: 'ประวัติ',
+    invoice: 'ใบเสร็จ', refund: 'คืนเงิน', noHistory: 'ยังไม่มีประวัติการชำระเงิน',
+    paid: 'ชำระแล้ว', refunded: 'คืนเงินแล้ว',
   },
   menu: {
     title: 'จัดการเมนู', addMenu: 'เพิ่มเมนู', addCategory: 'เพิ่ม', manageCategories: 'หมวดหมู่',
@@ -366,7 +369,9 @@ const en: DashboardT = {
     title: 'Verify Payments', loading: 'Loading…', noPending: 'No pending items',
     allVerified: 'All items verified', noSlipsPending: 'No slips pending',
     orderSlips: 'Transfer Slips — Orders', preorderSlips: 'Pre-order Slips — Reservations',
-    pendingVerif: 'Pending Verification',
+    pendingVerif: 'Pending Verification', pendingTab: 'Pending', historyTab: 'History',
+    invoice: 'Invoice', refund: 'Refund', noHistory: 'No payment history yet',
+    paid: 'Paid', refunded: 'Refunded',
   },
   menu: {
     title: 'Manage Menu', addMenu: 'Add Item', addCategory: 'Add', manageCategories: 'Categories',

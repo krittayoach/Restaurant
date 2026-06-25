@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
-import { CheckCircle, XCircle, RefreshCw, ImageIcon, CalendarClock, Users, Phone, Clock, CreditCard } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { CheckCircle, XCircle, RefreshCw, ImageIcon, CalendarClock, Users, Phone, Clock, CreditCard, ReceiptText, RotateCcw } from 'lucide-react'
 import { Spinner } from '@/components/Spinner'
 import { useDashboardLang } from '@/lib/i18n-dashboard'
 
@@ -26,6 +26,16 @@ type OrderSlip = {
   items: { menu_name: string; quantity: number; unit_price: number }[]
 }
 
+type HistoryOrder = {
+  id: string
+  total: number
+  discount: number
+  payment_method: string | null
+  payment_status: string
+  created_at: string
+  table_label: string | null
+}
+
 type PreOrderSlip = {
   id: string
   customer_name: string
@@ -42,9 +52,13 @@ type PreOrderSlip = {
 export default function PaymentsPage() {
   const { slug } = useParams() as { slug: string }
   const { t } = useDashboardLang()
+  const router = useRouter()
+  const [tab, setTab] = useState<'pending' | 'history'>('pending')
   const [orderSlips, setOrderSlips] = useState<OrderSlip[]>([])
   const [preOrders, setPreOrders] = useState<PreOrderSlip[]>([])
   const [loading, setLoading] = useState(true)
+  const [historyOrders, setHistoryOrders] = useState<HistoryOrder[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [viewSlip, setViewSlip] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
@@ -64,7 +78,16 @@ export default function PaymentsPage() {
     }
   }, [])
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    try {
+      const r = await fetch(`${API}/payment/history`, { headers: authHeaders() })
+      setHistoryOrders(r.ok ? await r.json() : [])
+    } finally { setHistoryLoading(false) }
+  }, [])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (tab === 'history') loadHistory() }, [tab, loadHistory])
 
   async function verifyOrder(orderId: string, approve: boolean) {
     setActionLoading(orderId)
@@ -77,6 +100,26 @@ export default function PaymentsPage() {
       })
       await load()
     } finally { setActionLoading(null) }
+  }
+
+  async function refundPaidOrder(orderId: string) {
+    if (!confirm('คืนเงินออเดอร์นี้?')) return
+    setActionLoading(orderId)
+    try {
+      await fetch(`${API}/payment/refund`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ orderId }),
+      })
+      await loadHistory()
+    } finally { setActionLoading(null) }
+  }
+
+  function paymentMethodLabel(method: string | null) {
+    if (method === 'cash') return 'เงินสด'
+    if (method === 'promptpay') return 'PromptPay'
+    if (method === 'transfer') return 'โอนเงิน'
+    return '-'
   }
 
   async function verifyPreOrder(id: string, action: 'approve' | 'reject') {
@@ -109,17 +152,30 @@ export default function PaymentsPage() {
             {t.payments.title}
           </h1>
           <p className="text-sm text-muted mt-0.5">
-            {loading ? t.payments.loading : total === 0 ? t.payments.noPending : `${total} ${t.payments.pendingVerif}`}
+            {loading ? t.payments.loading : tab === 'pending' ? (total === 0 ? t.payments.noPending : `${total} ${t.payments.pendingVerif}`) : `${historyOrders.length} รายการ`}
           </p>
         </div>
-        <button onClick={load} disabled={loading} data-tooltip="รีเฟรช"
+        <button onClick={tab === 'pending' ? load : loadHistory} disabled={loading || historyLoading} data-tooltip="รีเฟรช"
           className="size-9 rounded-2xl bg-bg3 flex items-center justify-center text-muted hover:text-text transition-colors">
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={loading || historyLoading ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      {/* Empty state */}
-      {!loading && total === 0 && (
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-bg3 rounded-2xl w-fit">
+        {(['pending', 'history'] as const).map(t2 => (
+          <button key={t2} onClick={() => setTab(t2)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-colors ${tab === t2 ? 'bg-white text-text shadow-sm' : 'text-muted hover:text-text'}`}>
+            {t2 === 'pending' ? t.payments.pendingTab : t.payments.historyTab}
+            {t2 === 'pending' && total > 0 && (
+              <span className="ml-1.5 text-xs bg-accent text-white px-1.5 py-0.5 rounded-full">{total}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Empty state (pending tab) */}
+      {tab === 'pending' && !loading && total === 0 && (
         <div className="card p-10 text-center space-y-2">
           <div className="size-14 rounded-2xl bg-green/10 flex items-center justify-center mx-auto">
             <CheckCircle size={28} className="text-green" />
@@ -129,8 +185,8 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Order slips */}
-      {orderSlips.length > 0 && (
+      {/* Order slips (pending tab only) */}
+      {tab === 'pending' && orderSlips.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-bold text-text px-1">{t.payments.orderSlips} ({orderSlips.length})</h2>
           {orderSlips.map(order => (
@@ -184,8 +240,8 @@ export default function PaymentsPage() {
         </section>
       )}
 
-      {/* Pre-order slips */}
-      {preOrders.length > 0 && (
+      {/* Pre-order slips (pending tab only) */}
+      {tab === 'pending' && preOrders.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-bold text-text px-1">{t.payments.preorderSlips} ({preOrders.length})</h2>
           {preOrders.map(res => (
@@ -240,6 +296,56 @@ export default function PaymentsPage() {
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-green/10 text-green hover:bg-green/20 transition-colors font-medium disabled:opacity-50">
                   {actionLoading === res.id ? <Spinner size={12} /> : <CheckCircle size={13} />}{t.common.approve}
                 </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* History tab */}
+      {tab === 'history' && (
+        <section className="space-y-3">
+          {historyLoading ? (
+            <div className="flex justify-center py-10"><Spinner size={24} /></div>
+          ) : historyOrders.length === 0 ? (
+            <div className="card p-10 text-center text-sm text-muted">{t.payments.noHistory}</div>
+          ) : historyOrders.map(order => (
+            <div key={order.id} className="card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-text">โต๊ะ {order.table_label ?? '-'}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      order.payment_status === 'paid' ? 'bg-green/10 text-green' : 'bg-rose/10 text-rose'
+                    }`}>
+                      {order.payment_status === 'paid' ? t.payments.paid : t.payments.refunded}
+                    </span>
+                    <span className="text-xs text-muted">{paymentMethodLabel(order.payment_method)}</span>
+                  </div>
+                  <p className="text-xs text-muted mt-1 flex items-center gap-1">
+                    <Clock size={10} />{formatDateTime(order.created_at)}
+                  </p>
+                  {order.discount > 0 && (
+                    <p className="text-xs text-green mt-0.5">ส่วนลด -฿{order.discount.toFixed(0)}</p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-display font-bold text-xl text-accent">฿{order.total.toFixed(0)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                <a href={`/invoice/${order.id}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-bg3 text-muted hover:text-text transition-colors">
+                  <ReceiptText size={13} />{t.payments.invoice}
+                </a>
+                <div className="flex-1" />
+                {order.payment_status === 'paid' && (
+                  <button onClick={() => refundPaidOrder(order.id)}
+                    disabled={actionLoading === order.id}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-rose/10 text-rose hover:bg-rose/20 transition-colors font-medium disabled:opacity-50">
+                    {actionLoading === order.id ? <Spinner size={12} /> : <RotateCcw size={13} />}{t.payments.refund}
+                  </button>
+                )}
               </div>
             </div>
           ))}
