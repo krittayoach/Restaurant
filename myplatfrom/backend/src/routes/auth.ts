@@ -208,7 +208,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 
   // POST /auth/switch-branch — manager switches into a branch context
   .post('/switch-branch', async ({ body, set, cookie: { session } }) => {
-    const token = session?.value ?? ''
+    const token = String(session?.value ?? '')
     let payload: any
     try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
     if (payload.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
@@ -228,7 +228,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 
   // POST /auth/switch-parent — manager returns to parent restaurant context
   .post('/switch-parent', async ({ set, cookie: { session } }) => {
-    const token = session?.value ?? ''
+    const token = String(session?.value ?? '')
     let payload: any
     try { payload = await verifyJWT(token) } catch { set.status = 401; return { error: 'Unauthorized' } }
     if (payload.role !== 'manager') { set.status = 403; return { error: 'Forbidden' } }
@@ -248,7 +248,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
 
   // POST /auth/logout
   .post('/logout', async ({ cookie: { session } }) => {
-    const token = session.value
+    const token = String(session.value ?? '')
     if (token) {
       try {
         const payload = await verifyJWT(token)

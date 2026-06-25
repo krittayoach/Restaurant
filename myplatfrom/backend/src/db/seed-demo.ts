@@ -266,7 +266,7 @@ async function main() {
       await db.insert(orderItems).values(items.map(it => ({
         order_id: order.id, menu_id: it.menu_id, menu_name: it.menu_name,
         quantity: it.quantity, unit_price: it.unit_price,
-        status: 'served', started_at: createdAt, finished_at: createdAt, served_at: createdAt,
+        status: 'served' as const, started_at: createdAt, finished_at: createdAt, served_at: createdAt,
       })))
       totalOrders++
     }

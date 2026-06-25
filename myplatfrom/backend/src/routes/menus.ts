@@ -3,19 +3,9 @@ import { db } from '../db'
 import { menus, restaurants } from '../db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { PLAN_LIMITS } from './restaurants'
-import { verifyJWT } from '../lib/jwt'
 import { redis, keys, MENU_CACHE_TTL } from '../lib/redis'
+import { requireAuth } from '../lib/requireAuth'
 import { uploadFile, getPublicUrl, menuImageKey } from '../lib/storage'
-
-async function requireAuth(headers: any, roles: string[], set: any) {
-  const auth = headers['authorization']
-  if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
-  try {
-    const payload = await verifyJWT(auth.slice(7))
-    if (!roles.includes(payload.role)) { set.status = 403; return null }
-    return payload
-  } catch { set.status = 401; return null }
-}
 
 async function invalidateCache(restaurantId: string) {
   await redis.del(keys.menuCache(restaurantId))

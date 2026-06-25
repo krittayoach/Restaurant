@@ -4,18 +4,8 @@ import { tables, restaurants } from '../db/schema'
 import { eq, and, count } from 'drizzle-orm'
 import { PLAN_LIMITS } from './restaurants'
 import { randomBytes } from 'crypto'
-import { verifyJWT } from '../lib/jwt'
 import { redis, keys, subscriber } from '../lib/redis'
-
-async function requireAuth(headers: Record<string, string | undefined>, roles: string[], set: any) {
-  const auth = headers['authorization']
-  if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
-  try {
-    const payload = await verifyJWT(auth.slice(7))
-    if (!roles.includes(payload.role)) { set.status = 403; return null }
-    return payload
-  } catch { set.status = 401; return null }
-}
+import { requireAuth } from '../lib/requireAuth'
 
 export const tableRoutes = new Elysia({ prefix: '/tables' })
 

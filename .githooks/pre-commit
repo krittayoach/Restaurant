@@ -1,0 +1,30 @@
+#!/bin/sh
+# Pre-commit hook: runs fast checks before every commit
+# Setup: git config core.hooksPath .githooks
+
+set -e
+
+echo "⚡ Pre-commit checks..."
+
+# Run backend unit tests (fast — no DB needed)
+echo "  → backend unit tests"
+(cd myplatfrom/backend && bun test --bail) || {
+  echo "❌ Backend tests failed. Fix before committing."
+  exit 1
+}
+
+# Backend type check
+echo "  → backend typecheck"
+(cd myplatfrom/backend && bunx tsc --noEmit) || {
+  echo "❌ Backend TypeScript errors. Fix before committing."
+  exit 1
+}
+
+# Frontend type check
+echo "  → frontend typecheck"
+(cd myplatfrom/frontend && bunx tsc --noEmit) || {
+  echo "❌ Frontend TypeScript errors. Fix before committing."
+  exit 1
+}
+
+echo "✅ All checks passed"

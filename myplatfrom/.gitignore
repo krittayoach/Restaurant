@@ -29,3 +29,7 @@ bun-debug.log*
 
 # Upload/storage
 uploads/
+
+# Playwright E2E
+e2e/playwright-report/
+e2e/test-results/

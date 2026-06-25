@@ -9,7 +9,7 @@ export interface JWTPayload {
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
 export async function signJWT(payload: JWTPayload): Promise<string> {
-  return new SignJWT(payload as Record<string, unknown>)
+  return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h')

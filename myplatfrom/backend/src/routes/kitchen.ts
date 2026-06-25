@@ -2,19 +2,10 @@ import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { orders, orderItems, menuIngredients, ingredients } from '../db/schema'
 import { eq, and, inArray, sql } from 'drizzle-orm'
-import { verifyJWT } from '../lib/jwt'
 import { publisher, keys, subscriber } from '../lib/redis'
 import { sendPushToTable } from '../lib/push'
-
-async function requireAuth(headers: any, roles: string[], set: any) {
-  const auth = headers['authorization']
-  if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
-  try {
-    const payload = await verifyJWT(auth.slice(7))
-    if (!roles.includes(payload.role)) { set.status = 403; return null }
-    return payload
-  } catch { set.status = 401; return null }
-}
+import { requireAuth } from '../lib/requireAuth'
+import { deriveOrderStatus } from '../lib/orderStatus'
 
 export const kitchenRoutes = new Elysia({ prefix: '/kitchen' })
 
@@ -68,10 +59,7 @@ export const kitchenRoutes = new Elysia({ prefix: '/kitchen' })
 
     // Sync order status
     const allItems = await db.select().from(orderItems).where(eq(orderItems.order_id, updated.order_id))
-    const statuses = allItems.map(i => i.status)
-    let orderStatus = 'pending'
-    if (statuses.every(s => s === 'ready' || s === 'served')) orderStatus = 'ready'
-    else if (statuses.some(s => s === 'cooking')) orderStatus = 'cooking'
+    const orderStatus = deriveOrderStatus(allItems.map(i => i.status))
     await db.update(orders).set({ status: orderStatus as any }).where(eq(orders.id, updated.order_id))
 
     await publisher.publish(keys.kitchenChannel(payload.restaurantId!), JSON.stringify({ type: 'ITEM_STATUS', data: { itemId: params.id, status: body.status, orderId: updated.order_id } }))

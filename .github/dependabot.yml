@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Backend (Bun/Node)
+  - package-ecosystem: npm
+    directory: /myplatfrom/backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+
+  # Frontend (Next.js)
+  - package-ecosystem: npm
+    directory: /myplatfrom/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+
+  # E2E (Playwright)
+  - package-ecosystem: npm
+    directory: /myplatfrom/e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - e2e
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci

@@ -31,7 +31,7 @@ export const authGuard = (allowedRoles?: Role[]) =>
 
       let payload: Awaited<ReturnType<typeof verifyJWT>>
       try {
-        payload = await verifyJWT(raw)
+        payload = await verifyJWT(raw as string)
       } catch {
         set.status = 401
         throw new Error('Unauthorized: invalid token')

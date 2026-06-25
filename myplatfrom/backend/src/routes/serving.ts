@@ -2,18 +2,8 @@ import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { orders, orderItems, tables } from '../db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
-import { verifyJWT } from '../lib/jwt'
 import { publisher, keys, subscriber } from '../lib/redis'
-
-async function requireAuth(headers: any, roles: string[], set: any) {
-  const auth = headers['authorization']
-  if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
-  try {
-    const payload = await verifyJWT(auth.slice(7))
-    if (!roles.includes(payload.role)) { set.status = 403; return null }
-    return payload
-  } catch { set.status = 401; return null }
-}
+import { requireAuth } from '../lib/requireAuth'
 
 async function syncOrderStatus(orderId: string, restaurantId: string) {
   const allItems = await db.select().from(orderItems).where(eq(orderItems.order_id, orderId))

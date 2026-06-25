@@ -2,17 +2,7 @@ import { Elysia, t } from 'elysia'
 import { db } from '../db'
 import { categories } from '../db/schema'
 import { eq, and } from 'drizzle-orm'
-import { verifyJWT } from '../lib/jwt'
-
-async function requireAuth(headers: any, roles: string[], set: any) {
-  const auth = headers['authorization']
-  if (!auth?.startsWith('Bearer ')) { set.status = 401; return null }
-  try {
-    const payload = await verifyJWT(auth.slice(7))
-    if (!roles.includes(payload.role)) { set.status = 403; return null }
-    return payload
-  } catch { set.status = 401; return null }
-}
+import { requireAuth } from '../lib/requireAuth'
 
 export const categoryRoutes = new Elysia({ prefix: '/categories' })
 
