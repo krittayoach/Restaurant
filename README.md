@@ -53,6 +53,8 @@
 - **Billing Cron** — ตรวจสอบทุก 1 ชั่วโมง, auto-downgrade plan ที่หมดอายุ (30-day cycle)
 - **Email Notifications** — แจ้งเตือนผ่าน Resend: อนุมัติ/ปฏิเสธ plan, หมดอายุ, 7-day reminder
 - **Email Verification** — register ต้องยืนยัน email ก่อน login ได้; staff login ใช้ email (phone สำหรับ walk-in loyalty เท่านั้น)
+- **Observability** — pino structured logging (JSON prod / pretty dev), optional Sentry error tracking (`SENTRY_DSN`), `GET /health` (DB + Redis), Prometheus metrics `GET /metrics`
+- **CI/CD** — GitHub Actions: backend unit tests (6 suites) + typecheck, frontend typecheck, E2E Playwright (auth + ordering); pre-commit hook รัน tests + typecheck ก่อน commit
 
 ---
 
@@ -112,8 +114,15 @@ myplatfrom/
 │           ├── jwt.ts              # JWT sign/verify
 │           ├── auth.ts             # requireSuperAdmin() — JWT + Redis check
 │           ├── storage.ts          # MinIO upload
-│           └── loyalty.ts          # Points system
-└── docker-compose.yml              # PostgreSQL + Redis + MinIO
+│           ├── loyalty.ts          # Points system
+│           ├── logger.ts           # pino structured logging
+│           ├── sentry.ts           # optional Sentry error tracking
+│           └── metrics.ts          # in-memory Prometheus counters
+├── e2e/                            # Playwright E2E tests
+├── scripts/
+│   └── backup-db.sh                # pg_dump → gzip → S3/MinIO
+├── docker-compose.yml              # dev: PostgreSQL + Redis + MinIO
+└── docker-compose.prod.yml         # production: all services + healthchecks
 ```
 
 ---
@@ -264,6 +273,8 @@ bun run dev --port 3002
 | `/push` | Web Push VAPID key + subscribe |
 | `/admin/*` | Super admin — จัดการร้าน, MRR, ระงับร้าน |
 | `/audit-logs` | บันทึก audit (super_admin: ทั้งหมด, manager: เฉพาะร้านตัวเอง) |
+| `GET /health` | Health check — DB + Redis status (`ok` / `degraded`) |
+| `GET /metrics` | Prometheus metrics — request counts, avg duration |
 
 Swagger UI: http://localhost:3010/docs
 
@@ -322,16 +333,39 @@ restaurants ──< users (manager/employee/chef) — login ด้วย email
 
 ```bash
 # Backend
-bun run dev          # รัน development server
-bun run db:push      # push schema ไป database
-bun run db:studio    # เปิด Drizzle Studio (GUI database)
+bun run dev              # รัน development server (watch mode)
+bun test                 # unit tests
+bun run db:push          # push schema (dev)
+bun run db:generate      # generate migration SQL files
+bun run db:migrate       # apply migrations (production path, idempotent)
+bun run db:studio        # เปิด Drizzle Studio (GUI)
 bun run src/db/seed-demo.ts  # เพิ่ม demo data
 
 # Frontend
-bun run dev --port 3002   # รัน frontend
-bun run build             # build production
-npx tsc --noEmit          # type check (ใช้แทน build ระหว่าง dev)
+bun run dev --port 3002  # รัน frontend
+bunx tsc --noEmit        # type check (ใช้แทน build ระหว่าง dev)
 ```
+
+## 🐳 Production Deploy
+
+```bash
+# 1. ตั้งค่า environment
+cp .env.production.example .env.production
+# แก้ DB_PASSWORD, REDIS_PASSWORD, JWT_SECRET, APP_URL, NEXT_PUBLIC_API_URL ฯลฯ
+
+# 2. Build + รัน
+docker compose -f myplatfrom/docker-compose.prod.yml --env-file .env.production up -d
+
+# 3. ตรวจสอบ
+curl http://localhost:3010/health
+# → { "status": "ok", "checks": { "db": true, "redis": true }, ... }
+
+# 4. Backup DB
+./scripts/backup-db.sh
+# → upload restaurant_TIMESTAMP.sql.gz ไป S3/MinIO
+```
+
+> **Pre-commit hook:** `git config core.hooksPath .githooks` — รัน unit tests + typecheck ก่อนทุก commit
 
 ---
 

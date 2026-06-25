@@ -30,16 +30,16 @@ myplatfrom/
 │   ├── kds/[slug]/                 # Kitchen Display System (fullscreen)
 │   ├── staff/[slug]/               # Staff Display tablet (employee+manager)
 │   ├── dashboard/[slug]/           # Staff: overview, menu, orders, kitchen, tables, reservations, payments, employees, promotions, reports, branches, settings
-│   ├── verify-email/               # Email verification landing page (public)
-│   ├── forgot-password/            # ขอลิงก์รีเซ็ตรหัสผ่าน (public)
-│   ├── reset-password/             # ตั้งรหัสผ่านใหม่ผ่าน token (public)
-│   ├── admin/                      # Super admin
+│   ├── verify-email/ · forgot-password/ · reset-password/ · admin/
 │   └── middleware.ts               # JWT guard + role routing (jose, Edge runtime)
 ├── backend/src/
 │   ├── routes/   # auth, restaurants, menus, categories, tables, orders, kitchen, serving, payment, employees, reports, reservations, inventory, billing, customers, branches, reviews
-│   ├── db/       # schema.ts, drizzle.config.ts, seed-demo.ts
-│   └── lib/      # redis.ts, jwt.ts, storage.ts, loyalty.ts
-└── docker-compose.yml
+│   ├── db/       # schema.ts, migrate.ts, ci-seed.ts, seed-demo.ts
+│   └── lib/      # redis.ts, jwt.ts, storage.ts, loyalty.ts, logger.ts, sentry.ts, metrics.ts
+├── backend/drizzle/    # SQL migrations (drizzle-kit generate)
+├── e2e/                # Playwright E2E tests (auth, ordering)
+├── docker-compose.yml · docker-compose.prod.yml  # dev + production compose
+└── scripts/backup-db.sh  # pg_dump → gzip → S3/MinIO upload
 ```
 
 ## Roles
@@ -76,7 +76,9 @@ Hook: `useSSE(path, onMessage)` — auto-reconnect 3s
 docker compose up -d               # PostgreSQL :5433 · Redis :6380 · MinIO :9000
 cd backend  && bun run dev         # Elysia :3010
 cd frontend && bun run dev --port 3002
-bun run db:push                    # push schema · npx tsc --noEmit (type check)
+bun run db:push                    # push schema (dev) · bun run db:migrate (production path)
+bun test                           # unit tests · bunx tsc --noEmit (type check)
+# CI: git config core.hooksPath .githooks  → pre-commit รัน tests + typecheck อัตโนมัติ
 ```
 
 **Env:** `DATABASE_URL` · `REDIS_URL` · `JWT_SECRET` · `PORT=3010` · `PLATFORM_PROMPTPAY_ID`  
@@ -107,6 +109,12 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - Redis: `email:verify:{token}` TTL 24h — email verification token (UUID → userId)
 - Redis: `password-reset:{token}` TTL 1h — forgot-password token (hex → userId); single-use (ลบทันทีหลัง reset)
 - `users.email_verified` — false สำหรับ register ใหม่; true สำหรับ employee ที่ manager สร้าง
+- `lib/logger.ts` — pino singleton; JSON prod / pino-pretty dev (devDep); `LOG_LEVEL` env (default: `info` prod, `debug` dev)
+- `lib/sentry.ts` — `initSentry()` + `captureException()`; no-op ถ้าไม่มี `SENTRY_DSN`
+- `lib/metrics.ts` — in-memory Prometheus counters; path normalization (UUID/hex/numeric → `:id`/`:token`/`:n`); resets on restart
+- Env: `SENTRY_DSN` (optional), `SENTRY_TRACES_SAMPLE_RATE=0.1`, `LOG_LEVEL=info`
+- `GET /health` → `{ status: 'ok'|'degraded', checks: { db, redis }, uptime_s, ts }` — ใช้เป็น Docker healthcheck target
+- `GET /metrics` → Prometheus text format — `http_requests_total`, `http_request_duration_ms_avg`, `process_uptime_seconds`
 
 ## Gotchas
 - Staff login ใช้ `email` — phone ใช้สำหรับ walk-in customer loyalty เท่านั้น
@@ -132,6 +140,9 @@ Frontend: `NEXT_PUBLIC_API_URL=http://localhost:3010`
 - Login ต้องใช้ `window.location.href` (ไม่ใช่ `router.push`) — ให้ browser reload เต็มรูปแบบเพื่อ cookie ใหม่ถูกส่งก่อน middleware อ่าน
 - Super admin routes ทุกตัวต้องใช้ `requireSuperAdmin()` จาก `lib/auth.ts` — เช็คทั้ง JWT + Redis session
 - `data-tooltip="label"` บน element ใดก็ได้ → tooltip CSS-only ผ่าน `::after` pseudo-element ใน globals.css
+- `next.config.mjs` มี `output: 'standalone'` — ต้องการสำหรับ Docker multi-stage; ไม่กระทบ dev
+- `bun run db:migrate` ใช้แทน `db:push` ใน production — idempotent, ใช้ SQL files ใน `drizzle/`; Dockerfile รัน migrate ก่อน start
+- `GET /health` + `GET /metrics` — ยกเว้นจาก request logging เพื่อลด noise
 
 ## Dashboard i18n
 - `lib/i18n-dashboard.tsx` — `DashboardLangProvider` (ใน layout), `useDashboardLang()` → `{ t, lang, setLang }`, `DashboardLangToggle`

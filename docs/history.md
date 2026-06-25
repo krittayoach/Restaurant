@@ -1,5 +1,21 @@
 # history.md — Project History & Decision Log
 
+## Changelog — v2.19 (2026-06-25)
+
+- C: Production Docker — `backend/Dockerfile` (multi-stage Bun), `frontend/Dockerfile` (Next.js standalone → node:20-alpine, non-root user); `.dockerignore` ทั้งคู่; `next.config.mjs` เพิ่ม `output: 'standalone'`
+- C: `docker-compose.prod.yml` — production compose ครบ services (postgres/redis/minio/backend/frontend) พร้อม healthchecks; backend depends-on postgres+redis healthy; NEXT_PUBLIC_API_URL เป็น build arg
+- C: Drizzle migrate workflow — `src/db/migrate.ts` programmatic migrator; `drizzle/0000_*.sql` initial migration 18 tables (idempotent); scripts: `db:migrate`, `db:seed`, `start:prod`; Dockerfile รัน migrate ก่อน start
+- C: `scripts/backup-db.sh` — pg_dump → gzip → upload S3/MinIO; `.env.production.example` documents ทุก production env var
+- F: pino structured logging — `src/lib/logger.ts`; JSON ใน prod, pino-pretty ใน dev (devDep, ไม่ถูก bundle); `LOG_LEVEL` env
+- F: Optional Sentry — `src/lib/sentry.ts`; `initSentry()` + `captureException()`; no-op ถ้าไม่มี `SENTRY_DSN`
+- F: Prometheus metrics — `src/lib/metrics.ts`; `GET /metrics` Prometheus text format; path normalization (UUID/hex/numeric → `:id`/`:token`/`:n`) ลด cardinality
+- F: Enhanced `GET /health` — ping DB (`SELECT 1`) + Redis (`PING`) → `{ status, checks, uptime_s, ts }`; ใช้เป็น Docker healthcheck target
+- F: `src/index.ts` observability hooks — `.derive()` request timing, `.onAfterHandle` log + record metrics, `.onError` log + Sentry capture + record metrics
+- F: CI pipeline — `.github/workflows/ci.yml`: backend unit tests + typecheck, frontend typecheck, E2E Playwright; `.github/dependabot.yml`
+- F: E2E Playwright — `e2e/tests/auth.spec.ts` + `ordering.spec.ts`; `src/db/ci-seed.ts` CI seed data
+- F: Unit tests — 6 test files: `jwt`, `loyalty`, `orderStatus`, `rateLimit`, `requireAuth`, `storage`; `test`, `test:coverage` scripts
+- C: `.githooks/pre-commit` — รัน `bun test` + typecheck backend/frontend ก่อน commit; setup: `git config core.hooksPath .githooks`
+
 ## Changelog — v2.18 (2026-06-22)
 
 - F: Reservation dashboard — `/dashboard/[slug]/reservations` หน้าใหม่; date navigation (prev/next + picker), stats bar (total/confirmed/seated/cancelled), tabs (การจองทั้งหมด / Pre-order รอยืนยัน พร้อม badge count), action: Seated/No Show/Cancel, approve/reject pre-order slip + modal ดูรูป, expand pre-order items
